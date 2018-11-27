@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../git/arch/arm/dts/stm32mp157a-av96.dts
 --- ./arch/arm/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/arch/arm/dts/stm32mp157a-av96.dts	2018-11-20 10:51:14.878188999 +0100
++++ ../git/arch/arm/dts/stm32mp157a-av96.dts	2018-11-23 10:12:09.026514000 +0100
 @@ -0,0 +1,698 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -702,7 +702,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../git/arch/arm/dts/stm32mp157a-
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157c-ed1.dts ../git/arch/arm/dts/stm32mp157c-ed1.dts
 --- ./arch/arm/dts/stm32mp157c-ed1.dts	2018-10-18 20:33:47.000000000 +0200
-+++ ../git/arch/arm/dts/stm32mp157c-ed1.dts	2018-11-20 10:51:14.878188999 +0100
++++ ../git/arch/arm/dts/stm32mp157c-ed1.dts	2018-11-26 16:20:58.593239360 +0100
 @@ -52,6 +52,7 @@
  		};
  	};
@@ -711,10 +711,35 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ed1.dts ../git/arch/arm/dts/stm32mp157c-e
  	gpio_keys {
  		compatible = "gpio-keys";
  		#address-cells = <1>;
-@@ -112,8 +113,10 @@
+@@ -112,8 +113,35 @@
  		gpios-states = <0>;
  		states = <1800000 0x1 2900000 0x0>;
  	};
++#else
++	led {
++		compatible = "gpio-leds";
++
++		status = "disabled";
++		green {
++			label = "stm32mp:green:user";
++			gpios = <&gpioa 14 GPIO_ACTIVE_LOW>;
++
++			status = "okay";
++		};
++	};
++
++	sd_switch: regulator-sd_switch {
++		compatible = "regulator-gpio";
++		regulator-name = "sd_switch";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <2900000>;
++		regulator-type = "voltage";
++		regulator-always-on;
++
++		gpios = <&gpioi 5 GPIO_ACTIVE_HIGH>;
++		gpios-states = <0>;
++		states = <1800000 0x1 2900000 0x0>;
++	};
 +#endif
  };
  
@@ -722,7 +747,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ed1.dts ../git/arch/arm/dts/stm32mp157c-e
  &adc {
  	/* ANA0, ANA1 are dedicated pins and don't need pinctrl: only in6. */
  	vref-supply = <&vdda>;
-@@ -151,6 +154,7 @@
+@@ -151,6 +179,7 @@
  		status = "okay";
  	};
  };
@@ -730,23 +755,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ed1.dts ../git/arch/arm/dts/stm32mp157c-e
  
  &dma1 {
  	memory-region = <&dma1_reserved>;
-@@ -489,6 +493,7 @@
- 	status = "okay";
- };
- 
-+#if 0
- &sdmmc1 {
- 	pinctrl-names = "default", "sleep";
- 	pinctrl-0 = <&sdmmc1_b4_pins_a &sdmmc1_dir_pins_a>;
-@@ -522,6 +527,7 @@
- 	vqmmc-supply = <&vdd>;
- 	status = "okay";
- };
-+#endif
- 
- &timers6 {
- 	status = "okay";
-@@ -535,8 +541,13 @@
+@@ -535,8 +564,13 @@
  
  &uart4 {
  	pinctrl-names = "default", "sleep";
@@ -762,7 +771,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ed1.dts ../git/arch/arm/dts/stm32mp157c-e
  
 diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-ev1.dts
 --- ./arch/arm/dts/stm32mp157c-ev1.dts	2018-10-18 20:33:47.000000000 +0200
-+++ ../git/arch/arm/dts/stm32mp157c-ev1.dts	2018-11-20 10:51:14.878188999 +0100
++++ ../git/arch/arm/dts/stm32mp157c-ev1.dts	2018-11-27 15:03:05.091268916 +0100
 @@ -30,6 +30,7 @@
  		};
  	};
@@ -782,7 +791,36 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  &cec {
  	pinctrl-names = "default";
  	pinctrl-0 = <&cec_pins_a>;
-@@ -359,6 +362,7 @@
+@@ -226,6 +229,7 @@
+ 		};
+ 	};
+ };
++#endif
+ 
+ &ethernet0 {
+ 	status = "okay";
+@@ -236,6 +240,12 @@
+ 	max-speed = <1000>;
+ 	phy-handle = <&phy0>;
+ 
++    rxc-skew-ps = <1500>;
++	/* rxdv-skew-ps = <0>; */
++	txc-skew-ps = <1500>;
++	/* txen-skew-ps = <0>; */
++	phy-reset-gpios = <&gpioz 2 GPIO_ACTIVE_LOW>;
++
+ 	mdio0 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+@@ -246,6 +256,7 @@
+ 	};
+ };
+ 
++#if 0
+ &fmc_nand {
+ 	pinctrl-names = "default", "sleep";
+ 	pinctrl-0 = <&fmc_pins_a>;
+@@ -359,6 +370,7 @@
  		irq-flags = <IRQ_TYPE_EDGE_RISING>;
  	};
  };
@@ -790,7 +828,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  
  &i2c4 {
  	pmic: stpmu1@33 {
-@@ -372,6 +376,7 @@
+@@ -372,6 +384,7 @@
  	};
  };
  
@@ -798,7 +836,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  &i2c5 {
  	pinctrl-names = "default", "sleep";
  	pinctrl-0 = <&i2c5_pins_a>;
-@@ -401,6 +406,7 @@
+@@ -401,6 +414,7 @@
  	pinctrl-1 = <&m_can1_sleep_pins_a>;
  	status = "okay";
  };
@@ -806,7 +844,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  
  &qspi {
  	pinctrl-names = "default", "sleep";
-@@ -428,6 +434,7 @@
+@@ -428,6 +442,7 @@
  	};
  };
  
@@ -814,7 +852,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  /*
   * &adc: ANA0, ANA1 and IN6 can be used on Motor Control connector.
   * Pre-requisite: Must solder on board resp. SB9, SB10 and SB16.
-@@ -524,6 +531,7 @@
+@@ -524,6 +539,7 @@
  	pinctrl-1 = <&spi1_sleep_pins_a>;
  	status = "disabled";
  };
@@ -822,7 +860,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  
  &timers2 {
  	/* spare dmas for other usage (un-delete to enable pwm capture) */
-@@ -568,6 +576,7 @@
+@@ -568,6 +584,7 @@
  	};
  };
  
@@ -830,19 +868,35 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-e
  &usart3 {
  	pinctrl-names = "default", "sleep";
  	pinctrl-0 = <&usart3_pins_a>;
-@@ -696,3 +705,4 @@
+@@ -581,6 +598,7 @@
+ 	vbus-supply = <&vbus_sw>;
+ 	status = "okay";
+ };
++#endif
+ 
+ &usbotg_hs {
+ 	pinctrl-names = "default";
+@@ -594,6 +612,7 @@
+ 	status = "okay";
+ };
+ 
++#if 0
+ &dfsdm {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&dfsdm_clkout_pins_a
+@@ -696,3 +715,4 @@
  		};
  	};
  };
 +#endif
 diff -Naurw ./arch/arm/dts/stm32mp157-pinctrl.dtsi ../git/arch/arm/dts/stm32mp157-pinctrl.dtsi
 --- ./arch/arm/dts/stm32mp157-pinctrl.dtsi	2018-10-18 20:33:47.000000000 +0200
-+++ ../git/arch/arm/dts/stm32mp157-pinctrl.dtsi	2018-11-20 12:19:57.494188999 +0100
++++ ../git/arch/arm/dts/stm32mp157-pinctrl.dtsi	2018-11-26 16:21:17.265239360 +0100
 @@ -331,6 +331,7 @@
  				};
  			};
  
-+#if 1
++#if 0
  			uart4_pins_a: uart4@0 {
  				pins1 {
  					pinmux = <STM32_PINMUX('G', 11, AF6)>; /* UART4_TX */
@@ -879,14 +933,281 @@ diff -Naurw ./arch/arm/dts/stm32mp157-pinctrl.dtsi ../git/arch/arm/dts/stm32mp15
  			usart3_pins_a: usart3@0 {
  				pins1 {
  					pinmux = <STM32_PINMUX('B', 10, AF7)>, /* USART3_TX */
+@@ -543,6 +570,7 @@
+ 				};
+ 			};
+ 
++#if 0
+ 			sdmmc1_dir_pins_a: sdmmc1-dir@0 {
+ 				pins1 {
+ 					pinmux = <STM32_PINMUX('F', 2, AF11)>, /* SDMMC1_D0DIR */
+@@ -566,6 +594,31 @@
+ 						 <STM32_PINMUX('E', 4, ANALOG)>; /* SDMMC1_CKIN */
+ 				};
+ 			};
++#else
++			sdmmc1_dir_pins_a: sdmmc1-dir@0 {
++				pins1 {
++					pinmux = <STM32_PINMUX('F', 2, AF11)>, /* SDMMC1_D0DIR */
++						 <STM32_PINMUX('E', 14, AF11)>, /* SDMMC1_D123DIR */
++						 <STM32_PINMUX('B', 9, AF11)>; /* SDMMC1_CDIR */
++					slew-rate = <3>;
++					drive-push-pull;
++					bias-pull-up;
++				};
++				pins2{
++					pinmux = <STM32_PINMUX('E', 4, AF8)>; /* SDMMC1_CKIN */
++					bias-pull-up;
++				};
++			};
++
++			sdmmc1_dir_sleep_pins_a: sdmmc1-dir-sleep@0 {
++				pins {
++					pinmux = <STM32_PINMUX('F', 2, ANALOG)>, /* SDMMC1_D0DIR */
++						 <STM32_PINMUX('C', 7, ANALOG)>, /* SDMMC1_D123DIR */
++						 <STM32_PINMUX('B', 9, ANALOG)>, /* SDMMC1_CDIR */
++						 <STM32_PINMUX('E', 4, ANALOG)>; /* SDMMC1_CKIN */
++				};
++			};
++#endif
+ 
+ 			sdmmc2_b4_pins_a: sdmmc2-b4@0 {
+ 				pins {
+@@ -592,6 +645,7 @@
+ 				};
+ 			};
+ 
++#if 0
+ 			sdmmc2_d47_pins_a: sdmmc2-d47@0 {
+ 				pins {
+ 					pinmux = <STM32_PINMUX('A', 8, AF9)>, /* SDMMC2_D4 */
+@@ -612,6 +666,28 @@
+ 						 <STM32_PINMUX('D', 3, ANALOG)>; /* SDMMC2_D7 */
+ 				};
+ 			};
++#else
++			sdmmc2_d47_pins_a: sdmmc2-d47@0 {
++				pins {
++					pinmux = <STM32_PINMUX('A', 8, AF9)>,  /* SDMMC2_D4 */
++						 <STM32_PINMUX('A', 15, AF9)>, /* SDMMC2_D5 */
++						 <STM32_PINMUX('C', 6, AF10)>, /* SDMMC2_D6 */
++						 <STM32_PINMUX('C', 7, AF10)>; /* SDMMC2_D7 */
++					slew-rate = <3>;
++					drive-push-pull;
++					bias-pull-up;
++				};
++			};
++
++			sdmmc2_d47_sleep_pins_a: sdmmc2-d47-sleep@0 {
++				pins {
++					pinmux = <STM32_PINMUX('A', 8, ANALOG)>, /* SDMMC2_D4 */
++						 <STM32_PINMUX('A', 15, ANALOG)>, /* SDMMC2_D5 */
++						 <STM32_PINMUX('C', 6, ANALOG)>, /* SDMMC2_D6 */
++						 <STM32_PINMUX('C', 7, ANALOG)>; /* SDMMC2_D7 */
++				};
++			};
++#endif
+ 
+ 			sdmmc3_b4_pins_a: sdmmc3-b4@0 {
+ 				pins {
+@@ -875,7 +951,7 @@
+ 					pinmux = <STM32_PINMUX('A', 14, GPIO)>;
+ 					bias-pull-up;
+ 					drive-push-pull;
+-					output-low;
++					output-high;
+ 					slew-rate = <0>;
+ 				};
+ 			};
+@@ -938,6 +1014,7 @@
+ 				};
+ 			};
+ 
++#if 0
+ 			ethernet0_rgmii_pins_a: rgmii@0 {
+ 				pins1 {
+ 					pinmux = <STM32_PINMUX('G', 5, AF11)>, /* ETH_RGMII_CLK125 */
+@@ -983,6 +1060,53 @@
+ 						 <STM32_PINMUX('A', 7, ANALOG)>; /* ETH_RGMII_RX_CTL */
+ 				};
+ 			};
++#else
++			ethernet0_rgmii_pins_a: rgmii@0 {
++				pins1 {
++					pinmux = <STM32_PINMUX('G', 5, AF11)>, /* ETH_RGMII_CLK125 */
++						 <STM32_PINMUX('G', 4, AF11)>, /* ETH_RGMII_GTX_CLK */
++						 <STM32_PINMUX('B', 12, AF11)>, /* ETH_RGMII_TXD0 */
++						 <STM32_PINMUX('G', 14, AF11)>, /* ETH_RGMII_TXD1 */
++						 <STM32_PINMUX('C', 2, AF11)>, /* ETH_RGMII_TXD2 */
++						 <STM32_PINMUX('E', 2, AF11)>, /* ETH_RGMII_TXD3 */
++						 <STM32_PINMUX('G', 11, AF11)>, /* ETH_RGMII_TX_CTL */
++						 <STM32_PINMUX('A', 2, AF11)>, /* ETH_MDIO */
++						 <STM32_PINMUX('C', 1, AF11)>; /* ETH_MDC */
++					bias-disable;
++					drive-push-pull;
++					slew-rate = <3>;
++				};
++				pins2 {
++					pinmux = <STM32_PINMUX('C', 4, AF11)>, /* ETH_RGMII_RXD0 */
++						 <STM32_PINMUX('C', 5, AF11)>, /* ETH_RGMII_RXD1 */
++						 <STM32_PINMUX('H', 6, AF11)>, /* ETH_RGMII_RXD2 */
++						 <STM32_PINMUX('B', 1, AF11)>, /* ETH_RGMII_RXD3 */
++						 <STM32_PINMUX('A', 1, AF11)>, /* ETH_RGMII_RX_CLK */
++						 <STM32_PINMUX('A', 7, AF11)>; /* ETH_RGMII_RX_CTL */
++					bias-disable;
++				};
++			};
++
++			ethernet0_rgmii_pins_sleep_a: rgmii-sleep@0 {
++				pins1 {
++					pinmux = <STM32_PINMUX('G', 5, ANALOG)>, /* ETH_RGMII_CLK125 */
++						 <STM32_PINMUX('G', 4, ANALOG)>, /* ETH_RGMII_GTX_CLK */
++						 <STM32_PINMUX('B', 12, ANALOG)>, /* ETH_RGMII_TXD0 */
++						 <STM32_PINMUX('G', 14, ANALOG)>, /* ETH_RGMII_TXD1 */
++						 <STM32_PINMUX('C', 2, ANALOG)>, /* ETH_RGMII_TXD2 */
++						 <STM32_PINMUX('E', 2, ANALOG)>, /* ETH_RGMII_TXD3 */
++						 <STM32_PINMUX('G', 11, ANALOG)>, /* ETH_RGMII_TX_CTL */
++						 <STM32_PINMUX('A', 2, ANALOG)>, /* ETH_MDIO */
++						 <STM32_PINMUX('C', 1, ANALOG)>, /* ETH_MDC */
++						 <STM32_PINMUX('C', 4, ANALOG)>, /* ETH_RGMII_RXD0 */
++						 <STM32_PINMUX('C', 5, ANALOG)>, /* ETH_RGMII_RXD1 */
++						 <STM32_PINMUX('H', 6, ANALOG)>, /* ETH_RGMII_RXD2 */
++						 <STM32_PINMUX('B', 1, ANALOG)>, /* ETH_RGMII_RXD3 */
++						 <STM32_PINMUX('A', 1, ANALOG)>, /* ETH_RGMII_RX_CLK */
++						 <STM32_PINMUX('A', 7, ANALOG)>; /* ETH_RGMII_RX_CTL */
++				};
++			};
++#endif
+ 
+ 			dcmi_pins_a: dcmi@0 {
+ 				pins {
+diff -Naurw ./arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi ../git/arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi
+--- ./arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-11-23 10:12:09.030514000 +0100
+@@ -18,8 +18,8 @@
+  * address mapping : RBC
+  */
+ 
+-#define DDR_MEM_NAME "DDR3-1066 bin G 2x4Gb 533MHz v1.39"
+-#define DDR_MEM_SPEED 533
++#define DDR_MEM_NAME "DDR3-1066 bin G 2x4Gb 528MHz v1.00"
++#define DDR_MEM_SPEED 528
+ #define DDR_MEM_SIZE 0x40000000
+ 
+ #define DDR_MSTR 0x00040401
+@@ -32,20 +32,20 @@
+ #define DDR_HWLPCTL 0x00000000
+ #define DDR_RFSHCTL0 0x00210000
+ #define DDR_RFSHCTL3 0x00000000
+-#define DDR_RFSHTMG 0x0081008B
++#define DDR_RFSHTMG 0x0080008A
+ #define DDR_CRCPARCTL0 0x00000000
+ #define DDR_DRAMTMG0 0x121B2414
+-#define DDR_DRAMTMG1 0x000A041C
+-#define DDR_DRAMTMG2 0x0608090F
++#define DDR_DRAMTMG1 0x000A041B
++#define DDR_DRAMTMG2 0x0607080F
+ #define DDR_DRAMTMG3 0x0050400C
+-#define DDR_DRAMTMG4 0x08040608
++#define DDR_DRAMTMG4 0x07040607
+ #define DDR_DRAMTMG5 0x06060403
+ #define DDR_DRAMTMG6 0x02020002
+ #define DDR_DRAMTMG7 0x00000202
+ #define DDR_DRAMTMG8 0x00001005
+ #define DDR_DRAMTMG14 0x000000A0
+ #define DDR_ZQCTL0 0xC2000040
+-#define DDR_DFITMG0 0x02060105
++#define DDR_DFITMG0 0x02050105
+ #define DDR_DFITMG1 0x00000202
+ #define DDR_DFILPCFG0 0x07000000
+ #define DDR_DFIUPD0 0xC0400003
+@@ -86,37 +86,37 @@
+ #define DDR_PCFGWQOS0_1 0x01100B03
+ #define DDR_PCFGWQOS1_1 0x01000200
+ #define DDR_PGCR 0x01442E02
+-#define DDR_PTR0 0x0022AA5B
+-#define DDR_PTR1 0x04841104
+-#define DDR_PTR2 0x042DA068
++#define DDR_PTR0 0x0022A41B
++#define DDR_PTR1 0x047C0740
++#define DDR_PTR2 0x042D9C80
+ #define DDR_ACIOCR 0x10400812
+ #define DDR_DXCCR 0x00000C40
+ #define DDR_DSGCR 0xF200001F
+ #define DDR_DCR 0x0000000B
+-#define DDR_DTPR0 0x38D488D0
+-#define DDR_DTPR1 0x098B00D8
++#define DDR_DTPR0 0x36D477D0
++#define DDR_DTPR1 0x098A00D8
+ #define DDR_DTPR2 0x10023600
+-#define DDR_MR0 0x00000840
++#define DDR_MR0 0x00000830
+ #define DDR_MR1 0x00000000
+ #define DDR_MR2 0x00000208
+ #define DDR_MR3 0x00000000
+ #define DDR_ODTCR 0x00010000
+ #define DDR_ZQ0CR1 0x00000038
+ #define DDR_DX0GCR 0x0000CE81
+-#define DDR_DX0DLLCR 0x40000000
+-#define DDR_DX0DQTR 0xFFFFFFFF
++#define DDR_DX0DLLCR 0x4000C000
++#define DDR_DX0DQTR 0x11101210
+ #define DDR_DX0DQSTR 0x3DB02000
+ #define DDR_DX1GCR 0x0000CE81
+-#define DDR_DX1DLLCR 0x40000000
+-#define DDR_DX1DQTR 0xFFFFFFFF
++#define DDR_DX1DLLCR 0x4000C000
++#define DDR_DX1DQTR 0x11101210
+ #define DDR_DX1DQSTR 0x3DB02000
+ #define DDR_DX2GCR 0x0000CE81
+-#define DDR_DX2DLLCR 0x40000000
+-#define DDR_DX2DQTR 0xFFFFFFFF
++#define DDR_DX2DLLCR 0x4000C000
++#define DDR_DX2DQTR 0x11101210
+ #define DDR_DX2DQSTR 0x3DB02000
+ #define DDR_DX3GCR 0x0000CE81
+-#define DDR_DX3DLLCR 0x40000000
+-#define DDR_DX3DQTR 0xFFFFFFFF
+-#define DDR_DX3DQSTR 0x3DB02000
++#define DDR_DX3DLLCR 0x4000C000
++#define DDR_DX3DQTR 0x11101210
++#define DDR_DX3DQSTR 0x3D202000
+ 
+ #include "stm32mp15-ddr.dtsi"
+diff -Naurw ./arch/arm/lib/relocate.S ../git/arch/arm/lib/relocate.S
+--- ./arch/arm/lib/relocate.S	2018-10-18 20:33:42.000000000 +0200
++++ ../git/arch/arm/lib/relocate.S	2018-11-27 14:51:03.564677916 +0100
+@@ -78,6 +78,7 @@
+  */
+ 
+ ENTRY(relocate_code)
++/*	b   relocate_code */
+ 	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
+ 	subs	r4, r0, r1		/* r4 <- relocation offset */
+ 	beq	relocate_done		/* skip relocation */
+diff -Naurw ./arch/arm/mach-stm32mp/spl.c ../git/arch/arm/mach-stm32mp/spl.c
+--- ./arch/arm/mach-stm32mp/spl.c	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/mach-stm32mp/spl.c	2018-11-23 10:12:09.030514000 +0100
+@@ -142,6 +142,11 @@
+ 	struct udevice *dev;
+ 	int ret;
+ 
++    volatile int a = 1;
++
++    while ( !a )
++        ;
++
+ 	arch_cpu_init();
+ 
+ 	ret = spl_early_init();
 diff -Naurw ./board/st/stm32mp1/board.c ../git/board/st/stm32mp1/board.c
 --- ./board/st/stm32mp1/board.c	2018-10-18 20:33:47.000000000 +0200
-+++ ../git/board/st/stm32mp1/board.c	2018-11-20 12:19:51.026188999 +0100
++++ ../git/board/st/stm32mp1/board.c	2018-11-26 16:20:16.721239360 +0100
 @@ -23,6 +23,7 @@
  	/* UART4 clock enable */
  	setbits_le32(RCC_MP_APB1ENSETR, BIT(16));
  
-+ #if 1
++ #if 0
  #define GPIOG_BASE 0x50008000
  	/* GPIOG clock enable */
  	writel(BIT(6), RCC_MP_AHB4ENSETR);
@@ -907,9 +1228,274 @@ diff -Naurw ./board/st/stm32mp1/board.c ../git/board/st/stm32mp1/board.c
  
  #error("CONFIG_DEBUG_UART_BASE: not supported value")
  
+diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../git/board/st/stm32mp1/stm32mp1.c
+--- ./board/st/stm32mp1/stm32mp1.c	2018-10-18 20:33:47.000000000 +0200
++++ ../git/board/st/stm32mp1/stm32mp1.c	2018-11-23 10:56:53.214514000 +0100
+@@ -71,10 +71,12 @@
+ 		      __func__);
+ 		return;
+ 	}
++#if 0
+ 	if (dm_gpio_get_value(&gpio))
+ 		clrsetbits_le32(TAMP_BOOT_CONTEXT,
+ 				TAMP_BOOT_FORCED_MASK,
+ 				BOOT_FASTBOOT);
++#endif
+ 
+ 	dm_gpio_free(NULL, &gpio);
+ }
+diff -Naurw ./common/board_f.c ../git/common/board_f.c
+--- ./common/board_f.c	2018-10-18 20:33:48.000000000 +0200
++++ ../git/common/board_f.c	2018-11-26 15:18:42.854703120 +0100
+@@ -655,6 +655,8 @@
+ 
+ static int jump_to_copy(void)
+ {
++    volatile int a = 0;
++
+ 	if (gd->flags & GD_FLG_SKIP_RELOC)
+ 		return 0;
+ 	/*
+@@ -675,6 +677,9 @@
+ 	arch_setup_gd(gd->new_gd);
+ 	board_init_f_r_trampoline(gd->start_addr_sp);
+ #else
++    while( !a )
++        ;
++
+ 	relocate_code(gd->start_addr_sp, gd->new_gd, gd->relocaddr);
+ #endif
+ 
+diff -Naurw ./configs/stm32mp157a-av96_devicetree_stm32mp15_basic_defconfig ../git/configs/stm32mp157a-av96_devicetree_stm32mp15_basic_defconfig
+--- ./configs/stm32mp157a-av96_devicetree_stm32mp15_basic_defconfig	1970-01-01 01:00:00.000000000 +0100
++++ ../git/configs/stm32mp157a-av96_devicetree_stm32mp15_basic_defconfig	2018-11-23 10:19:58.650514000 +0100
+@@ -0,0 +1,120 @@
++CONFIG_ARM=y
++CONFIG_ARCH_STM32MP=y
++CONFIG_SYS_MALLOC_F_LEN=0x2000
++CONFIG_SPL_MMC_SUPPORT=y
++CONFIG_SPL_SPI_FLASH_SUPPORT=y
++CONFIG_SPL_SPI_SUPPORT=y
++CONFIG_SPL=y
++CONFIG_TARGET_STM32MP1=y
++CONFIG_DEFAULT_DEVICE_TREE="stm32mp157a-av96"
++CONFIG_DEBUG_UART=y
++CONFIG_DISTRO_DEFAULTS=y
++CONFIG_FIT=y
++CONFIG_BOOTSTAGE=y
++CONFIG_BOOTSTAGE_REPORT=y
++CONFIG_BOOTDELAY=1
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_PARTITION=y
++CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_PARTITION=3
++CONFIG_SPL_I2C_SUPPORT=y
++CONFIG_SPL_MTD_SUPPORT=y
++CONFIG_SPL_POST_MEM_SUPPORT=y
++CONFIG_SPL_POWER_SUPPORT=y
++CONFIG_SYS_PROMPT="STM32MP> "
++CONFIG_FASTBOOT=y
++CONFIG_FASTBOOT_BUF_ADDR=0xC0000000
++CONFIG_FASTBOOT_BUF_SIZE=0x02000000
++CONFIG_FASTBOOT_USB_DEV=1
++CONFIG_FASTBOOT_FLASH=y
++CONFIG_FASTBOOT_FLASH_MMC_DEV=1
++# CONFIG_CMD_BOOTD is not set
++# CONFIG_CMD_ELF is not set
++# CONFIG_CMD_IMI is not set
++# CONFIG_CMD_XIMG is not set
++# CONFIG_CMD_EXPORTENV is not set
++# CONFIG_CMD_IMPORTENV is not set
++CONFIG_CMD_MEMINFO=y
++CONFIG_CMD_MEMTEST=y
++CONFIG_CMD_CLK=y
++CONFIG_CMD_DFU=y
++CONFIG_CMD_FUSE=y
++CONFIG_CMD_GPIO=y
++CONFIG_CMD_I2C=y
++CONFIG_CMD_MMC=y
++CONFIG_CMD_REMOTEPROC=y
++CONFIG_CMD_SF=y
++CONFIG_CMD_USB=y
++CONFIG_CMD_USB_MASS_STORAGE=y
++CONFIG_CMD_ADC=y
++CONFIG_CMD_BMP=y
++CONFIG_CMD_CACHE=y
++CONFIG_CMD_TIME=y
++CONFIG_CMD_TIMER=y
++CONFIG_CMD_BOOTSTAGE=y
++CONFIG_CMD_PMIC=y
++CONFIG_CMD_REGULATOR=y
++CONFIG_CMD_EXT4_WRITE=y
++CONFIG_CMD_UBI=y
++# CONFIG_SPL_DOS_PARTITION is not set
++# CONFIG_SPL_ISO_PARTITION is not set
++CONFIG_ADC=y
++CONFIG_STM32_ADC=y
++CONFIG_DFU_NAND=y
++CONFIG_DM_I2C=y
++CONFIG_SYS_I2C_STM32F7=y
++CONFIG_LED=y
++CONFIG_LED_GPIO=y
++CONFIG_STM32MP_FUSE=y
++CONFIG_DM_MMC=y
++CONFIG_STM32_SDMMC2=y
++CONFIG_NAND=y
++CONFIG_DM_NAND=y
++CONFIG_NAND_STM32_FMC=y
++CONFIG_DM_SPI_FLASH=y
++CONFIG_SPI_FLASH=y
++CONFIG_SPI_FLASH_BAR=y
++CONFIG_SPI_FLASH_MACRONIX=y
++CONFIG_SPI_FLASH_SPANSION=y
++CONFIG_SPI_FLASH_STMICRO=y
++CONFIG_SPI_FLASH_WINBOND=y
++# CONFIG_SPI_FLASH_USE_4K_SECTORS is not set
++CONFIG_SPI_FLASH_MTD=y
++CONFIG_DM_ETH=y
++CONFIG_DWC_ETH_QOS=y
++CONFIG_PHY=y
++CONFIG_PHY_STM32_USBPHYC=y
++# CONFIG_PINCTRL_FULL is not set
++# CONFIG_SPL_PINCTRL_FULL is not set
++CONFIG_DM_PMIC=y
++CONFIG_PMIC_STPMU1=y
++CONFIG_DM_REGULATOR=y
++CONFIG_DM_REGULATOR_FIXED=y
++CONFIG_DM_REGULATOR_GPIO=y
++CONFIG_DM_REGULATOR_STM32_VREFBUF=y
++CONFIG_DM_REGULATOR_STPMU1=y
++CONFIG_STM32MP1_DDR_INTERACTIVE=y
++CONFIG_REMOTEPROC_STM32_COPRO=y
++CONFIG_SERIAL_RX_BUFFER=y
++CONFIG_DEBUG_UART_STM32=y
++CONFIG_DM_SPI=y
++CONFIG_STM32_QSPI=y
++CONFIG_USB=y
++CONFIG_DM_USB=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_GENERIC=y
++CONFIG_USB_DWC2=y
++CONFIG_USB_STORAGE=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_GADGET_MANUFACTURER="STMicroelectronics"
++CONFIG_USB_GADGET_VENDOR_NUM=0x0483
++CONFIG_USB_GADGET_PRODUCT_NUM=0x5720
++CONFIG_USB_GADGET_DWC2_OTG=y
++CONFIG_DM_VIDEO=y
++CONFIG_BACKLIGHT_GPIO=y
++CONFIG_VIDEO_LCD_ORISETECH_OTM8009A=y
++CONFIG_VIDEO_LCD_RAYDIUM_RM68200=y
++CONFIG_VIDEO_STM32=y
++CONFIG_VIDEO_STM32_DSI=y
++CONFIG_VIDEO_STM32_MAX_XRES=1280
++CONFIG_VIDEO_STM32_MAX_YRES=800
++CONFIG_STM32MP_WATCHDOG=y
++# CONFIG_EFI_LOADER is not set
+diff -Naurw ./configs/stm32mp15_basic_defconfig ../git/configs/stm32mp15_basic_defconfig
+--- ./configs/stm32mp15_basic_defconfig	2018-10-18 20:39:19.000000000 +0200
++++ ../git/configs/stm32mp15_basic_defconfig	2018-11-26 17:48:42.136450360 +0100
+@@ -81,6 +81,8 @@
+ CONFIG_DM_ETH=y
+ CONFIG_DWC_ETH_QOS=y
+ CONFIG_PHY=y
++CONFIG_PHY_MICREL=y
++CONFIG_PHY_MICREL_KSZ90X1=y
+ CONFIG_PHY_STM32_USBPHYC=y
+ # CONFIG_PINCTRL_FULL is not set
+ # CONFIG_SPL_PINCTRL_FULL is not set
+diff -Naurw ./drivers/net/dwc_eth_qos.c ../git/drivers/net/dwc_eth_qos.c
+--- ./drivers/net/dwc_eth_qos.c	2018-10-18 20:33:48.000000000 +0200
++++ ../git/drivers/net/dwc_eth_qos.c	2018-11-27 14:41:33.356411592 +0100
+@@ -679,6 +679,26 @@
+ 
+ static int eqos_start_resets_stm32(struct udevice *dev)
+ {
++	struct eqos_priv *eqos = dev_get_priv(dev);
++	int ret;
++
++	debug("%s(dev=%p):\n", __func__, dev);
++
++	ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 1);
++	if (ret < 0) {
++		pr_err("dm_gpio_set_value(phy_reset, assert) failed: %d", ret);
++		return ret;
++	}
++
++	udelay(2);
++
++	ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 0);
++	if (ret < 0) {
++		pr_err("dm_gpio_set_value(phy_reset, deassert) failed: %d", ret);
++		return ret;
++	}
++
++	debug("%s: OK\n", __func__);
+ 	return 0;
+ }
+ 
+@@ -1025,7 +1045,7 @@
+ 	val = (rate / 1000000) - 1;
+ 	writel(val, &eqos->mac_regs->us_tic_counter);
+ 
+-	eqos->phy = phy_connect(eqos->mii, 0, dev,
++	eqos->phy = phy_connect(eqos->mii, 7, dev,
+ 				eqos->config->interface(dev));
+ 	if (!eqos->phy) {
+ 		pr_err("phy_connect() failed");
+@@ -1596,6 +1616,16 @@
+ 	if (ret)
+ 		return -EINVAL;
+ 
++	debug("%s(dev=%p):\n", __func__, dev);
++
++	ret = gpio_request_by_name(dev, "phy-reset-gpios", 0,
++				   &eqos->phy_reset_gpio,
++				   GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE);
++	if (ret) {
++		pr_err("gpio_request_by_name(phy reset) failed: %d", ret);
++        return ret;
++	}
++
+ 	ret = clk_get_by_name(dev, "stmmaceth", &eqos->clk_master_bus);
+ 	if (ret) {
+ 		pr_err("clk_get_by_name(master_bus) failed: %d", ret);
+@@ -1675,6 +1705,7 @@
+ 	clk_free(&eqos->clk_tx);
+ 	clk_free(&eqos->clk_rx);
+ 	clk_free(&eqos->clk_master_bus);
++	dm_gpio_free(dev, &eqos->phy_reset_gpio);
+ 
+ 	debug("%s: OK\n", __func__);
+ 	return 0;
+diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../git/drivers/net/phy/micrel_ksz90x1.c
+--- ./drivers/net/phy/micrel_ksz90x1.c	2018-10-18 20:33:43.000000000 +0200
++++ ../git/drivers/net/phy/micrel_ksz90x1.c	2018-11-27 15:01:55.731268916 +0100
+@@ -121,6 +121,8 @@
+ 
+ 	for (i = 0; i < ofcfg->grpsz; i++) {
+ 		val[i] = dev_read_u32_default(dev, ofcfg->grp[i].name, ~0);
++        printf( "name: %s   val: %i\n", ofcfg->grp[i].name, val[i] );
++
+ 		offset = ofcfg->grp[i].off;
+ 		if (val[i] == -1) {
+ 			/* Default register value for KSZ9021 */
+@@ -128,12 +130,13 @@
+ 		} else {
+ 			changed = 1;	/* Value was changed in OF */
+ 			/* Calculate the register value and fix corner cases */
+-			if (val[i] > ps_to_regval * 0xf) {
++			if (val[i] > ps_to_regval * 0x1f) {
+ 				max = (1 << ofcfg->grp[i].size) - 1;
+ 				regval |= max << offset;
+ 			} else {
+ 				regval |= (val[i] / ps_to_regval) << offset;
+ 			}
++            printf( "regval: 0x%08x\n", regval );
+ 		}
+ 	}
+ 
 diff -Naurw ./Makefile ../git/Makefile
 --- ./Makefile	2018-10-18 20:33:48.000000000 +0200
-+++ ../git/Makefile	2018-11-20 10:51:14.882188999 +0100
++++ ../git/Makefile	2018-11-23 10:12:09.030514000 +0100
 @@ -256,7 +256,8 @@
  
  HOSTCC       = cc
