@@ -1,6 +1,6 @@
     Disclaimer
     In its current state the meta-av96 layer doesn't aim to be elegant or portable.
-It's mare purpose is to be verifiable and compact. Because of this it contains a lot
+It's mere purpose is to be verifiable and compact. Because of this it contains a lot
 of temporary hacks.
     Also please don't try to execute images created by meta-av96 on other HW than the
 Avanger96 platform.
@@ -22,6 +22,7 @@ Avanger96 platform.
     - rebuild tf-a, u-boot-basic, u-boot-trusted
         $ bitbake tf-a-stm32mp -c clean -f
         $ bitbake u-boot-basic-stm32mp -c clean -f
+        $ bitbake u-boot-trusted-stm32mp -c clean -f
 
     - rebuild whole image again:
         $ bitbake st-image-weston
