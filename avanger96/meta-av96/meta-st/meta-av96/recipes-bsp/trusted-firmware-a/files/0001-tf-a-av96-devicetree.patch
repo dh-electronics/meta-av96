@@ -1,6 +1,6 @@
 diff -Naurw ./fdts/stm32mp157a-av96.dts ../git/fdts/stm32mp157a-av96.dts
 --- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/fdts/stm32mp157a-av96.dts	2018-11-16 13:08:46.106566161 +0100
++++ ../git/fdts/stm32mp157a-av96.dts	2018-11-28 10:23:06.324567396 +0100
 @@ -0,0 +1,25 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -29,7 +29,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../git/fdts/stm32mp157a-av96.dts
 +};
 diff -Naurw ./fdts/stm32mp157c-ed1.dts ../git/fdts/stm32mp157c-ed1.dts
 --- ./fdts/stm32mp157c-ed1.dts	2018-11-22 16:32:03.000000000 +0100
-+++ ../git/fdts/stm32mp157c-ed1.dts	2018-11-22 16:35:42.334207000 +0100
++++ ../git/fdts/stm32mp157c-ed1.dts	2018-11-28 10:23:06.324567396 +0100
 @@ -106,6 +106,7 @@
  	status = "okay";
  };
@@ -48,7 +48,7 @@ diff -Naurw ./fdts/stm32mp157c-ed1.dts ../git/fdts/stm32mp157c-ed1.dts
  	pinctrl-names = "default";
 diff -Naurw ./fdts/stm32mp157c-ev1.dts ../git/fdts/stm32mp157c-ev1.dts
 --- ./fdts/stm32mp157c-ev1.dts	2018-11-22 16:32:45.000000000 +0100
-+++ ../git/fdts/stm32mp157c-ev1.dts	2018-11-22 17:05:06.486207000 +0100
++++ ../git/fdts/stm32mp157c-ev1.dts	2018-11-28 10:23:06.324567396 +0100
 @@ -17,9 +17,11 @@
  	};
  };
@@ -63,7 +63,7 @@ diff -Naurw ./fdts/stm32mp157c-ev1.dts ../git/fdts/stm32mp157c-ev1.dts
 +#endif
 diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
 --- ./fdts/stm32mp157-pinctrl.dtsi	2018-11-22 16:28:40.000000000 +0100
-+++ ../git/fdts/stm32mp157-pinctrl.dtsi	2018-11-22 16:46:19.022207000 +0100
++++ ../git/fdts/stm32mp157-pinctrl.dtsi	2018-11-28 10:28:09.336567396 +0100
 @@ -134,6 +134,7 @@
  				status = "disabled";
  			};
@@ -72,7 +72,7 @@ diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
  			uart4_pins_a: uart4@0 {
  				pins1 {
  					pinmux = <STM32_PINMUX('G', 11, AF6)>; /* UART4_TX */
-@@ -161,6 +162,21 @@
+@@ -146,6 +147,21 @@
  					bias-disable;
  				};
  			};
@@ -92,8 +92,8 @@ diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
 +
 +#endif
  
- 			sdmmc1_b4_pins_a: sdmmc1-b4@0 {
- 				pins {
+ 			usart3_pins_a: usart3@0 {
+ 				pins1 {
 @@ -176,6 +192,7 @@
  				};
  			};
@@ -127,7 +127,7 @@ diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
  				pins {
 diff -Naurw ./fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi ../git/fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi
 --- ./fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-10-18 20:38:12.000000000 +0200
-+++ ../git/fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-11-22 17:00:57.110207000 +0100
++++ ../git/fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-11-28 10:23:06.324567396 +0100
 @@ -18,8 +18,8 @@
   * address mapping : RBC
   */
