@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2018-12-03 12:56:38.114767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2018-12-03 13:27:15.270767999 +0100
 @@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -94,8 +94,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2018-12-03 13:18:35.874767999 +0100
-@@ -0,0 +1,1305 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2018-12-03 15:50:26.762767999 +0100
+@@ -0,0 +1,1321 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +
 +/dts-v1/;
@@ -219,12 +219,23 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +		regulator-type = "voltage";
 +		regulator-always-on;
 +
-+		gpios = <&gpiof 14 GPIO_ACTIVE_HIGH>;
-+		/* gpios = <&gpioi 5 GPIO_ACTIVE_HIGH>; */
++		gpios = <&gpioi 5 GPIO_ACTIVE_HIGH>;
 +		gpios-states = <0>;
 +		states = <1800000 0x1 2900000 0x0>;
 +	};
 +
++	wlreg_on: regulator-wlreg_on {
++		compatible = "regulator-gpio";
++		regulator-name = "wlreg_on";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <2900000>;
++		regulator-type = "voltage";
++		regulator-always-on;
++
++		gpios = <&gpioz 3 GPIO_ACTIVE_HIGH>;
++		gpios-states = <0>;
++		states = <1800000 0x0 2900000 0x1>;
++	};
 +#endif
 +
 +};
@@ -641,6 +652,22 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	status = "okay";
 +};
 +#endif
++
++&sdmmc3 {
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&sdmmc3_b4_pins_a>;
++	pinctrl-1 = <&sdmmc3_b4_sleep_pins_a>;
++	non-removable;
++#if 0
++	broken-cd;
++	st,dirpol;
++	st,negedge;
++#endif
++	bus-width = <4>;
++	vmmc-supply = <&v3v3>;
++	vqmmc-supply = <&wlreg_on>;
++	status = "okay";
++};
 +
 +&timers6 {
 +	status = "okay";
@@ -1192,17 +1219,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	};
 +};
 +
-+&sdmmc3 {
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&sdmmc3_b4_pins_a>;
-+	pinctrl-1 = <&sdmmc3_b4_sleep_pins_a>;
-+	broken-cd;
-+	st,dirpol;
-+	st,negedge;
-+	bus-width = <4>;
-+	status = "disabled";
-+};
-+
 +&spdifrx {
 +	pinctrl-names = "default", "sleep";
 +	pinctrl-0 = <&spdifrx_pins_a>;
@@ -1403,7 +1419,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +#endif
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2018-12-03 12:49:05.458767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2018-12-03 13:27:15.270767999 +0100
 @@ -0,0 +1,1755 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -3162,7 +3178,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2018-12-03 12:58:05.234767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2018-12-03 14:16:56.886767999 +0100
 @@ -0,0 +1,1191 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -3783,10 +3799,10 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +				pins {
 +					pinmux = <STM32_PINMUX('F', 0, AF9)>, /* SDMMC3_D0 */
 +						 <STM32_PINMUX('F', 4, AF9)>, /* SDMMC3_D1 */
-+						 <STM32_PINMUX('F', 5, AF9)>, /* SDMMC3_D2 */
++						 <STM32_PINMUX('D', 5, AF10)>, /* SDMMC3_D2 */
 +						 <STM32_PINMUX('D', 7, AF10)>, /* SDMMC3_D3 */
 +						 <STM32_PINMUX('G', 15, AF10)>, /* SDMMC3_CK */
-+						 <STM32_PINMUX('F', 1, AF9)>; /* SDMMC3_CMD */
++						 <STM32_PINMUX('D', 0, AF10)>; /* SDMMC3_CMD */
 +					slew-rate = <3>;
 +					drive-push-pull;
 +					bias-pull-up;
@@ -3797,10 +3813,10 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +				pins {
 +					pinmux = <STM32_PINMUX('F', 0, ANALOG)>, /* SDMMC3_D0 */
 +						 <STM32_PINMUX('F', 4, ANALOG)>, /* SDMMC3_D1 */
-+						 <STM32_PINMUX('F', 5, ANALOG)>, /* SDMMC3_D2 */
++						 <STM32_PINMUX('D', 5, ANALOG)>, /* SDMMC3_D2 */
 +						 <STM32_PINMUX('D', 7, ANALOG)>, /* SDMMC3_D3 */
 +						 <STM32_PINMUX('G', 15, ANALOG)>, /* SDMMC3_CK */
-+						 <STM32_PINMUX('F', 1, ANALOG)>; /* SDMMC3_CMD */
++						 <STM32_PINMUX('D', 0, ANALOG)>; /* SDMMC3_CMD */
 +				};
 +			};
 +
@@ -4355,9 +4371,25 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +		};
 +	};
 +};
+diff -aurw ./arch/arm/configs/stm32mp1_defconfig ../kernel-source/arch/arm/configs/stm32mp1_defconfig
+--- ./arch/arm/configs/stm32mp1_defconfig	2018-10-18 16:23:08.000000000 +0200
++++ ../kernel-source/arch/arm/configs/stm32mp1_defconfig	2018-12-03 17:32:37.934767999 +0100
+@@ -70,7 +70,11 @@
+ # CONFIG_USB_NET_NET1080 is not set
+ # CONFIG_USB_NET_CDC_SUBSET is not set
+ # CONFIG_USB_NET_ZAURUS is not set
+-CONFIG_BRCMFMAC=y
++CONFIG_BRCMUTIL=m
++# CONFIG_BRCMSMAC is not set
++CONFIG_BRCMFMAC=m
++CONFIG_BRCMFMAC_PROTO_BCDC=y
++CONFIG_BRCMFMAC_SDIO=y
+ CONFIG_INPUT_EVDEV=y
+ # CONFIG_KEYBOARD_ATKBD is not set
+ CONFIG_KEYBOARD_GPIO=y
 diff -Naurw ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 --- ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-10-18 16:23:05.000000000 +0200
-+++ ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-12-03 13:04:51.250767999 +0100
++++ ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-12-03 13:27:15.274767999 +0100
 @@ -918,6 +918,11 @@
  	char bus_id[MII_BUS_ID_SIZE];
  	int interface = priv->plat->interface;
@@ -4372,7 +4404,7 @@ diff -Naurw ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c ../kernel-source
  	priv->oldduplex = DUPLEX_UNKNOWN;
 diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
 --- ./drivers/net/phy/micrel.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/net/phy/micrel.c	2018-12-03 13:05:17.734767999 +0100
++++ ../kernel-source/drivers/net/phy/micrel.c	2018-12-03 13:27:15.274767999 +0100
 @@ -493,6 +493,7 @@
  					<< (field_sz * i));
  		}
@@ -4398,7 +4430,7 @@ diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
  	if (!priv)
 diff -Naurw ./drivers/net/phy/phy_device.c ../kernel-source/drivers/net/phy/phy_device.c
 --- ./drivers/net/phy/phy_device.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/net/phy/phy_device.c	2018-12-03 13:05:34.614767999 +0100
++++ ../kernel-source/drivers/net/phy/phy_device.c	2018-12-03 13:27:15.274767999 +0100
 @@ -1778,6 +1778,10 @@
  	struct device_driver *drv = phydev->mdio.dev.driver;
  	struct phy_driver *phydrv = to_phy_driver(drv);
@@ -4427,7 +4459,7 @@ diff -Naurw ./drivers/net/phy/phy_device.c ../kernel-source/drivers/net/phy/phy_
  
 diff -Naurw ./drivers/of/of_mdio.c ../kernel-source/drivers/of/of_mdio.c
 --- ./drivers/of/of_mdio.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/of/of_mdio.c	2018-12-03 11:25:23.162767999 +0100
++++ ../kernel-source/drivers/of/of_mdio.c	2018-12-03 13:27:15.274767999 +0100
 @@ -193,6 +193,8 @@
   */
  int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
@@ -4488,7 +4520,7 @@ diff -Naurw ./drivers/of/of_mdio.c ../kernel-source/drivers/of/of_mdio.c
  
 diff -Naurw ./init/main.c ../kernel-source/init/main.c
 --- ./init/main.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/init/main.c	2018-12-03 13:06:02.054767999 +0100
++++ ../kernel-source/init/main.c	2018-12-03 16:57:58.998767999 +0100
 @@ -514,6 +514,10 @@
  {
  	char *command_line;
