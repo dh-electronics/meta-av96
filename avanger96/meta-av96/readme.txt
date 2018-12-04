@@ -60,6 +60,16 @@ ERROR: st-image-weston-1.0-r0 do_image_complete: Missing tf-a-stm32mp157a-av96-t
 
 
 
+    Creating card image another way
+
+    - still in .../tmp-glibc/deploy/images/stm32mp1/ execute:
+        $ ./scripts/create_sdcard_from_flashlayout.sh flashlayout_st-image-weston/FlashLayout_sdcard_stm32mp157a-av96-basic.tsv
+        $ sudo dd if=flashlayout_st-image-weston_FlashLayout_sdcard_stm32mp157a-av96-basic.raw bs=1M of=/dev/sdX && sync
+
+    - let PC mount the created uSD card and copy files from ../bootfs and ../rootfs
+
+
+
     Rebuilding only u-boot-basic
 
     - "cd" to build directory, usually .../Distribution-kit/build-openstlinuxweston-stm32mp1
@@ -72,3 +82,18 @@ ERROR: st-image-weston-1.0-r0 do_image_complete: Missing tf-a-stm32mp157a-av96-t
         $ sudo dd if=u-boot-spl.stm32-stm32mp157a-av96-basic bs=1M of=/dev/sdX1 && sync
         $ sudo dd if=u-boot-stm32mp157a-av96-basic.img bs=1M of=/dev/sdX3 && sync
       where /dev/sdX is the block device for the inserted uSD card
+
+
+
+    Rebuilding linux
+
+    - in build directory:
+        $ bitbake virtual/kernel -c clean -f
+        $ bitbake virtual/kernel -c menuconfig -f
+
+    - the usual Linux menuconfig will appear
+
+        $ bitbake virtual/kernel -C compile -f
+
+    - the whole st-image-weston won't need to be rebuilt (would take ~1 hour), new Linux image files will be written .../Distribution-kit/build-openstlinuxweston-stm32mp1/tmp-glibc/work/stm32mp1-openstlinux_weston-linux-gnueabi/linux-stm32mp/4.14-48/image
+
