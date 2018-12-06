@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2018-12-03 13:27:15.270767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2018-12-03 18:47:36.838767999 +0100
 @@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -94,8 +94,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2018-12-03 15:50:26.762767999 +0100
-@@ -0,0 +1,1321 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2018-12-05 09:46:39.958262621 +0100
+@@ -0,0 +1,1374 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +
 +/dts-v1/;
@@ -578,6 +578,50 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +			compatible = "st,stpmu1-wdt";
 +		};
 +	};
++
++	hdmi-transmitter@3d {
++		compatible = "adi,adv7513";
++		reg = <0x3d>;
++
++		avdd-supply = <&v3v3>;
++		dvdd-supply = <&v3v3>;
++		pvdd-supply = <&v3v3>;
++		dvdd-3v-supply = <&v3v3>;
++		bgvdd-supply = <&v3v3>;
++
++		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
++		interrupt-parent = <&gpiog>;
++
++		pinctrl-names = "default", "sleep";
++		pinctrl-0 = <&ltdc_pins_a>;
++		pinctrl-1 = <&ltdc_sleep_pins_a>;
++		status = "okay";
++
++		adi,input-depth = <8>;
++		adi,input-colorspace = "rgb";
++		adi,input-clock = "1x";
++		adi,input-style = <1>;
++		adi,input-justification = "evenly";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++				adv7513_in: endpoint {
++					remote-endpoint = <&ltdc_ep0_out>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				adv7513_out: endpoint {
++					remote-endpoint = <&hdmi_con>;
++				};
++			};
++		};
++	};
 +};
 +
 +&ipcc {
@@ -861,6 +905,16 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	};
 +#endif
 +
++	hdmi-out {
++		compatible = "hdmi-connector";
++		type = "a";
++
++		port {
++			hdmi_con: endpoint {
++				remote-endpoint = <&adv7513_out>;
++			};
++		};
++	};
 +};
 +
 +#if 0
@@ -1094,6 +1148,19 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	};
 +};
 +
++&ltdc {
++	status = "okay";
++
++	port {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ltdc_ep0_out: endpoint@0 {
++			remote-endpoint = <&adv7513_in>;
++		};
++	};
++};
++
 +#if 0
 +&i2c5 {
 +	pinctrl-names = "default", "sleep";
@@ -1102,20 +1169,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	i2c-scl-rising-time-ns = <185>;
 +	i2c-scl-falling-time-ns = <20>;
 +	status = "okay";
-+};
-+
-+&ltdc {
-+	status = "okay";
-+
-+	port {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		ltdc_out_dsi: endpoint@0 {
-+			reg = <0>;
-+			remote-endpoint = <&dsi_in>;
-+		};
-+	};
 +};
 +
 +&m_can1 {
@@ -1419,7 +1472,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +#endif
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2018-12-03 13:27:15.270767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2018-12-03 18:47:36.838767999 +0100
 @@ -0,0 +1,1755 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -3178,8 +3231,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2018-12-03 14:16:56.886767999 +0100
-@@ -0,0 +1,1191 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2018-12-04 17:35:03.987656749 +0100
+@@ -0,0 +1,1263 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -3375,31 +3428,31 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +					pinmux = <STM32_PINMUX('G',  7, AF14)>, /* LCD_CLK */
 +						 <STM32_PINMUX('I', 10, AF14)>, /* LCD_HSYNC */
 +						 <STM32_PINMUX('I',  9, AF14)>, /* LCD_VSYNC */
-+						 <STM32_PINMUX('F', 10, AF14)>, /* LCD_DE */
-+						 <STM32_PINMUX('H',  2, AF14)>, /* LCD_R0 */
++						 <STM32_PINMUX('E', 13, AF14)>, /* LCD_DE */
++						 <STM32_PINMUX('G', 13, AF14)>, /* LCD_R0 */
 +						 <STM32_PINMUX('H',  3, AF14)>, /* LCD_R1 */
 +						 <STM32_PINMUX('H',  8, AF14)>, /* LCD_R2 */
 +						 <STM32_PINMUX('H',  9, AF14)>, /* LCD_R3 */
-+						 <STM32_PINMUX('H', 10, AF14)>, /* LCD_R4 */
-+						 <STM32_PINMUX('C',  0, AF14)>, /* LCD_R5 */
++						 <STM32_PINMUX('A',  5, AF14)>, /* LCD_R4 */
++						 <STM32_PINMUX('H', 11, AF14)>, /* LCD_R5 */
 +						 <STM32_PINMUX('H', 12, AF14)>, /* LCD_R6 */
 +						 <STM32_PINMUX('E', 15, AF14)>, /* LCD_R7 */
 +						 <STM32_PINMUX('E',  5, AF14)>, /* LCD_G0 */
-+						 <STM32_PINMUX('E',  6, AF14)>, /* LCD_G1 */
++						 <STM32_PINMUX('B',  0, AF14)>, /* LCD_G1 */
 +						 <STM32_PINMUX('H', 13, AF14)>, /* LCD_G2 */
-+						 <STM32_PINMUX('H', 14, AF14)>, /* LCD_G3 */
++						 <STM32_PINMUX('E', 11, AF14)>, /* LCD_G3 */
 +						 <STM32_PINMUX('H', 15, AF14)>, /* LCD_G4 */
-+						 <STM32_PINMUX('I',  0, AF14)>, /* LCD_G5 */
-+						 <STM32_PINMUX('I',  1, AF14)>, /* LCD_G6 */
-+						 <STM32_PINMUX('I',  2, AF14)>, /* LCD_G7 */
++						 <STM32_PINMUX('H',  4,  AF9)>, /* LCD_G5 */
++						 <STM32_PINMUX('I', 11,  AF9)>, /* LCD_G6 */
++						 <STM32_PINMUX('G',  8, AF14)>, /* LCD_G7 */
 +						 <STM32_PINMUX('D',  9, AF14)>, /* LCD_B0 */
 +						 <STM32_PINMUX('G', 12, AF14)>, /* LCD_B1 */
 +						 <STM32_PINMUX('G', 10, AF14)>, /* LCD_B2 */
 +						 <STM32_PINMUX('D', 10, AF14)>, /* LCD_B3 */
-+						 <STM32_PINMUX('I',  4, AF14)>, /* LCD_B4 */
++						 <STM32_PINMUX('E', 12, AF14)>, /* LCD_B4 */
 +						 <STM32_PINMUX('A',  3, AF14)>, /* LCD_B5 */
 +						 <STM32_PINMUX('B',  8, AF14)>, /* LCD_B6 */
-+						 <STM32_PINMUX('D',  8, AF14)>; /* LCD_B7 */
++						 <STM32_PINMUX('I',  7, AF14)>; /* LCD_B7 */
 +					bias-pull-up;
 +					drive-push-pull;
 +					slew-rate = <2>;
@@ -3436,6 +3489,78 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +						 <STM32_PINMUX('K',  4, AF14)>, /* LCD_B5 */
 +						 <STM32_PINMUX('K',  5, AF14)>, /* LCD_B6 */
 +						 <STM32_PINMUX('K',  6, AF14)>; /* LCD_B7 */
++					bias-pull-up;
++					drive-push-pull;
++					slew-rate = <2>;
++				};
++			};
++
++			ltdc_sleep_pins_a: ltdc_sleep@0 {
++				pins {
++					pinmux = <STM32_PINMUX('G',  7, ANALOG)>, /* LCD_CLK */
++						 <STM32_PINMUX('I', 10, ANALOG)>, /* LCD_HSYNC */
++						 <STM32_PINMUX('I',  9, ANALOG)>, /* LCD_VSYNC */
++						 <STM32_PINMUX('E', 13, ANALOG)>, /* LCD_DE */
++						 <STM32_PINMUX('G', 13, ANALOG)>, /* LCD_R0 */
++						 <STM32_PINMUX('H',  3, ANALOG)>, /* LCD_R1 */
++						 <STM32_PINMUX('H',  8, ANALOG)>, /* LCD_R2 */
++						 <STM32_PINMUX('H',  9, ANALOG)>, /* LCD_R3 */
++						 <STM32_PINMUX('A',  5, ANALOG)>, /* LCD_R4 */
++						 <STM32_PINMUX('H', 11, ANALOG)>, /* LCD_R5 */
++						 <STM32_PINMUX('H', 12, ANALOG)>, /* LCD_R6 */
++						 <STM32_PINMUX('E', 15, ANALOG)>, /* LCD_R7 */
++						 <STM32_PINMUX('E',  5, ANALOG)>, /* LCD_G0 */
++						 <STM32_PINMUX('B',  0, ANALOG)>, /* LCD_G1 */
++						 <STM32_PINMUX('H', 13, ANALOG)>, /* LCD_G2 */
++						 <STM32_PINMUX('E', 11, ANALOG)>, /* LCD_G3 */
++						 <STM32_PINMUX('H', 15, ANALOG)>, /* LCD_G4 */
++						 <STM32_PINMUX('H',  4, ANALOG)>, /* LCD_G5 */
++						 <STM32_PINMUX('I', 11, ANALOG)>, /* LCD_G6 */
++						 <STM32_PINMUX('G',  8, ANALOG)>, /* LCD_G7 */
++						 <STM32_PINMUX('D',  9, ANALOG)>, /* LCD_B0 */
++						 <STM32_PINMUX('G', 12, ANALOG)>, /* LCD_B1 */
++						 <STM32_PINMUX('G', 10, ANALOG)>, /* LCD_B2 */
++						 <STM32_PINMUX('D', 10, ANALOG)>, /* LCD_B3 */
++						 <STM32_PINMUX('E', 12, ANALOG)>, /* LCD_B4 */
++						 <STM32_PINMUX('A',  3, ANALOG)>, /* LCD_B5 */
++						 <STM32_PINMUX('B',  8, ANALOG)>, /* LCD_B6 */
++						 <STM32_PINMUX('I',  7, ANALOG)>; /* LCD_B7 */
++					bias-pull-up;
++					drive-push-pull;
++					slew-rate = <2>;
++				};
++			};
++
++			ltdc_sleep_pins_b: ltdc_sleep@1 {
++				pins {
++					pinmux = <STM32_PINMUX('I', 14, ANALOG)>, /* LCD_CLK */
++						 <STM32_PINMUX('I', 12, ANALOG)>, /* LCD_HSYNC */
++						 <STM32_PINMUX('I', 13, ANALOG)>, /* LCD_VSYNC */
++						 <STM32_PINMUX('K',  7, ANALOG)>, /* LCD_DE */
++						 <STM32_PINMUX('I', 15, ANALOG)>, /* LCD_R0 */
++						 <STM32_PINMUX('J',  0, ANALOG)>, /* LCD_R1 */
++						 <STM32_PINMUX('J',  1, ANALOG)>, /* LCD_R2 */
++						 <STM32_PINMUX('J',  2, ANALOG)>, /* LCD_R3 */
++						 <STM32_PINMUX('J',  3, ANALOG)>, /* LCD_R4 */
++						 <STM32_PINMUX('J',  4, ANALOG)>, /* LCD_R5 */
++						 <STM32_PINMUX('J',  5, ANALOG)>, /* LCD_R6 */
++						 <STM32_PINMUX('J',  6, ANALOG)>, /* LCD_R7 */
++						 <STM32_PINMUX('J',  7, ANALOG)>, /* LCD_G0 */
++						 <STM32_PINMUX('J',  8, ANALOG)>, /* LCD_G1 */
++						 <STM32_PINMUX('J',  9, ANALOG)>, /* LCD_G2 */
++						 <STM32_PINMUX('J', 10, ANALOG)>, /* LCD_G3 */
++						 <STM32_PINMUX('J', 11, ANALOG)>, /* LCD_G4 */
++						 <STM32_PINMUX('K',  0, ANALOG)>, /* LCD_G5 */
++						 <STM32_PINMUX('K',  1, ANALOG)>, /* LCD_G6 */
++						 <STM32_PINMUX('K',  2, ANALOG)>, /* LCD_G7 */
++						 <STM32_PINMUX('J', 12, ANALOG)>, /* LCD_B0 */
++						 <STM32_PINMUX('J', 13, ANALOG)>, /* LCD_B1 */
++						 <STM32_PINMUX('J', 14, ANALOG)>, /* LCD_B2 */
++						 <STM32_PINMUX('J', 15, ANALOG)>, /* LCD_B3 */
++						 <STM32_PINMUX('K',  3, ANALOG)>, /* LCD_B4 */
++						 <STM32_PINMUX('K',  4, ANALOG)>, /* LCD_B5 */
++						 <STM32_PINMUX('K',  5, ANALOG)>, /* LCD_B6 */
++						 <STM32_PINMUX('K',  6, ANALOG)>; /* LCD_B7 */
 +					bias-pull-up;
 +					drive-push-pull;
 +					slew-rate = <2>;
@@ -4371,9 +4496,9 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +		};
 +	};
 +};
-diff -aurw ./arch/arm/configs/stm32mp1_defconfig ../kernel-source/arch/arm/configs/stm32mp1_defconfig
+diff -Naurw ./arch/arm/configs/stm32mp1_defconfig ../kernel-source/arch/arm/configs/stm32mp1_defconfig
 --- ./arch/arm/configs/stm32mp1_defconfig	2018-10-18 16:23:08.000000000 +0200
-+++ ../kernel-source/arch/arm/configs/stm32mp1_defconfig	2018-12-03 17:32:37.934767999 +0100
++++ ../kernel-source/arch/arm/configs/stm32mp1_defconfig	2018-12-03 18:47:36.838767999 +0100
 @@ -70,7 +70,11 @@
  # CONFIG_USB_NET_NET1080 is not set
  # CONFIG_USB_NET_CDC_SUBSET is not set
@@ -4387,9 +4512,450 @@ diff -aurw ./arch/arm/configs/stm32mp1_defconfig ../kernel-source/arch/arm/confi
  CONFIG_INPUT_EVDEV=y
  # CONFIG_KEYBOARD_ATKBD is not set
  CONFIG_KEYBOARD_GPIO=y
+diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c
+--- ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-06-05 11:42:00.000000000 +0200
++++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-12-05 10:59:42.086262621 +0100
+@@ -358,6 +358,8 @@
+ 
+ static void adv7511_power_on(struct adv7511 *adv7511)
+ {
++    printk( KERN_ALERT "**** adv7511_power_on\n" );
++
+ 	__adv7511_power_on(adv7511);
+ 
+ 	/*
+@@ -381,6 +383,8 @@
+ 
+ static void adv7511_power_off(struct adv7511 *adv7511)
+ {
++    printk( KERN_ALERT "**** adv7511_power_off\n" );
++
+ 	__adv7511_power_off(adv7511);
+ 	if (adv7511->type == ADV7533)
+ 		adv7533_dsi_power_off(adv7511);
+@@ -572,6 +576,8 @@
+ 	struct edid *edid;
+ 	unsigned int count;
+ 
++    printk( KERN_ALERT "**** adv7511_get_modes\n" );
++
+ 	/* Reading the EDID only works if the device is powered */
+ 	if (!adv7511->powered) {
+ 		unsigned int edid_i2c_addr =
+@@ -597,6 +603,7 @@
+ 	drm_mode_connector_update_edid_property(connector, edid);
+ 	count = drm_add_edid_modes(connector, edid);
+ 
++    printk( KERN_ALERT "**** count: %i\n", count );
+ 	adv7511_set_config_csc(adv7511, connector, adv7511->rgb);
+ 
+ 	return count;
+@@ -609,6 +616,9 @@
+ 	unsigned int val;
+ 	bool hpd;
+ 	int ret;
++    volatile int a = 0;
++
++    printk( KERN_ALERT "**** adv7511_detect %i\n", (int )__LINE__ );
+ 
+ 	ret = regmap_read(adv7511->regmap, ADV7511_REG_STATUS, &val);
+ 	if (ret < 0)
+@@ -619,25 +629,29 @@
+ 	else
+ 		status = connector_status_disconnected;
+ 
++    printk( KERN_ALERT "**** adv7511_detect line: %i   status: %i   connected: %i\n", (int )__LINE__, (int )status, (int )connector_status_connected );
+ 	hpd = adv7511_hpd(adv7511);
+ 
+ 	/* The chip resets itself when the cable is disconnected, so in case
+ 	 * there is a pending HPD interrupt and the cable is connected there was
+ 	 * at least one transition from disconnected to connected and the chip
+ 	 * has to be reinitialized. */
+-	if (status == connector_status_connected && hpd && adv7511->powered) {
++	if (status == connector_status_connected && hpd ) {
+ 		regcache_mark_dirty(adv7511->regmap);
++		if (!adv7511->powered)
+ 		adv7511_power_on(adv7511);
+ 		adv7511_get_modes(adv7511, connector);
+ 		if (adv7511->status == connector_status_connected)
+ 			status = connector_status_disconnected;
+ 	} else {
++        printk( KERN_ALERT "**** adv7511_detect line: %i   powered: %i\n", (int )__LINE__, (int )adv7511->powered );
+ 		/* Renable HPD sensing */
+ 		regmap_update_bits(adv7511->regmap, ADV7511_REG_POWER2,
+ 				   ADV7511_REG_POWER2_HPD_SRC_MASK,
+ 				   ADV7511_REG_POWER2_HPD_SRC_BOTH);
+ 	}
+ 
++    printk( KERN_ALERT "**** adv7511_detect line: %i   status: %i\n", (int )__LINE__, (int )status );
+ 	adv7511->status = status;
+ 	return status;
+ }
+@@ -804,6 +818,8 @@
+ {
+ 	struct adv7511 *adv = bridge_to_adv7511(bridge);
+ 
++    printk( KERN_ALERT "**** bridge_enable\n" );
++
+ 	adv7511_power_on(adv);
+ }
+ 
+@@ -811,6 +827,8 @@
+ {
+ 	struct adv7511 *adv = bridge_to_adv7511(bridge);
+ 
++    printk( KERN_ALERT "**** bridge_disable\n" );
++
+ 	adv7511_power_off(adv);
+ }
+ 
+@@ -1011,7 +1029,9 @@
+ 	unsigned int edid_i2c_addr = main_i2c_addr + 4;
+ 	unsigned int val;
+ 	int ret;
++    volatile int a = 1;
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	if (!dev->of_node)
+ 		return -EINVAL;
+ 
+@@ -1019,6 +1039,7 @@
+ 	if (!adv7511)
+ 		return -ENOMEM;
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	adv7511->i2c_main = i2c;
+ 	adv7511->powered = false;
+ 	adv7511->status = connector_status_disconnected;
+@@ -1037,6 +1058,7 @@
+ 	if (ret)
+ 		return ret;
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	ret = adv7511_init_regulators(adv7511);
+ 	if (ret) {
+ 		dev_err(dev, "failed to init regulators\n");
+@@ -1053,17 +1075,22 @@
+ 		goto uninit_regulators;
+ 	}
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	if (adv7511->gpio_pd) {
+ 		mdelay(5);
+ 		gpiod_set_value_cansleep(adv7511->gpio_pd, 0);
+ 	}
+ 
++    while ( !a )
++        ;
++
+ 	adv7511->regmap = devm_regmap_init_i2c(i2c, &adv7511_regmap_config);
+ 	if (IS_ERR(adv7511->regmap)) {
+ 		ret = PTR_ERR(adv7511->regmap);
+ 		goto uninit_regulators;
+ 	}
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	ret = regmap_read(adv7511->regmap, ADV7511_REG_CHIP_REVISION, &val);
+ 	if (ret)
+ 		goto uninit_regulators;
+@@ -1078,6 +1105,7 @@
+ 	if (ret)
+ 		goto uninit_regulators;
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	regmap_write(adv7511->regmap, ADV7511_REG_EDID_I2C_ADDR, edid_i2c_addr);
+ 	regmap_write(adv7511->regmap, ADV7511_REG_PACKET_I2C_ADDR,
+ 		     main_i2c_addr - 0xa);
+@@ -1092,6 +1120,7 @@
+ 		goto uninit_regulators;
+ 	}
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	if (adv7511->type == ADV7533) {
+ 		ret = adv7533_init_cec(adv7511);
+ 		if (ret)
+@@ -1111,6 +1140,7 @@
+ 			goto err_unregister_cec;
+ 	}
+ 
++    printk( KERN_ALERT "**** adv7511_probe %i\n", (int )__LINE__ );
+ 	/* CEC is unused for now */
+ 	regmap_write(adv7511->regmap, ADV7511_REG_CEC_CTRL,
+ 		     ADV7511_CEC_CTRL_POWER_DOWN);
+diff -Naurw ./drivers/gpu/drm/drm_of.c ../kernel-source/drivers/gpu/drm/drm_of.c
+--- ./drivers/gpu/drm/drm_of.c	2018-10-18 16:23:02.000000000 +0200
++++ ../kernel-source/drivers/gpu/drm/drm_of.c	2018-12-05 09:30:10.278262621 +0100
+@@ -230,6 +230,10 @@
+ {
+ 	int ret = -EPROBE_DEFER;
+ 	struct device_node *remote;
++    volatile int b = 1;
++
++    while ( !b )
++        ;
+ 
+ 	if (!panel && !bridge)
+ 		return -EINVAL;
+diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/drm/drm_probe_helper.c
+--- ./drivers/gpu/drm/drm_probe_helper.c	2018-06-05 11:42:00.000000000 +0200
++++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2018-12-05 15:07:56.222262621 +0100
+@@ -92,6 +92,7 @@
+ 	enum drm_mode_status ret = MODE_OK;
+ 	unsigned int i;
+ 
++    printk( KERN_ALERT "**** drm_mode_validate_pipeline %i\n", (int )__LINE__ );
+ 	/* Step 1: Validate against connector */
+ 	ret = drm_connector_mode_valid(connector, mode);
+ 	if (ret != MODE_OK)
+@@ -105,6 +106,7 @@
+ 		if (!encoder)
+ 			continue;
+ 
++        printk( KERN_ALERT "**** drm_mode_validate_pipeline %i\n", (int )__LINE__ );
+ 		ret = drm_encoder_mode_valid(encoder, mode);
+ 		if (ret != MODE_OK) {
+ 			/* No point in continuing for crtc check as this encoder
+@@ -125,6 +127,7 @@
+ 			if (!drm_encoder_crtc_ok(encoder, crtc))
+ 				continue;
+ 
++            printk( KERN_ALERT "**** drm_mode_validate_pipeline %i\n", (int )__LINE__ );
+ 			ret = drm_crtc_mode_valid(crtc, mode);
+ 			if (ret == MODE_OK) {
+ 				/* If we get to this point there is at least
+@@ -135,6 +138,7 @@
+ 		}
+ 	}
+ 
++    printk( KERN_ALERT "**** drm_mode_validate_pipeline %i\n", (int )__LINE__ );
+ 	return ret;
+ }
+ 
+@@ -403,6 +407,8 @@
+ 	enum drm_connector_status old_status;
+ 	struct drm_modeset_acquire_ctx ctx;
+ 
++    printk( KERN_ALERT "**** drm_helper_probe_single_connector_modes %i\n", (int )__LINE__ );
++
+ 	WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+ 
+ 	drm_modeset_acquire_init(&ctx, 0);
+@@ -483,6 +489,7 @@
+ 		goto prune;
+ 	}
+ 
++    printk( KERN_ALERT "**** drm_helper_probe_single_connector_modes %i\n", (int )__LINE__ );
+ 	if (connector->override_edid) {
+ 		struct edid *edid = (struct edid *) connector->edid_blob_ptr->data;
+ 
+@@ -515,23 +522,51 @@
+ 	if (connector->stereo_allowed)
+ 		mode_flags |= DRM_MODE_FLAG_3D_MASK;
+ 
++    printk( KERN_ALERT "**** maxX: %i   maxY: %i   mode_flags: %i\n", maxX, maxY, mode_flags );
++
+ 	list_for_each_entry(mode, &connector->modes, head) {
++        old_status = mode->status;
+ 		if (mode->status == MODE_OK)
+ 			mode->status = drm_mode_validate_basic(mode);
+ 
++		if ( old_status != mode->status ) {
++	        printk( KERN_ALERT "**** %i   mode->status: %i\n", (int )__LINE__, (int )mode->status );
++            old_status = mode->status;
++        }
++
+ 		if (mode->status == MODE_OK)
+ 			mode->status = drm_mode_validate_size(mode, maxX, maxY);
+ 
++		if ( old_status != mode->status ) {
++	        printk( KERN_ALERT "**** %i   mode->status: %i\n", (int )__LINE__, (int )mode->status );
++            old_status = mode->status;
++        }
++
+ 		if (mode->status == MODE_OK)
+ 			mode->status = drm_mode_validate_flag(mode, mode_flags);
+ 
++		if ( old_status != mode->status ) {
++	        printk( KERN_ALERT "**** %i   mode->status: %i\n", (int )__LINE__, (int )mode->status );
++            old_status = mode->status;
++        }
++
+ 		if (mode->status == MODE_OK)
+ 			mode->status = drm_mode_validate_pipeline(mode,
+ 								  connector);
+ 
++		if ( old_status != mode->status ) {
++	        printk( KERN_ALERT "**** %i   mode->status: %i\n", (int )__LINE__, (int )mode->status );
++            old_status = mode->status;
++        }
++
+ 		if (mode->status == MODE_OK)
+ 			mode->status = drm_mode_validate_ycbcr420(mode,
+ 								  connector);
++
++		if (mode->status == MODE_OK)
++	        printk( KERN_ALERT "**** drm_helper_probe_single_connector_modes %i   mode->status: MODE_OK\n", (int )__LINE__ );
++		else
++	        printk( KERN_ALERT "**** drm_helper_probe_single_connector_modes %i   mode->status: %i\n", (int )__LINE__, (int )mode->status );
+ 	}
+ 
+ prune:
+@@ -548,6 +583,7 @@
+ 
+ 	drm_mode_sort(&connector->modes);
+ 
++    printk( KERN_ALERT "[CONNECTOR:%d:%s] probed modes :\n", connector->base.id, connector->name);
+ 	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] probed modes :\n", connector->base.id,
+ 			connector->name);
+ 	list_for_each_entry(mode, &connector->modes, head) {
+diff -Naurw ./drivers/gpu/drm/stm/drv.c ../kernel-source/drivers/gpu/drm/stm/drv.c
+--- ./drivers/gpu/drm/stm/drv.c	2018-10-18 16:23:02.000000000 +0200
++++ ../kernel-source/drivers/gpu/drm/stm/drv.c	2018-12-04 17:54:17.303656749 +0100
+@@ -214,6 +214,8 @@
+ 	struct drm_device *ddev;
+ 	int ret;
+ 
++    printk( KERN_ALERT "**** stm_drm_platform_probe ****\n" );
++
+ 	DRM_DEBUG("%s\n", __func__);
+ 
+ 	dma_set_coherent_mask(dev, DMA_BIT_MASK(32));
+@@ -226,10 +228,12 @@
+ 	if (ret)
+ 		goto err_unref;
+ 
++    printk( KERN_ALERT "**** stm_drm_platform_probe %i\n", (int )__LINE__ );
+ 	ret = drm_dev_register(ddev, 0);
+ 	if (ret)
+ 		goto err_unref;
+ 
++    printk( KERN_ALERT "**** stm_drm_platform_probe %i\n", (int )__LINE__ );
+ 	return 0;
+ 
+ err_unref:
+diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/ltdc.c
+--- ./drivers/gpu/drm/stm/ltdc.c	2018-10-18 16:23:02.000000000 +0200
++++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2018-12-06 10:55:59.460865089 +0100
+@@ -473,13 +473,17 @@
+ 
+ 	result = clk_round_rate(ldev->pixel_clk, target);
+ 
++    printk( KERN_ALERT "**** target rate = %d => available rate = %d\n", target, result);
+ 	DRM_DEBUG_DRIVER("target rate = %d => available rate = %d\n",
+ 			 target, result);
+ 
+ 	/* Filter modes according to the max frequency supported by the pads */
+-	if (result > ldev->caps.pad_max_freq_hz)
++	if (result > ldev->caps.pad_max_freq_hz) {
++        printk( KERN_ALERT "**** pad_max_freq_hz: %i\n", ldev->caps.pad_max_freq_hz );
+ 		return MODE_CLOCK_HIGH;
++    }
+ 
++    printk( KERN_ALERT "**** ltdc_crtc_mode_valid %i\n", (int )__LINE__ );
+ 	/*
+ 	 * Accept all "preferred" modes:
+ 	 * - particularly useful for panels because panel clock tolerances are
+@@ -490,6 +494,7 @@
+ 	if (mode->type & DRM_MODE_TYPE_PREFERRED)
+ 		return MODE_OK;
+ 
++    printk( KERN_ALERT "**** ltdc_crtc_mode_valid %i\n", (int )__LINE__ );
+ 	/*
+ 	 * Filter modes according to the clock value, particularly useful for
+ 	 * hdmi modes that require precise pixel clocks.
+@@ -497,6 +502,7 @@
+ 	if (result < target_min || result > target_max)
+ 		return MODE_CLOCK_RANGE;
+ 
++    printk( KERN_ALERT "**** ltdc_crtc_mode_valid %i\n", (int )__LINE__ );
+ 	return MODE_OK;
+ }
+ 
+@@ -1011,6 +1017,7 @@
+ 	ldev->caps.bus_width = 8 << bus_width_log2;
+ 	ldev->caps.hw_version = reg_read(ldev->regs, LTDC_IDR);
+ 
++    printk( KERN_ALERT "**** ltdc_get_caps - hw_version: 0x%08x\n", (int )ldev->caps.hw_version );
+ 	switch (ldev->caps.hw_version) {
+ 	case HWVER_10200:
+ 		ldev->caps.reg_ofs = REG_OFS_NONE;
+@@ -1027,7 +1034,7 @@
+ 		 * 65000000 hz due to hardware bug on CUT 1
+ 		 * Don't upstream it!
+ 		 */
+-		ldev->caps.pad_max_freq_hz = 65000000;
++		ldev->caps.pad_max_freq_hz = 74250000;
+ 		break;
+ 	case HWVER_20101:
+ 		ldev->caps.reg_ofs = REG_OFS_4;
+@@ -1055,6 +1062,8 @@
+ 	struct resource *res;
+ 	int irq, ret, i, endpoint_not_ready = -ENODEV;
+ 
++    printk( KERN_ALERT "**** ltdc_load ****\n" );
++
+ 	DRM_DEBUG_DRIVER("\n");
+ 
+ 	/* Get endpoints if any */
+@@ -1072,6 +1081,7 @@
+ 			endpoint_not_ready = 0;
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	if (endpoint_not_ready)
+ 		return endpoint_not_ready;
+ 
+@@ -1085,6 +1095,7 @@
+ 		return -ENODEV;
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	ldev->power_on = false;
+ 	ret = ltdc_power_up(ldev);
+ 	if (ret)
+@@ -1097,6 +1108,7 @@
+ 		goto err;
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	ldev->regs = devm_ioremap_resource(dev, res);
+ 	if (IS_ERR(ldev->regs)) {
+ 		DRM_ERROR("Unable to get ltdc registers\n");
+@@ -1118,6 +1130,7 @@
+ 		}
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	if (!IS_ERR(rstc)) {
+ 		reset_control_assert(rstc);
+ 		usleep_range(10, 20);
+@@ -1135,6 +1148,7 @@
+ 		goto err;
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	DRM_INFO("ltdc hw version 0x%08x - ready\n", ldev->caps.hw_version);
+ 
+ 	/* Add endpoints panels or bridges if any */
+@@ -1158,6 +1172,7 @@
+ 		}
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	crtc = devm_kzalloc(dev, sizeof(*crtc), GFP_KERNEL);
+ 	if (!crtc) {
+ 		DRM_ERROR("Failed to allocate crtc\n");
+@@ -1171,6 +1186,7 @@
+ 		goto err;
+ 	}
+ 
++    printk( KERN_ALERT "**** ltdc_load %i\n", (int )__LINE__ );
+ 	ret = drm_vblank_init(ddev, NB_CRTC);
+ 	if (ret) {
+ 		DRM_ERROR("Failed calling drm_vblank_init()\n");
 diff -Naurw ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
 --- ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-10-18 16:23:05.000000000 +0200
-+++ ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-12-03 13:27:15.274767999 +0100
++++ ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-12-03 18:47:36.838767999 +0100
 @@ -918,6 +918,11 @@
  	char bus_id[MII_BUS_ID_SIZE];
  	int interface = priv->plat->interface;
@@ -4404,7 +4970,7 @@ diff -Naurw ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c ../kernel-source
  	priv->oldduplex = DUPLEX_UNKNOWN;
 diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
 --- ./drivers/net/phy/micrel.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/net/phy/micrel.c	2018-12-03 13:27:15.274767999 +0100
++++ ../kernel-source/drivers/net/phy/micrel.c	2018-12-03 18:47:36.842767999 +0100
 @@ -493,6 +493,7 @@
  					<< (field_sz * i));
  		}
@@ -4430,7 +4996,7 @@ diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
  	if (!priv)
 diff -Naurw ./drivers/net/phy/phy_device.c ../kernel-source/drivers/net/phy/phy_device.c
 --- ./drivers/net/phy/phy_device.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/net/phy/phy_device.c	2018-12-03 13:27:15.274767999 +0100
++++ ../kernel-source/drivers/net/phy/phy_device.c	2018-12-03 18:47:36.842767999 +0100
 @@ -1778,6 +1778,10 @@
  	struct device_driver *drv = phydev->mdio.dev.driver;
  	struct phy_driver *phydrv = to_phy_driver(drv);
@@ -4459,7 +5025,7 @@ diff -Naurw ./drivers/net/phy/phy_device.c ../kernel-source/drivers/net/phy/phy_
  
 diff -Naurw ./drivers/of/of_mdio.c ../kernel-source/drivers/of/of_mdio.c
 --- ./drivers/of/of_mdio.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/of/of_mdio.c	2018-12-03 13:27:15.274767999 +0100
++++ ../kernel-source/drivers/of/of_mdio.c	2018-12-03 18:47:36.842767999 +0100
 @@ -193,6 +193,8 @@
   */
  int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
@@ -4520,7 +5086,7 @@ diff -Naurw ./drivers/of/of_mdio.c ../kernel-source/drivers/of/of_mdio.c
  
 diff -Naurw ./init/main.c ../kernel-source/init/main.c
 --- ./init/main.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/init/main.c	2018-12-03 16:57:58.998767999 +0100
++++ ../kernel-source/init/main.c	2018-12-05 10:28:03.014262621 +0100
 @@ -514,6 +514,10 @@
  {
  	char *command_line;
