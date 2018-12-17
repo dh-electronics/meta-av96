@@ -70,6 +70,14 @@ ERROR: st-image-weston-1.0-r0 do_image_complete: Missing tf-a-stm32mp157a-av96-t
 
 
 
+    Finalizing card image
+
+    Some file need to be added to the uSD image in order to make WiFi work.
+    - insert uSD card into PC and let PC mount rootfs and bootfs partitions
+    - copy necessary files from ./sdcrad/ to uSD card
+
+
+
     Rebuilding only u-boot-basic
 
     - "cd" to build directory, usually .../Distribution-kit/build-openstlinuxweston-stm32mp1

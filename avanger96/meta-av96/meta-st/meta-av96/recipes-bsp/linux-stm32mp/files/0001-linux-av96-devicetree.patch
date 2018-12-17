@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2018-12-03 18:47:36.838767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2018-12-15 10:24:52.000000000 +0100
 @@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -94,8 +94,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2018-12-05 09:46:39.958262621 +0100
-@@ -0,0 +1,1374 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2018-12-17 13:21:02.000000000 +0100
+@@ -0,0 +1,1367 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +
 +/dts-v1/;
@@ -680,11 +680,10 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	status = "okay";
 +};
 +
-+#if 0
 +&sdmmc2 {
 +	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&sdmmc2_b4_pins_a &sdmmc2_d47_pins_a>;
-+	pinctrl-1 = <&sdmmc2_b4_sleep_pins_a &sdmmc2_d47_sleep_pins_a>;
++	pinctrl-0 = <&sdmmc2_b4_pins_a &sdmmc2_d47_pins_b>;
++	pinctrl-1 = <&sdmmc2_b4_sleep_pins_a &sdmmc2_d47_sleep_pins_b>;
 +	non-removable;
 +	no-sd;
 +	no-sdio;
@@ -695,18 +694,12 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	vqmmc-supply = <&vdd>;
 +	status = "okay";
 +};
-+#endif
 +
 +&sdmmc3 {
 +	pinctrl-names = "default", "sleep";
 +	pinctrl-0 = <&sdmmc3_b4_pins_a>;
 +	pinctrl-1 = <&sdmmc3_b4_sleep_pins_a>;
 +	non-removable;
-+#if 0
-+	broken-cd;
-+	st,dirpol;
-+	st,negedge;
-+#endif
 +	bus-width = <4>;
 +	vmmc-supply = <&v3v3>;
 +	vqmmc-supply = <&wlreg_on>;
@@ -1472,7 +1465,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +#endif
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2018-12-03 18:47:36.838767999 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2018-12-15 10:24:52.000000000 +0100
 @@ -0,0 +1,1755 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -3231,8 +3224,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2018-12-04 17:35:03.987656749 +0100
-@@ -0,0 +1,1263 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2018-12-17 13:08:06.000000000 +0100
+@@ -0,0 +1,1284 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -3920,6 +3913,27 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +				};
 +			};
 +
++			sdmmc2_d47_pins_b: sdmmc2-d47@1 {
++				pins {
++					pinmux = <STM32_PINMUX('A', 8, AF9)>,  /* SDMMC2_D4 */
++						 <STM32_PINMUX('A', 15, AF9)>, /* SDMMC2_D5 */
++						 <STM32_PINMUX('C', 6, AF10)>, /* SDMMC2_D6 */
++						 <STM32_PINMUX('C', 7, AF10)>; /* SDMMC2_D7 */
++					slew-rate = <3>;
++					drive-push-pull;
++					bias-pull-up;
++				};
++			};
++
++			sdmmc2_d47_sleep_pins_b: sdmmc2-d47-sleep@1 {
++				pins {
++					pinmux = <STM32_PINMUX('A', 8, ANALOG)>, /* SDMMC2_D4 */
++						 <STM32_PINMUX('A', 15, ANALOG)>, /* SDMMC2_D5 */
++						 <STM32_PINMUX('C', 6, ANALOG)>, /* SDMMC2_D6 */
++						 <STM32_PINMUX('C', 7, ANALOG)>; /* SDMMC2_D7 */
++				};
++			};
++
 +			sdmmc3_b4_pins_a: sdmmc3-b4@0 {
 +				pins {
 +					pinmux = <STM32_PINMUX('F', 0, AF9)>, /* SDMMC3_D0 */
@@ -4497,8 +4511,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +	};
 +};
 diff -Naurw ./arch/arm/configs/stm32mp1_defconfig ../kernel-source/arch/arm/configs/stm32mp1_defconfig
---- ./arch/arm/configs/stm32mp1_defconfig	2018-10-18 16:23:08.000000000 +0200
-+++ ../kernel-source/arch/arm/configs/stm32mp1_defconfig	2018-12-03 18:47:36.838767999 +0100
+--- ./arch/arm/configs/stm32mp1_defconfig	2018-10-18 16:23:08.924569319 +0200
++++ ../kernel-source/arch/arm/configs/stm32mp1_defconfig	2018-12-15 10:24:52.000000000 +0100
 @@ -70,7 +70,11 @@
  # CONFIG_USB_NET_NET1080 is not set
  # CONFIG_USB_NET_CDC_SUBSET is not set
@@ -4514,7 +4528,7 @@ diff -Naurw ./arch/arm/configs/stm32mp1_defconfig ../kernel-source/arch/arm/conf
  CONFIG_KEYBOARD_GPIO=y
 diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c
 --- ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-12-05 10:59:42.086262621 +0100
++++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-12-15 10:24:52.000000000 +0100
 @@ -358,6 +358,8 @@
  
  static void adv7511_power_on(struct adv7511 *adv7511)
@@ -4682,23 +4696,9 @@ diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/driv
  	/* CEC is unused for now */
  	regmap_write(adv7511->regmap, ADV7511_REG_CEC_CTRL,
  		     ADV7511_CEC_CTRL_POWER_DOWN);
-diff -Naurw ./drivers/gpu/drm/drm_of.c ../kernel-source/drivers/gpu/drm/drm_of.c
---- ./drivers/gpu/drm/drm_of.c	2018-10-18 16:23:02.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/drm_of.c	2018-12-05 09:30:10.278262621 +0100
-@@ -230,6 +230,10 @@
- {
- 	int ret = -EPROBE_DEFER;
- 	struct device_node *remote;
-+    volatile int b = 1;
-+
-+    while ( !b )
-+        ;
- 
- 	if (!panel && !bridge)
- 		return -EINVAL;
 diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/drm/drm_probe_helper.c
 --- ./drivers/gpu/drm/drm_probe_helper.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2018-12-05 15:07:56.222262621 +0100
++++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2018-12-15 10:24:52.000000000 +0100
 @@ -92,6 +92,7 @@
  	enum drm_mode_status ret = MODE_OK;
  	unsigned int i;
@@ -4809,8 +4809,8 @@ diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/dr
  			connector->name);
  	list_for_each_entry(mode, &connector->modes, head) {
 diff -Naurw ./drivers/gpu/drm/stm/drv.c ../kernel-source/drivers/gpu/drm/stm/drv.c
---- ./drivers/gpu/drm/stm/drv.c	2018-10-18 16:23:02.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/stm/drv.c	2018-12-04 17:54:17.303656749 +0100
+--- ./drivers/gpu/drm/stm/drv.c	2018-10-18 16:23:02.880569319 +0200
++++ ../kernel-source/drivers/gpu/drm/stm/drv.c	2018-12-15 10:24:52.000000000 +0100
 @@ -214,6 +214,8 @@
  	struct drm_device *ddev;
  	int ret;
@@ -4834,8 +4834,8 @@ diff -Naurw ./drivers/gpu/drm/stm/drv.c ../kernel-source/drivers/gpu/drm/stm/drv
  
  err_unref:
 diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/ltdc.c
---- ./drivers/gpu/drm/stm/ltdc.c	2018-10-18 16:23:02.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2018-12-06 10:55:59.460865089 +0100
+--- ./drivers/gpu/drm/stm/ltdc.c	2018-10-18 16:23:02.880569319 +0200
++++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2018-12-15 10:24:52.000000000 +0100
 @@ -473,13 +473,17 @@
  
  	result = clk_round_rate(ldev->pixel_clk, target);
@@ -4954,8 +4954,8 @@ diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/lt
  	if (ret) {
  		DRM_ERROR("Failed calling drm_vblank_init()\n");
 diff -Naurw ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
---- ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-10-18 16:23:05.000000000 +0200
-+++ ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-12-03 18:47:36.838767999 +0100
+--- ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-10-18 16:23:05.720569319 +0200
++++ ../kernel-source/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c	2018-12-15 10:24:52.000000000 +0100
 @@ -918,6 +918,11 @@
  	char bus_id[MII_BUS_ID_SIZE];
  	int interface = priv->plat->interface;
@@ -4970,7 +4970,7 @@ diff -Naurw ./drivers/net/ethernet/stmicro/stmmac/stmmac_main.c ../kernel-source
  	priv->oldduplex = DUPLEX_UNKNOWN;
 diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
 --- ./drivers/net/phy/micrel.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/net/phy/micrel.c	2018-12-03 18:47:36.842767999 +0100
++++ ../kernel-source/drivers/net/phy/micrel.c	2018-12-15 10:24:52.000000000 +0100
 @@ -493,6 +493,7 @@
  					<< (field_sz * i));
  		}
@@ -4996,7 +4996,7 @@ diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
  	if (!priv)
 diff -Naurw ./drivers/net/phy/phy_device.c ../kernel-source/drivers/net/phy/phy_device.c
 --- ./drivers/net/phy/phy_device.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/net/phy/phy_device.c	2018-12-03 18:47:36.842767999 +0100
++++ ../kernel-source/drivers/net/phy/phy_device.c	2018-12-15 10:24:52.000000000 +0100
 @@ -1778,6 +1778,10 @@
  	struct device_driver *drv = phydev->mdio.dev.driver;
  	struct phy_driver *phydrv = to_phy_driver(drv);
@@ -5025,7 +5025,7 @@ diff -Naurw ./drivers/net/phy/phy_device.c ../kernel-source/drivers/net/phy/phy_
  
 diff -Naurw ./drivers/of/of_mdio.c ../kernel-source/drivers/of/of_mdio.c
 --- ./drivers/of/of_mdio.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/of/of_mdio.c	2018-12-03 18:47:36.842767999 +0100
++++ ../kernel-source/drivers/of/of_mdio.c	2018-12-15 10:24:52.000000000 +0100
 @@ -193,6 +193,8 @@
   */
  int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
@@ -5086,7 +5086,7 @@ diff -Naurw ./drivers/of/of_mdio.c ../kernel-source/drivers/of/of_mdio.c
  
 diff -Naurw ./init/main.c ../kernel-source/init/main.c
 --- ./init/main.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/init/main.c	2018-12-05 10:28:03.014262621 +0100
++++ ../kernel-source/init/main.c	2018-12-15 10:24:52.000000000 +0100
 @@ -514,6 +514,10 @@
  {
  	char *command_line;

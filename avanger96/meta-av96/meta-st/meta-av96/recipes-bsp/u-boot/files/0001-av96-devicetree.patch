@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/dts/Makefile ../git/arch/arm/dts/Makefile
---- ./arch/arm/dts/Makefile	2018-10-18 20:33:47.920276576 +0200
-+++ ../git/arch/arm/dts/Makefile	2018-12-03 10:44:33.158767999 +0100
+--- ./arch/arm/dts/Makefile	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/dts/Makefile	2018-12-15 10:24:12.076827000 +0100
 @@ -502,7 +502,8 @@
  	stm32mp157c-ev1.dtb \
  	stm32mp157c-ed2.dtb \
@@ -13,7 +13,7 @@ diff -Naurw ./arch/arm/dts/Makefile ../git/arch/arm/dts/Makefile
  
 diff -Naurw ./arch/arm/dts/stm32mp157aac-pinctrl.dtsi ../git/arch/arm/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/arch/arm/dts/stm32mp157aac-pinctrl.dtsi	2018-12-03 10:44:33.158767999 +0100
++++ ../git/arch/arm/dts/stm32mp157aac-pinctrl.dtsi	2018-12-15 10:24:12.076827000 +0100
 @@ -0,0 +1,1398 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -1415,8 +1415,8 @@ diff -Naurw ./arch/arm/dts/stm32mp157aac-pinctrl.dtsi ../git/arch/arm/dts/stm32m
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../git/arch/arm/dts/stm32mp157a-av96.dts
 --- ./arch/arm/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/arch/arm/dts/stm32mp157a-av96.dts	2018-12-03 10:44:33.158767999 +0100
-@@ -0,0 +1,718 @@
++++ ../git/arch/arm/dts/stm32mp157a-av96.dts	2018-12-17 09:37:29.071931586 +0100
+@@ -0,0 +1,734 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -1659,10 +1659,26 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../git/arch/arm/dts/stm32mp157a-
 +	max-speed = <1000>;
 +	phy-handle = <&phy0>;
 +
++#if 1
 +	rxc-skew-ps = <1500>;
-+	/* rxdv-skew-ps = <0>; */
++	rxdv-skew-ps = <420>;
++	rxd0-skew-ps = <420>;
++	rxd1-skew-ps = <420>;
++	rxd2-skew-ps = <420>;
++	rxd3-skew-ps = <420>;
++
++	txc-skew-ps = <1860>;
++	txen-skew-ps = <0>;
++	txd0-skew-ps = <0>;
++	txd1-skew-ps = <0>;
++	txd2-skew-ps = <0>;
++	txd3-skew-ps = <0>;
++#else
++
++	rxc-skew-ps = <1500>;
 +	txc-skew-ps = <900>;
-+	/* txen-skew-ps = <0>; */
++#endif
++
 +	phy-reset-gpios = <&gpioz 2 GPIO_ACTIVE_LOW>;
 +
 +	mdio0 {
@@ -2137,7 +2153,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../git/arch/arm/dts/stm32mp157a-
 +#endif
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dtsi ../git/arch/arm/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/arch/arm/dts/stm32mp157a-av96.dtsi	2018-12-03 10:44:33.162767999 +0100
++++ ../git/arch/arm/dts/stm32mp157a-av96.dtsi	2018-12-15 10:24:12.076827000 +0100
 @@ -0,0 +1,593 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -2734,7 +2750,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dtsi ../git/arch/arm/dts/stm32mp157a
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi ../git/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	2018-12-03 10:44:33.162767999 +0100
++++ ../git/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	2018-12-15 10:24:12.076827000 +0100
 @@ -0,0 +1,71 @@
 +/*
 + * Copyright : STMicroelectronics 2018
@@ -2809,7 +2825,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi ../git/arch/arm/dts/stm3
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a.dtsi ../git/arch/arm/dts/stm32mp157a.dtsi
 --- ./arch/arm/dts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/arch/arm/dts/stm32mp157a.dtsi	2018-12-03 10:44:33.162767999 +0100
++++ ../git/arch/arm/dts/stm32mp157a.dtsi	2018-12-15 10:24:12.084831000 +0100
 @@ -0,0 +1,1755 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -4566,9 +4582,45 @@ diff -Naurw ./arch/arm/dts/stm32mp157a.dtsi ../git/arch/arm/dts/stm32mp157a.dtsi
 +		};
 +	};
 +};
+diff -Naurw ./arch/arm/dts/stm32mp157c-ed1.dts ../git/arch/arm/dts/stm32mp157c-ed1.dts
+--- ./arch/arm/dts/stm32mp157c-ed1.dts	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/dts/stm32mp157c-ed1.dts	2018-12-15 12:45:04.568476192 +0100
+@@ -86,12 +86,14 @@
+ 		compatible = "gpio-leds";
+ 
+ 		status = "disabled";
++#if 0
+ 		red {
+ 			label = "stm32mp:red:status";
+ 			gpios = <&gpioa 13 GPIO_ACTIVE_LOW>;
+ 
+ 			status = "disabled";
+ 		};
++#endif
+ 		green {
+ 			label = "stm32mp:green:user";
+ 			gpios = <&gpioa 14 GPIO_ACTIVE_LOW>;
 diff -Naurw ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi ../git/arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi
---- ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2018-10-18 20:33:47.924276576 +0200
-+++ ../git/arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2018-12-05 15:33:17.014262621 +0100
+--- ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2018-12-17 17:49:14.776596859 +0100
+@@ -67,7 +67,7 @@
+ 		CLK_PLL3_HSE
+ 		CLK_PLL4_HSE
+ 		CLK_RTC_LSE
+-		CLK_MCO1_DISABLED
++		CLK_MCO1_HSE
+ 		CLK_MCO2_DISABLED
+ 	>;
+ 
+@@ -81,7 +81,7 @@
+ 		1 /*APB4*/
+ 		2 /*APB5*/
+ 		23 /*RTC*/
+-		0 /*MCO1*/
++		1 /*MCO1*/
+ 		0 /*MCO2*/
+ 	>;
+ 
 @@ -144,9 +144,9 @@
  		u-boot,dm-pre-reloc;
  	};
@@ -4581,9 +4633,21 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi ../git/arch/arm/dts/stm32
  		u-boot,dm-pre-reloc;
  	};
  };
+diff -Naurw ./arch/arm/dts/stm32mp157c-ev1.dts ../git/arch/arm/dts/stm32mp157c-ev1.dts
+--- ./arch/arm/dts/stm32mp157c-ev1.dts	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/dts/stm32mp157c-ev1.dts	2018-12-15 12:45:17.408476192 +0100
+@@ -236,6 +236,8 @@
+ 	max-speed = <1000>;
+ 	phy-handle = <&phy0>;
+ 
++	phy-reset-gpios = <&gpioa 13 GPIO_ACTIVE_LOW>;
++
+ 	mdio0 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
 diff -Naurw ./arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi ../git/arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi
---- ./arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-10-18 20:33:47.920276576 +0200
-+++ ../git/arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-12-03 10:44:33.162767999 +0100
+--- ./arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-12-15 10:24:12.084831000 +0100
 @@ -18,8 +18,8 @@
   * address mapping : RBC
   */
@@ -4675,8 +4739,8 @@ diff -Naurw ./arch/arm/dts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi ../git/arch/arm/d
  
  #include "stm32mp15-ddr.dtsi"
 diff -Naurw ./arch/arm/lib/relocate.S ../git/arch/arm/lib/relocate.S
---- ./arch/arm/lib/relocate.S	2018-10-18 20:33:42.796276576 +0200
-+++ ../git/arch/arm/lib/relocate.S	2018-12-03 10:44:33.162767999 +0100
+--- ./arch/arm/lib/relocate.S	2018-10-18 20:33:42.000000000 +0200
++++ ../git/arch/arm/lib/relocate.S	2018-12-15 10:24:12.084831000 +0100
 @@ -78,6 +78,7 @@
   */
  
@@ -4686,8 +4750,8 @@ diff -Naurw ./arch/arm/lib/relocate.S ../git/arch/arm/lib/relocate.S
  	subs	r4, r0, r1		/* r4 <- relocation offset */
  	beq	relocate_done		/* skip relocation */
 diff -Naurw ./arch/arm/mach-stm32mp/spl.c ../git/arch/arm/mach-stm32mp/spl.c
---- ./arch/arm/mach-stm32mp/spl.c	2018-10-18 20:33:47.784276576 +0200
-+++ ../git/arch/arm/mach-stm32mp/spl.c	2018-12-03 10:44:33.162767999 +0100
+--- ./arch/arm/mach-stm32mp/spl.c	2018-10-18 20:33:47.000000000 +0200
++++ ../git/arch/arm/mach-stm32mp/spl.c	2018-12-15 10:24:12.084831000 +0100
 @@ -142,6 +142,11 @@
  	struct udevice *dev;
  	int ret;
@@ -4701,8 +4765,8 @@ diff -Naurw ./arch/arm/mach-stm32mp/spl.c ../git/arch/arm/mach-stm32mp/spl.c
  
  	ret = spl_early_init();
 diff -Naurw ./board/st/stm32mp1/board.c ../git/board/st/stm32mp1/board.c
---- ./board/st/stm32mp1/board.c	2018-10-18 20:33:47.852276576 +0200
-+++ ../git/board/st/stm32mp1/board.c	2018-12-03 10:44:33.162767999 +0100
+--- ./board/st/stm32mp1/board.c	2018-10-18 20:33:47.000000000 +0200
++++ ../git/board/st/stm32mp1/board.c	2018-12-15 10:24:12.084831000 +0100
 @@ -23,6 +23,7 @@
  	/* UART4 clock enable */
  	setbits_le32(RCC_MP_APB1ENSETR, BIT(16));
@@ -4729,8 +4793,8 @@ diff -Naurw ./board/st/stm32mp1/board.c ../git/board/st/stm32mp1/board.c
  #error("CONFIG_DEBUG_UART_BASE: not supported value")
  
 diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../git/board/st/stm32mp1/stm32mp1.c
---- ./board/st/stm32mp1/stm32mp1.c	2018-10-18 20:33:47.852276576 +0200
-+++ ../git/board/st/stm32mp1/stm32mp1.c	2018-12-03 10:44:33.162767999 +0100
+--- ./board/st/stm32mp1/stm32mp1.c	2018-10-18 20:33:47.000000000 +0200
++++ ../git/board/st/stm32mp1/stm32mp1.c	2018-12-15 10:24:12.084831000 +0100
 @@ -71,10 +71,12 @@
  		      __func__);
  		return;
@@ -4745,8 +4809,8 @@ diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../git/board/st/stm32mp1/stm32mp1.c
  	dm_gpio_free(NULL, &gpio);
  }
 diff -Naurw ./common/board_f.c ../git/common/board_f.c
---- ./common/board_f.c	2018-10-18 20:33:48.012276576 +0200
-+++ ../git/common/board_f.c	2018-12-03 10:44:33.162767999 +0100
+--- ./common/board_f.c	2018-10-18 20:33:48.000000000 +0200
++++ ../git/common/board_f.c	2018-12-15 10:24:12.084831000 +0100
 @@ -655,6 +655,8 @@
  
  static int jump_to_copy(void)
@@ -4767,8 +4831,8 @@ diff -Naurw ./common/board_f.c ../git/common/board_f.c
  #endif
  
 diff -Naurw ./configs/stm32mp15_basic_defconfig ../git/configs/stm32mp15_basic_defconfig
---- ./configs/stm32mp15_basic_defconfig	2018-10-18 20:33:48.152276576 +0200
-+++ ../git/configs/stm32mp15_basic_defconfig	2018-12-03 10:44:33.162767999 +0100
+--- ./configs/stm32mp15_basic_defconfig	2018-10-18 20:33:48.000000000 +0200
++++ ../git/configs/stm32mp15_basic_defconfig	2018-12-15 10:24:12.084831000 +0100
 @@ -81,6 +81,8 @@
  CONFIG_DM_ETH=y
  CONFIG_DWC_ETH_QOS=y
@@ -4779,8 +4843,8 @@ diff -Naurw ./configs/stm32mp15_basic_defconfig ../git/configs/stm32mp15_basic_d
  # CONFIG_PINCTRL_FULL is not set
  # CONFIG_SPL_PINCTRL_FULL is not set
 diff -Naurw ./drivers/net/dwc_eth_qos.c ../git/drivers/net/dwc_eth_qos.c
---- ./drivers/net/dwc_eth_qos.c	2018-10-18 20:33:48.020276576 +0200
-+++ ../git/drivers/net/dwc_eth_qos.c	2018-12-03 10:44:33.162767999 +0100
+--- ./drivers/net/dwc_eth_qos.c	2018-10-18 20:33:48.000000000 +0200
++++ ../git/drivers/net/dwc_eth_qos.c	2018-12-15 10:24:12.084831000 +0100
 @@ -679,6 +679,26 @@
  
  static int eqos_start_resets_stm32(struct udevice *dev)
@@ -4843,8 +4907,8 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../git/drivers/net/dwc_eth_qos.c
  	debug("%s: OK\n", __func__);
  	return 0;
 diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../git/drivers/net/phy/micrel_ksz90x1.c
---- ./drivers/net/phy/micrel_ksz90x1.c	2018-10-18 20:33:43.704276576 +0200
-+++ ../git/drivers/net/phy/micrel_ksz90x1.c	2018-12-03 10:44:33.162767999 +0100
+--- ./drivers/net/phy/micrel_ksz90x1.c	2018-10-18 20:33:43.000000000 +0200
++++ ../git/drivers/net/phy/micrel_ksz90x1.c	2018-12-15 10:24:12.088833000 +0100
 @@ -121,6 +121,8 @@
  
  	for (i = 0; i < ofcfg->grpsz; i++) {
@@ -4870,8 +4934,8 @@ diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../git/drivers/net/phy/micrel_ksz
  	}
  
 diff -Naurw ./Makefile ../git/Makefile
---- ./Makefile	2018-10-18 20:33:48.304276576 +0200
-+++ ../git/Makefile	2018-12-03 10:44:33.162767999 +0100
+--- ./Makefile	2018-10-18 20:33:48.000000000 +0200
++++ ../git/Makefile	2018-12-15 10:24:12.088833000 +0100
 @@ -256,7 +256,8 @@
  
  HOSTCC       = cc
