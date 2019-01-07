@@ -1,6 +1,6 @@
 diff -Naurw ./fdts/stm32mp157a-av96.dts ../git/fdts/stm32mp157a-av96.dts
 --- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../git/fdts/stm32mp157a-av96.dts	2018-12-17 17:46:49.328596859 +0100
++++ ../git/fdts/stm32mp157a-av96.dts	2019-01-07 16:44:18.862798347 +0100
 @@ -0,0 +1,267 @@
 +/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause) */
 +/*
@@ -162,7 +162,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../git/fdts/stm32mp157a-av96.dts
 +		CLK_PLL3_HSE
 +		CLK_PLL4_HSE
 +		CLK_RTC_LSE
-+		CLK_MCO1_DISABLED
++		CLK_MCO1_HSE
 +		CLK_MCO2_DISABLED
 +	>;
 +
@@ -176,7 +176,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../git/fdts/stm32mp157a-av96.dts
 +		1 /*APB4*/
 +		2 /*APB5*/
 +		23 /*RTC*/
-+		0 /*MCO1*/
++		1 /*MCO1*/
 +		0 /*MCO2*/
 +	>;
 +
@@ -271,11 +271,15 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../git/fdts/stm32mp157a-av96.dts
 +#endif
 diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
 --- ./fdts/stm32mp157-pinctrl.dtsi	2018-11-22 16:28:40.000000000 +0100
-+++ ../git/fdts/stm32mp157-pinctrl.dtsi	2018-12-17 14:10:25.246955000 +0100
-@@ -147,6 +147,19 @@
++++ ../git/fdts/stm32mp157-pinctrl.dtsi	2018-12-20 08:57:41.580093385 +0100
+@@ -143,6 +143,19 @@
  				};
- 			};
- 
+ 				pins2 {
+ 					pinmux = <STM32_PINMUX('B', 2, AF8)>; /* UART4_RX */
++					bias-pull-up;
++				};
++			};
++
 +			uart4_pins_b: uart4@1 {
 +				pins1 {
 +					pinmux = <STM32_PINMUX('D', 1, AF8)>; /* UART4_TX */
@@ -285,13 +289,9 @@ diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
 +				};
 +				pins2 {
 +					pinmux = <STM32_PINMUX('B', 2, AF8)>; /* UART4_RX */
-+					bias-disable;
-+				};
-+			};
-+
- 			usart3_pins_a: usart3@0 {
- 				pins1 {
- 					pinmux = <STM32_PINMUX('B', 10, AF7)>, /* USART3_TX */
+ 					bias-disable;
+ 				};
+ 			};
 @@ -191,6 +204,21 @@
  				};
  			};
@@ -335,7 +335,7 @@ diff -Naurw ./fdts/stm32mp157-pinctrl.dtsi ../git/fdts/stm32mp157-pinctrl.dtsi
  		};
 diff -Naurw ./fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi ../git/fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi
 --- ./fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-10-18 20:38:12.000000000 +0200
-+++ ../git/fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-12-15 10:24:06.974277000 +0100
++++ ../git/fdts/stm32mp15-ddr3-2x4Gb-1066-binG.dtsi	2018-12-19 13:32:31.220478619 +0100
 @@ -18,8 +18,8 @@
   * address mapping : RBC
   */
