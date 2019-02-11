@@ -4655,6 +4655,17 @@ diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
  	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
  	subs	r4, r0, r1		/* r4 <- relocation offset */
  	beq	relocate_done		/* skip relocation */
+diff -Naurw ./arch/arm/mach-stm32mp/Kconfig ../uboot-source/arch/arm/mach-stm32mp/Kconfig
+--- ./arch/arm/mach-stm32mp/Kconfig	2019-01-30 09:23:24.000000000 +0100
++++ ../uboot-source/arch/arm/mach-stm32mp/Kconfig	2019-02-06 21:42:04.600398999 +0100
+@@ -51,7 +51,6 @@
+ config STM32MP15x_REVA
+ 	bool "Support STM32PM15x revision .A"
+ 	depends on TARGET_STM32MP1
+-	default y
+ 	help
+ 		support for STM32PM15x.A
+ 		allow to identify part of code introduced for REV A support
 diff -Naurw ./common/board_r.c ../uboot-source/common/board_r.c
 --- ./common/board_r.c	2019-01-30 09:23:23.006014428 +0100
 +++ ../uboot-source/common/board_r.c	2019-01-30 16:25:25.000000000 +0100
