@@ -1,6 +1,6 @@
 diff -Naurw ./fdts/stm32mp157aac-pinctrl.dtsi ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi
 --- ./fdts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi	2019-01-30 15:58:02.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi	2019-02-06 16:47:30.416911000 +0100
 @@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -94,7 +94,7 @@ diff -Naurw ./fdts/stm32mp157aac-pinctrl.dtsi ../tfa-source/fdts/stm32mp157aac-p
 +};
 diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 --- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-01-30 15:52:30.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-02-11 15:34:37.310363999 +0100
 @@ -0,0 +1,44 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -142,7 +142,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 +
 diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dtsi
 --- ./fdts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-01-30 15:55:50.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-02-11 15:34:25.118363999 +0100
 @@ -0,0 +1,498 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -422,9 +422,9 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +		frac = < 0x9ba >;
 +	};
 +
-+	/* VCO = 508.0 MHz => P = 56, Q = 56, R = 56 */
++	/* VCO = 594.0 MHz => P = 74.25, Q = 74.25, R = 74.25 */
 +	pll4: st,pll@3 {
-+		cfg = < 5 126 8 8 8 PQR(1,1,1) >;
++		cfg = < 3 98 7 7 7 PQR(1,1,1) >;
 +	};
 +};
 +
@@ -644,7 +644,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +};
 diff -Naurw ./fdts/stm32mp157a.dtsi ../tfa-source/fdts/stm32mp157a.dtsi
 --- ./fdts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a.dtsi	2019-01-30 15:57:05.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157a.dtsi	2019-02-06 16:47:30.416911000 +0100
 @@ -0,0 +1,347 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -995,7 +995,7 @@ diff -Naurw ./fdts/stm32mp157a.dtsi ../tfa-source/fdts/stm32mp157a.dtsi
 +};
 diff -Naurw ./fdts/stm32mp157a-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi
 --- ./fdts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi	2019-01-30 15:58:51.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi	2019-02-06 16:47:30.416911000 +0100
 @@ -0,0 +1,297 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
