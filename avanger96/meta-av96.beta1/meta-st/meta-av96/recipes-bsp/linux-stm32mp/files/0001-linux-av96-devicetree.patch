@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2019-02-06 17:47:32.433031000 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2019-02-11 16:24:16.166363999 +0100
 @@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -94,8 +94,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-02-11 13:46:38.285940000 +0100
-@@ -0,0 +1,839 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-02-12 17:07:11.838867406 +0100
+@@ -0,0 +1,852 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -412,17 +412,30 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +		       STM32_HDP(6, HDP6_GPOVAL_6) |
 +		       STM32_HDP(7, HDP7_GPOVAL_7))>;
 +};
++#endif
 +
-+&i2c2 {
++&i2c1 {
 +	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&i2c2_pins_a>;
-+	pinctrl-1 = <&i2c2_pins_sleep_a>;
++	pinctrl-0 = <&i2c1_pins_a>;
++	pinctrl-1 = <&i2c1_pins_sleep_a>;
 +	i2c-scl-rising-time-ns = <185>;
 +	i2c-scl-falling-time-ns = <20>;
 +	status = "okay";
++};
++
++&i2c2 {
++	pinctrl-names = "default", "default", "sleep";
++	pinctrl-0 = <&i2c2_pins_a>;
++	pinctrl-1 = <&i2c2_pins_z>;
++	pinctrl-2 = <&i2c2_pins_sleep_a>;
++	i2c-scl-rising-time-ns = <185>;
++	i2c-scl-falling-time-ns = <20>;
++	status = "okay";
++
 +	/delete-property/dmas;
 +	/delete-property/dma-names;
 +
++#if 0
 +	ov5640: camera@3c {
 +		compatible = "ovti,ov5640";
 +		reg = <0x3c>;
@@ -533,8 +546,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +		irq-gpios = <&stmfx_pinctrl 14 GPIO_ACTIVE_HIGH>;
 +		irq-flags = <IRQ_TYPE_EDGE_RISING>;
 +	};
-+};
 +#endif
++};
 +
 +&i2c4 {
 +	pmic: stpmu1@33 {
@@ -938,8 +951,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 \ No newline at end of file
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2019-02-06 17:47:32.433031000 +0100
-@@ -0,0 +1,418 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2019-02-12 17:13:06.146867406 +0100
+@@ -0,0 +1,415 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -1034,7 +1047,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +
 +		gpio = <&gpioz 3 GPIO_ACTIVE_HIGH>;
 +		enable-active-high;
-+		/* regulator-boot-on; */
 +	};
 +};
 +
@@ -1304,7 +1316,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +	status = "okay";
 +};
 +
-+#if 0
 +&sdmmc2 {
 +	pinctrl-names = "default", "sleep";
 +	pinctrl-0 = <&sdmmc2_b4_pins_a &sdmmc2_d47_pins_a>;
@@ -1319,7 +1330,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +	vqmmc-supply = <&vdd>;
 +	status = "okay";
 +};
-+#endif
 +
 +&sdmmc3 {
 +	pinctrl-names = "default", "sleep";
@@ -1360,7 +1370,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2019-02-06 17:47:32.433031000 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a.dtsi	2019-02-11 16:24:16.166363999 +0100
 @@ -0,0 +1,1964 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -3328,7 +3338,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-02-11 13:41:20.437940000 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-02-12 17:06:16.602867406 +0100
 @@ -0,0 +1,1472 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -3591,9 +3601,9 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +
 +			i2c1_pins_a: i2c1-0 {
 +				pins {
-+					pinmux = <STM32_PINMUX('D', 12, AF5)>, /* I2C1_SCL */
++					pinmux = <STM32_PINMUX('F', 14, AF5)>, /* I2C1_SCL */
 +						 <STM32_PINMUX('F', 15, AF5)>; /* I2C1_SDA */
-+					bias-disable;
++					bias-pull-up;
 +					drive-open-drain;
 +					slew-rate = <0>;
 +				};
@@ -3601,16 +3611,15 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +
 +			i2c1_pins_sleep_a: i2c1-1 {
 +				pins {
-+					pinmux = <STM32_PINMUX('D', 12, ANALOG)>, /* I2C1_SCL */
++					pinmux = <STM32_PINMUX('F', 14, ANALOG)>, /* I2C1_SCL */
 +						 <STM32_PINMUX('F', 15, ANALOG)>; /* I2C1_SDA */
 +				};
 +			};
 +
 +			i2c2_pins_a: i2c2-0 {
 +				pins {
-+					pinmux = <STM32_PINMUX('H', 4, AF4)>, /* I2C2_SCL */
-+						 <STM32_PINMUX('H', 5, AF4)>; /* I2C2_SDA */
-+					bias-disable;
++					pinmux = <STM32_PINMUX('H', 5, AF4)>; /* I2C2_SDA */
++					bias-pull-up;
 +					drive-open-drain;
 +					slew-rate = <0>;
 +				};
@@ -3618,8 +3627,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +
 +			i2c2_pins_sleep_a: i2c2-1 {
 +				pins {
-+					pinmux = <STM32_PINMUX('H', 4, ANALOG)>, /* I2C2_SCL */
-+						 <STM32_PINMUX('H', 5, ANALOG)>; /* I2C2_SDA */
++					pinmux = <STM32_PINMUX('H', 5, ANALOG)>; /* I2C2_SDA */
 +				};
 +			};
 +
@@ -4166,12 +4174,13 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +				};
 +			};
 +
++#if 1
 +			sdmmc2_d47_pins_a: sdmmc2-d47-0 {
 +				pins {
 +					pinmux = <STM32_PINMUX('A', 8, AF9)>, /* SDMMC2_D4 */
-+						 <STM32_PINMUX('A', 9, AF10)>, /* SDMMC2_D5 */
-+						 <STM32_PINMUX('E', 5, AF9)>, /* SDMMC2_D6 */
-+						 <STM32_PINMUX('D', 3, AF9)>; /* SDMMC2_D7 */
++						 <STM32_PINMUX('A', 15, AF9)>, /* SDMMC2_D5 */
++						 <STM32_PINMUX('C', 6, AF10)>, /* SDMMC2_D6 */
++						 <STM32_PINMUX('C', 7, AF10)>; /* SDMMC2_D7 */
 +					slew-rate = <3>;
 +					drive-push-pull;
 +					bias-pull-up;
@@ -4181,11 +4190,12 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +			sdmmc2_d47_sleep_pins_a: sdmmc2-d47-sleep-0 {
 +				pins {
 +					pinmux = <STM32_PINMUX('A', 8, ANALOG)>, /* SDMMC2_D4 */
-+						 <STM32_PINMUX('A', 9, ANALOG)>, /* SDMMC2_D5 */
-+						 <STM32_PINMUX('E', 5, ANALOG)>, /* SDMMC2_D6 */
-+						 <STM32_PINMUX('D', 3, ANALOG)>; /* SDMMC2_D7 */
++						 <STM32_PINMUX('A', 15, ANALOG)>, /* SDMMC2_D5 */
++						 <STM32_PINMUX('C', 6, ANALOG)>, /* SDMMC2_D6 */
++						 <STM32_PINMUX('C', 7, ANALOG)>; /* SDMMC2_D7 */
 +				};
 +			};
++#endif
 +
 +			sdmmc3_b4_pins_a: sdmmc3-b4-0 {
 +				pins {
@@ -4804,7 +4814,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +};
 diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c
 --- ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-02-11 15:52:44.290363999 +0100
++++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-02-11 16:24:16.174363999 +0100
 @@ -625,8 +625,9 @@
  	 * there is a pending HPD interrupt and the cable is connected there was
  	 * at least one transition from disconnected to connected and the chip
@@ -4818,8 +4828,8 @@ diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/driv
  		if (adv7511->status == connector_status_connected)
 diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/ltdc.c
 --- ./drivers/gpu/drm/stm/ltdc.c	2019-01-29 18:50:49.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-02-11 15:55:14.790363999 +0100
-@@ -1072,7 +1073,8 @@
++++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-02-11 16:24:16.174363999 +0100
+@@ -1072,7 +1072,8 @@
  		 * 65000000 hz due to hardware bug on CUT 1
  		 * Don't upstream it!
  		 */
@@ -4831,7 +4841,7 @@ diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/lt
  		ldev->caps.reg_ofs = REG_OFS_4;
 diff -Naurw ./init/main.c ../kernel-source/init/main.c
 --- ./init/main.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/init/main.c	2019-02-06 17:47:32.445024999 +0100
++++ ../kernel-source/init/main.c	2019-02-11 16:24:16.174363999 +0100
 @@ -515,6 +515,13 @@
  	char *command_line;
  	char *after_dashes;
