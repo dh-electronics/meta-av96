@@ -4678,14 +4678,6 @@ diff -Naurw ./arch/arm/mach-stm32mp/Kconfig ../uboot-source/arch/arm/mach-stm32m
  	help
  		support for STM32PM15x.A
  		allow to identify part of code introduced for REV A support
-@@ -90,7 +89,6 @@
- config STM32_ETZPC
- 	bool "STM32 Extended TrustZone Protection"
- 	depends on TARGET_STM32MP1
--	default y
- 	help
- 	  Say y to enable STM32 Extended TrustZone Protection
- 	  Controller (ETZPC)
 diff -Naurw ./common/board_r.c ../uboot-source/common/board_r.c
 --- ./common/board_r.c	2019-01-30 09:23:23.000000000 +0100
 +++ ../uboot-source/common/board_r.c	2019-02-11 16:23:41.610363999 +0100
