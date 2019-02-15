@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/dts/stm32mp157aac-pinctrl.dtsi ../uboot-source/arch/arm/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157aac-pinctrl.dtsi	2019-02-11 16:23:41.602363999 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157aac-pinctrl.dtsi	2019-02-12 18:20:15.594867406 +0100
 @@ -0,0 +1,90 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -94,8 +94,8 @@ diff -Naurw ./arch/arm/dts/stm32mp157aac-pinctrl.dtsi ../uboot-source/arch/arm/d
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../uboot-source/arch/arm/dts/stm32mp157a-av96.dts
 --- ./arch/arm/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dts	2019-02-12 15:57:33.806867406 +0100
-@@ -0,0 +1,801 @@
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dts	2019-02-15 16:16:08.864370001 +0100
+@@ -0,0 +1,799 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -358,7 +358,6 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../uboot-source/arch/arm/dts/stm
 +	max-speed = <1000>;
 +	phy-handle = <&phy0>;
 +
-+#if 0
 +	rxc-skew-ps = <1500>;
 +	rxdv-skew-ps = <540>;
 +	rxd0-skew-ps = <420>;
@@ -366,13 +365,12 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../uboot-source/arch/arm/dts/stm
 +	rxd2-skew-ps = <420>;
 +	rxd3-skew-ps = <420>;
 +
-+	txc-skew-ps = <1440>;
-+	txen-skew-ps = <480>;
++	txc-skew-ps = <1860>;
++	txen-skew-ps = <420>;
 +	txd0-skew-ps = <420>;
 +	txd1-skew-ps = <420>;
 +	txd2-skew-ps = <420>;
 +	txd3-skew-ps = <420>;
-+#endif
 +
 +	phy-reset-gpios = <&gpioz 2 GPIO_ACTIVE_LOW>;
 +
@@ -899,7 +897,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../uboot-source/arch/arm/dts/stm
 +#endif
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dtsi ../uboot-source/arch/arm/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dtsi	2019-02-11 16:23:41.606363999 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dtsi	2019-02-12 18:20:15.594867406 +0100
 @@ -0,0 +1,407 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -1310,7 +1308,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dtsi ../uboot-source/arch/arm/dts/st
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi ../uboot-source/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	2019-02-11 16:23:41.606363999 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	2019-02-12 18:20:15.594867406 +0100
 @@ -0,0 +1,65 @@
 +// SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 +/*
@@ -1379,7 +1377,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi ../uboot-source/arch/arm
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a.dtsi ../uboot-source/arch/arm/dts/stm32mp157a.dtsi
 --- ./arch/arm/dts/stm32mp157a.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a.dtsi	2019-02-11 16:23:41.606363999 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a.dtsi	2019-02-12 18:20:15.594867406 +0100
 @@ -0,0 +1,1800 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -3183,7 +3181,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a.dtsi ../uboot-source/arch/arm/dts/stm32mp
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-pinctrl.dtsi ../uboot-source/arch/arm/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-pinctrl.dtsi	2019-02-12 15:58:34.734867406 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-pinctrl.dtsi	2019-02-12 18:20:15.598867406 +0100
 @@ -0,0 +1,1443 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -4630,7 +4628,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-pinctrl.dtsi ../uboot-source/arch/arm/dts
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi ../uboot-source/arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi
 --- ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2019-01-30 09:23:24.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2019-02-11 16:23:41.606363999 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi	2019-02-12 18:20:15.598867406 +0100
 @@ -16,8 +16,10 @@
  
  	config {
@@ -4656,20 +4654,19 @@ diff -Naurw ./arch/arm/dts/stm32mp157c-ed1-u-boot.dtsi ../uboot-source/arch/arm/
  };
 diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
 --- ./arch/arm/lib/relocate.S	2019-01-30 09:23:22.000000000 +0100
-+++ ../uboot-source/arch/arm/lib/relocate.S	2019-02-11 16:23:41.610363999 +0100
-@@ -77,6 +77,9 @@
++++ ../uboot-source/arch/arm/lib/relocate.S	2019-02-13 14:00:37.997801000 +0100
+@@ -77,6 +77,8 @@
   */
  
  ENTRY(relocate_code)
-+back:
-+	/* b	back */
++	/* b	relocate_code */
 +
  	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
  	subs	r4, r0, r1		/* r4 <- relocation offset */
  	beq	relocate_done		/* skip relocation */
 diff -Naurw ./arch/arm/mach-stm32mp/Kconfig ../uboot-source/arch/arm/mach-stm32mp/Kconfig
 --- ./arch/arm/mach-stm32mp/Kconfig	2019-01-30 09:23:24.000000000 +0100
-+++ ../uboot-source/arch/arm/mach-stm32mp/Kconfig	2019-02-11 16:23:41.610363999 +0100
++++ ../uboot-source/arch/arm/mach-stm32mp/Kconfig	2019-02-12 18:20:15.598867406 +0100
 @@ -51,7 +51,6 @@
  config STM32MP15x_REVA
  	bool "Support STM32PM15x revision .A"
@@ -4680,7 +4677,7 @@ diff -Naurw ./arch/arm/mach-stm32mp/Kconfig ../uboot-source/arch/arm/mach-stm32m
  		allow to identify part of code introduced for REV A support
 diff -Naurw ./common/board_r.c ../uboot-source/common/board_r.c
 --- ./common/board_r.c	2019-01-30 09:23:23.000000000 +0100
-+++ ../uboot-source/common/board_r.c	2019-02-11 16:23:41.610363999 +0100
++++ ../uboot-source/common/board_r.c	2019-02-12 18:20:15.598867406 +0100
 @@ -749,12 +749,14 @@
  #ifdef CONFIG_PPC
  	initr_spi,
@@ -4711,7 +4708,7 @@ diff -Naurw ./common/board_r.c ../uboot-source/common/board_r.c
  #endif
 diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp15_basic_defconfig
 --- ./configs/stm32mp15_basic_defconfig	2019-01-30 09:23:24.000000000 +0100
-+++ ../uboot-source/configs/stm32mp15_basic_defconfig	2019-02-11 16:23:41.610363999 +0100
++++ ../uboot-source/configs/stm32mp15_basic_defconfig	2019-02-12 18:20:15.598867406 +0100
 @@ -76,6 +76,8 @@
  CONFIG_DM_ETH=y
  CONFIG_DWC_ETH_QOS=y
@@ -4721,9 +4718,21 @@ diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp1
  CONFIG_PHY_STM32_USBPHYC=y
  CONFIG_PINCONF=y
  # CONFIG_SPL_PINCTRL_FULL is not set
+diff -Naurw ./configs/stm32mp15_trusted_defconfig ../uboot-source/configs/stm32mp15_trusted_defconfig
+--- ./configs/stm32mp15_trusted_defconfig	2019-01-30 09:23:24.000000000 +0100
++++ ../uboot-source/configs/stm32mp15_trusted_defconfig	2019-02-13 10:37:05.075442957 +0100
+@@ -65,6 +65,8 @@
+ CONFIG_DM_ETH=y
+ CONFIG_DWC_ETH_QOS=y
+ CONFIG_PHY=y
++CONFIG_PHY_MICREL=y
++CONFIG_PHY_MICREL_KSZ90X1=y
+ CONFIG_PHY_STM32_USBPHYC=y
+ CONFIG_PINCONF=y
+ CONFIG_PINCTRL_STMFX=y
 diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.c
 --- ./drivers/net/dwc_eth_qos.c	2019-01-30 09:23:24.000000000 +0100
-+++ ../uboot-source/drivers/net/dwc_eth_qos.c	2019-02-11 16:23:41.610363999 +0100
++++ ../uboot-source/drivers/net/dwc_eth_qos.c	2019-02-12 18:20:15.598867406 +0100
 @@ -691,6 +691,26 @@
  
  static int eqos_start_resets_stm32(struct udevice *dev)
@@ -4811,17 +4820,8 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
  err_remove_resources_core:
 diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../uboot-source/drivers/net/phy/micrel_ksz90x1.c
 --- ./drivers/net/phy/micrel_ksz90x1.c	2019-01-30 09:23:23.000000000 +0100
-+++ ../uboot-source/drivers/net/phy/micrel_ksz90x1.c	2019-02-11 16:23:41.610363999 +0100
-@@ -116,6 +116,8 @@
- 
- 	for (i = 0; i < ofcfg->grpsz; i++) {
- 		val[i] = dev_read_u32_default(dev, ofcfg->grp[i].name, ~0);
-+        printf( "name: %s   val: %i\n", ofcfg->grp[i].name, val[i] );
-+
- 		offset = ofcfg->grp[i].off;
- 		if (val[i] == -1) {
- 			/* Default register value for KSZ9021 */
-@@ -123,12 +125,14 @@
++++ ../uboot-source/drivers/net/phy/micrel_ksz90x1.c	2019-02-15 17:26:19.317317999 +0100
+@@ -123,7 +123,7 @@
  		} else {
  			changed = 1;	/* Value was changed in OF */
  			/* Calculate the register value and fix corner cases */
@@ -4830,16 +4830,28 @@ diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../uboot-source/drivers/net/phy/m
  				max = (1 << ofcfg->grp[i].size) - 1;
  				regval |= max << offset;
  			} else {
- 				regval |= (val[i] / ps_to_regval) << offset;
- 			}
-+
-+            printf( "regval: 0x%08x\n", regval );
- 		}
- 	}
+@@ -135,6 +135,7 @@
+ 	if (!changed)
+ 		return 0;
  
++    /* printf( "ksz90x1 writeext( %i, 0x%04x )\n", (int )ofcfg->reg, (int )regval ); */
+ 	return drv->writeext(phydev, 0, ofcfg->devad, ofcfg->reg, regval);
+ }
+ 
+diff -Naurw ./drivers/net/phy/phy.c ../uboot-source/drivers/net/phy/phy.c
+--- ./drivers/net/phy/phy.c	2019-01-30 09:23:23.000000000 +0100
++++ ../uboot-source/drivers/net/phy/phy.c	2019-02-13 13:54:41.475628999 +0100
+@@ -737,6 +737,7 @@
+ 	int i;
+ 	struct phy_device *phydev;
+ 
++    mdelay(5);	/* 5 ms */
+ 	phydev = search_for_existing_phy(bus, phy_mask, interface);
+ 	if (phydev)
+ 		return phydev;
 diff -Naurw ./Makefile ../uboot-source/Makefile
 --- ./Makefile	2019-01-30 09:23:24.000000000 +0100
-+++ ../uboot-source/Makefile	2019-02-11 16:23:41.610363999 +0100
++++ ../uboot-source/Makefile	2019-02-12 18:20:15.598867406 +0100
 @@ -254,7 +254,8 @@
  
  HOSTCC       = cc

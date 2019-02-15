@@ -36,3 +36,8 @@ of temporary hacks.
     - copy necessary files from ./sdcrad/ to uSD card
 
 
+    Ethernet speed
+
+    Ethernet speed is limited to 100Mbps by systemd/system/systemd-networkd-wait-online.service
+    Don't copy it over if you want to test 1Gbps
+
