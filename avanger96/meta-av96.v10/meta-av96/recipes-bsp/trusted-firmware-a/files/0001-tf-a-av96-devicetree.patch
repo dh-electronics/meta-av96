@@ -1,0 +1,20 @@
+diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
+--- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-03-19 16:49:03.646785259 +0100
+@@ -0,0 +1,16 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
++/*
++ * Copyright (C) Arrow Electronics 2018 - All Rights Reserved
++ * Author: Botond Kardos <botond.kardos@arroweurope.com>
++ */
++
++/dts-v1/;
++
++#include "stm32mp157a-dk1.dts"
++
++/ {
++	model = "Arrow Electronics Avenger96 Board";
++	compatible = "st,stm32mp157a-av96", "st,stm32mp157";
++
++};
++
