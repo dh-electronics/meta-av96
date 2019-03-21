@@ -94,7 +94,7 @@ diff -Naurw ./fdts/stm32mp157aac-pinctrl.dtsi ../tfa-source/fdts/stm32mp157aac-p
 +};
 diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 --- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-02-15 18:08:33.973751694 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-03-20 16:25:48.447478000 +0100
 @@ -0,0 +1,44 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -142,7 +142,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 +
 diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dtsi
 --- ./fdts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-03-18 16:28:56.872066851 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-03-20 17:15:09.753718000 +0100
 @@ -0,0 +1,498 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -204,8 +204,8 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +
 +			vdd: buck3 {
 +				regulator-name = "vdd";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
++				regulator-min-microvolt = <2500000>;
++				regulator-max-microvolt = <2500000>;
 +				regulator-always-on;
 +				st,mask_reset;
 +				regulator-initial-mode = <8>;
@@ -348,7 +348,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +		CLK_PLL3_HSE
 +		CLK_PLL4_HSE
 +		CLK_RTC_LSE
-+		CLK_MCO1_DISABLED
++		CLK_MCO1_HSE
 +		CLK_MCO2_DISABLED
 +	>;
 +
@@ -362,7 +362,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +		1 /*APB4*/
 +		2 /*APB5*/
 +		23 /*RTC*/
-+		0 /*MCO1*/
++		1 /*MCO1*/
 +		0 /*MCO2*/
 +	>;
 +
@@ -422,9 +422,9 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +		frac = < 0x9ba >;
 +	};
 +
-+	/* VCO = 480.0 MHz => P = 40, Q = 40, R = 40 */
++	/* VCO = 480.0 MHz => P = 120, Q = 40, R = 96 */
 +	pll4: st,pll@3 {
-+		cfg = < 1 39 11 11 11 PQR(1,1,1) >;
++		cfg = < 1 39 3 11 4 PQR(1,1,1) >;
 +	};
 +};
 +

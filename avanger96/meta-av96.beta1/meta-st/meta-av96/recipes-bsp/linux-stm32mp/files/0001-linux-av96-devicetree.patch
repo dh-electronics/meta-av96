@@ -94,7 +94,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-03-12 16:22:31.942272760 +0100
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-03-21 11:19:24.542635637 +0100
 @@ -0,0 +1,886 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -385,8 +385,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +			rxd2-skew-ps = <420>;
 +			rxd3-skew-ps = <420>;
 +
-+			txc-skew-ps = <1680>;
-+			txen-skew-ps = <420>;
++			txc-skew-ps = <1440>;
++			txen-skew-ps = <540>;
 +			txd0-skew-ps = <420>;
 +			txd1-skew-ps = <420>;
 +			txd2-skew-ps = <420>;
@@ -4861,6 +4861,21 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +	};
 +
 +};
+diff -Naurw ./drivers/clk/clk-stm32mp1.c ../kernel-source/drivers/clk/clk-stm32mp1.c
+--- ./drivers/clk/clk-stm32mp1.c	2019-01-29 18:50:46.000000000 +0100
++++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-03-21 12:24:32.086635637 +0100
+@@ -2530,7 +2530,11 @@
+ 		  _NO_DIV),
+ 
+ 	/* MCO clocks */
++#if 0
++	COMPOSITE(CK_MCO1, "ck_mco1", mco1_src, CLK_IS_CRITICAL | CLK_OPS_PARENT_ENABLE |
++#else
+ 	COMPOSITE(CK_MCO1, "ck_mco1", mco1_src, CLK_OPS_PARENT_ENABLE |
++#endif
+ 		  CLK_SET_RATE_NO_REPARENT,
+ 		  _GATE(RCC_MCO1CFGR, 12, 0),
+ 		  _MUX(RCC_MCO1CFGR, 0, 3, 0),
 diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c
 --- ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-06-05 11:42:00.000000000 +0200
 +++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-02-15 18:08:46.797751694 +0100
