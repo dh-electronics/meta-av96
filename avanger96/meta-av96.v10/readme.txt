@@ -6,4 +6,4 @@
     $ DISTRO=openstlinux-weston MACHINE=stm32mp1-av96 source layers/meta-st/scripts/envsetup.sh
     $ cp .../meta-av96.v10 ../layers/meta-av96 -R
     $ bitbake-layers add-layer ../layers/meta-av96/
-    $ bitbake tf-a-stm32mp
+    $ bitbake st-image-core
