@@ -94,8 +94,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-03-21 11:19:24.542635637 +0100
-@@ -0,0 +1,886 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-03-22 15:10:02.421925613 +0100
+@@ -0,0 +1,882 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -300,6 +300,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	pinctrl-1 = <&cec_pins_sleep_a>;
 +	status = "okay";
 +};
++#endif
 +
 +&dcmi {
 +	status = "okay";
@@ -319,6 +320,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	};
 +};
 +
++#if 0
 +&dsi {
 +	#address-cells = <1>;
 +	#size-cells = <0>;
@@ -449,33 +451,27 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	/delete-property/dmas;
 +	/delete-property/dma-names;
 +
-+#if 0
 +	ov5640: camera@3c {
 +		compatible = "ovti,ov5640";
 +		reg = <0x3c>;
 +		clocks = <&clk_ext_camera>;
 +		clock-names = "xclk";
-+		DOVDD-supply = <&v2v8>;
++		DOVDD-supply = <&v1v8>;
 +		status = "okay";
-+		powerdown-gpios = <&stmfx_pinctrl 18 GPIO_ACTIVE_HIGH>;
-+		reset-gpios = <&stmfx_pinctrl 19 GPIO_ACTIVE_LOW>;
++		powerdown-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
++		reset-gpios = <&gpioa 12 GPIO_ACTIVE_LOW>;
 +		rotation = <180>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&ov5640_pins>;
 +
 +		port {
 +			ov5640_0: endpoint {
 +				remote-endpoint = <&dcmi_0>;
-+				bus-width = <8>;
-+				data-shift = <2>; /* lines 9:2 are used */
-+				hsync-active = <0>;
-+				vsync-active = <0>;
-+				pclk-sample = <1>;
-+				pclk-max-frequency = <77000000>;
++				clock-lanes = <1>;
++				data-lanes = <0 2>;
 +			};
 +		};
 +	};
 +
++#if 0
 +	wm8994: wm8994@1b {
 +		compatible = "wlf,wm8994";
 +		#sound-dai-cells = <0>;
@@ -3371,8 +3367,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a.dtsi ../kernel-source/arch/arm/boot/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-03-12 15:37:39.026272760 +0100
-@@ -0,0 +1,1488 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-03-21 15:10:31.638635637 +0100
+@@ -0,0 +1,1486 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -4613,46 +4609,44 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +			};
 +#endif
 +
++#if 1
 +			dcmi_pins_a: dcmi-0 {
 +				pins {
-+					pinmux = <STM32_PINMUX('H', 8,  AF13)>,/* DCMI_HSYNC */
++					pinmux = <STM32_PINMUX('A', 4,  AF13)>,/* DCMI_HSYNC */
 +						 <STM32_PINMUX('B', 7,  AF13)>,/* DCMI_VSYNC */
 +						 <STM32_PINMUX('A', 6,  AF13)>,/* DCMI_PIXCLK */
-+						 <STM32_PINMUX('H', 9,  AF13)>,/* DCMI_D0 */
++						 <STM32_PINMUX('A', 9,  AF13)>,/* DCMI_D0 */
 +						 <STM32_PINMUX('H', 10, AF13)>,/* DCMI_D1 */
-+						 <STM32_PINMUX('H', 11, AF13)>,/* DCMI_D2 */
-+						 <STM32_PINMUX('H', 12, AF13)>,/* DCMI_D3 */
++						 <STM32_PINMUX('E', 0, AF13)>, /* DCMI_D2 */
++						 <STM32_PINMUX('E', 1, AF13)>, /* DCMI_D3 */
 +						 <STM32_PINMUX('H', 14, AF13)>,/* DCMI_D4 */
 +						 <STM32_PINMUX('I', 4,  AF13)>,/* DCMI_D5 */
-+						 <STM32_PINMUX('B', 8,  AF13)>,/* DCMI_D6 */
++						 <STM32_PINMUX('I', 6,  AF13)>,/* DCMI_D6 */
 +						 <STM32_PINMUX('E', 6,  AF13)>,/* DCMI_D7 */
 +						 <STM32_PINMUX('I', 1,  AF13)>,/* DCMI_D8 */
-+						 <STM32_PINMUX('H', 7,  AF13)>,/* DCMI_D9 */
-+						 <STM32_PINMUX('I', 3,  AF13)>,/* DCMI_D10 */
-+						 <STM32_PINMUX('H', 15, AF13)>;/* DCMI_D11 */
++						 <STM32_PINMUX('H', 7,  AF13)>;/* DCMI_D9 */
 +					bias-disable;
 +				};
 +			};
 +
 +			dcmi_sleep_pins_a: dcmi-sleep-0 {
 +				pins {
-+					pinmux = <STM32_PINMUX('H', 8,  ANALOG)>,/* DCMI_HSYNC */
++					pinmux = <STM32_PINMUX('A', 4,  ANALOG)>,/* DCMI_HSYNC */
 +						 <STM32_PINMUX('B', 7,  ANALOG)>,/* DCMI_VSYNC */
 +						 <STM32_PINMUX('A', 6,  ANALOG)>,/* DCMI_PIXCLK */
-+						 <STM32_PINMUX('H', 9,  ANALOG)>,/* DCMI_D0 */
++						 <STM32_PINMUX('A', 9,  ANALOG)>,/* DCMI_D0 */
 +						 <STM32_PINMUX('H', 10, ANALOG)>,/* DCMI_D1 */
-+						 <STM32_PINMUX('H', 11, ANALOG)>,/* DCMI_D2 */
-+						 <STM32_PINMUX('H', 12, ANALOG)>,/* DCMI_D3 */
++						 <STM32_PINMUX('E', 0,  ANALOG)>,/* DCMI_D2 */
++						 <STM32_PINMUX('E', 1,  ANALOG)>,/* DCMI_D3 */
 +						 <STM32_PINMUX('H', 14, ANALOG)>,/* DCMI_D4 */
 +						 <STM32_PINMUX('I', 4,  ANALOG)>,/* DCMI_D5 */
-+						 <STM32_PINMUX('B', 8,  ANALOG)>,/* DCMI_D6 */
++						 <STM32_PINMUX('I', 6,  ANALOG)>,/* DCMI_D6 */
 +						 <STM32_PINMUX('E', 6,  ANALOG)>,/* DCMI_D7 */
 +						 <STM32_PINMUX('I', 1,  ANALOG)>,/* DCMI_D8 */
-+						 <STM32_PINMUX('H', 7,  ANALOG)>,/* DCMI_D9 */
-+						 <STM32_PINMUX('I', 3,  ANALOG)>,/* DCMI_D10 */
-+						 <STM32_PINMUX('H', 15, ANALOG)>;/* DCMI_D11 */
++						 <STM32_PINMUX('H', 7,  ANALOG)>;/* DCMI_D9 */
 +				};
 +			};
++#endif
 +
 +			spi4_pins_a: spi4-0 {
 +				pins1 {
@@ -4863,7 +4857,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +};
 diff -Naurw ./drivers/clk/clk-stm32mp1.c ../kernel-source/drivers/clk/clk-stm32mp1.c
 --- ./drivers/clk/clk-stm32mp1.c	2019-01-29 18:50:46.000000000 +0100
-+++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-03-21 12:24:32.086635637 +0100
++++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-03-21 13:46:24.510635637 +0100
 @@ -2530,7 +2530,11 @@
  		  _NO_DIV),
  
@@ -4892,7 +4886,7 @@ diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/driv
  		if (adv7511->status == connector_status_connected)
 diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/drm/drm_probe_helper.c
 --- ./drivers/gpu/drm/drm_probe_helper.c	2018-06-05 11:42:00.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2019-03-19 13:38:48.534785259 +0100
++++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2019-03-21 12:27:43.154635637 +0100
 @@ -92,6 +92,10 @@
  	enum drm_mode_status ret = MODE_OK;
  	unsigned int i;
@@ -4906,7 +4900,7 @@ diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/dr
  	if (ret != MODE_OK)
 diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/ltdc.c
 --- ./drivers/gpu/drm/stm/ltdc.c	2019-01-29 18:50:49.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-03-19 13:39:22.138785259 +0100
++++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-03-21 12:28:03.302635637 +0100
 @@ -475,6 +475,9 @@
  
  	result = clk_round_rate(ldev->pixel_clk, target);
@@ -4922,11 +4916,333 @@ diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/lt
  		 * Don't upstream it!
  		 */
 -		ldev->caps.pad_max_freq_hz = 65000000;
-+		ldev->caps.pad_max_freq_hz = 48000000;
++		ldev->caps.pad_max_freq_hz = 45000000;
 +		/* ldev->caps.pad_max_freq_hz = 74250000; */
  		break;
  	case HWVER_20101:
  		ldev->caps.reg_ofs = REG_OFS_4;
+diff -Naurw ./drivers/media/i2c/ov5640.c ../kernel-source/drivers/media/i2c/ov5640.c
+--- ./drivers/media/i2c/ov5640.c	2019-01-29 18:50:53.000000000 +0100
++++ ../kernel-source/drivers/media/i2c/ov5640.c	2019-03-21 16:14:32.642510542 +0100
+@@ -596,7 +596,7 @@
+ 	return 0;
+ }
+ 
+-static int ov5640_write_reg(struct ov5640_dev *sensor, u16 reg, u8 val)
++static int ov5640_write_reg8_1(struct ov5640_dev *sensor, u16 reg, u8 val)
+ {
+ 	struct i2c_client *client = sensor->i2c_client;
+ 	struct i2c_msg msg;
+@@ -622,6 +622,12 @@
+ 	return 0;
+ }
+ 
++static int ov5640_write_reg8(struct ov5640_dev *sensor, u16 reg, u8 val)
++{
++	printk( KERN_ALERT "ov5640_write_reg8   reg: 0x%04x   val: 0x%02x\n", (int )reg, (int )val );
++    return ov5640_write_reg8_1( sensor, reg, val );
++}
++
+ static int ov5640_read_reg(struct ov5640_dev *sensor, u16 reg, u8 *val)
+ {
+ 	struct i2c_client *client = sensor->i2c_client;
+@@ -673,11 +679,13 @@
+ {
+ 	int ret;
+ 
+-	ret = ov5640_write_reg(sensor, reg, val >> 8);
++	printk( KERN_ALERT "ov5640_write_reg16   reg: 0x%04x   val: 0x%04x\n", (int )reg, (int )val );
++
++	ret = ov5640_write_reg8_1(sensor, reg, val >> 8);
+ 	if (ret)
+ 		return ret;
+ 
+-	return ov5640_write_reg(sensor, reg + 1, val & 0xff);
++	return ov5640_write_reg8_1(sensor, reg + 1, val & 0xff);
+ }
+ 
+ static int ov5640_mod_reg(struct ov5640_dev *sensor, u16 reg,
+@@ -694,7 +702,7 @@
+ 	val &= mask;
+ 	val |= readval;
+ 
+-	return ov5640_write_reg(sensor, reg, val);
++	return ov5640_write_reg8(sensor, reg, val);
+ }
+ 
+ static int ov5640_set_timings(struct ov5640_dev *sensor,
+@@ -927,7 +935,7 @@
+ 	u8 dvp_pclk_divider = mode->hact < 1024 ? 2 : 1;//FIXME
+ 	unsigned int pclk_freq, max_pclk_freq;
+ 
+-	ret = ov5640_write_reg(sensor, OV5640_REG_DVP_PCLK_DIVIDER,
++	ret = ov5640_write_reg8(sensor, OV5640_REG_DVP_PCLK_DIVIDER,
+ 			       dvp_pclk_divider);
+ 	if (ret)
+ 		return ret;
+@@ -969,7 +977,7 @@
+ 
+ 	ov5640_calc_pclk(sensor, rate, &sysdiv, &prediv, &pll_rdiv, &mult,
+ 			 &pclk_rdiv);
+-	ret = ov5640_write_reg(sensor, OV5640_REG_SC_PLL_CTRL1,
++	ret = ov5640_write_reg8(sensor, OV5640_REG_SC_PLL_CTRL1,
+ 			       (sysdiv << 4) | pclk_rdiv);
+ 	if (ret)
+ 		return ret;
+@@ -1003,7 +1011,7 @@
+ 		if (mask)
+ 			ret = ov5640_mod_reg(sensor, reg_addr, mask, val);
+ 		else
+-			ret = ov5640_write_reg(sensor, reg_addr, val);
++			ret = ov5640_write_reg8(sensor, reg_addr, val);
+ 		if (ret)
+ 			break;
+ 
+@@ -1049,17 +1057,17 @@
+ 
+ 	exposure <<= 4;
+ 
+-	ret = ov5640_write_reg(sensor,
++	ret = ov5640_write_reg8(sensor,
+ 			       OV5640_REG_AEC_PK_EXPOSURE_LO,
+ 			       exposure & 0xff);
+ 	if (ret)
+ 		return ret;
+-	ret = ov5640_write_reg(sensor,
++	ret = ov5640_write_reg8(sensor,
+ 			       OV5640_REG_AEC_PK_EXPOSURE_MED,
+ 			       (exposure >> 8) & 0xff);
+ 	if (ret)
+ 		return ret;
+-	return ov5640_write_reg(sensor,
++	return ov5640_write_reg8(sensor,
+ 				OV5640_REG_AEC_PK_EXPOSURE_HI,
+ 				(exposure >> 16) & 0x0f);
+ }
+@@ -1142,7 +1150,7 @@
+ 		if (flags & V4L2_MBUS_VSYNC_ACTIVE_LOW)
+ 			vsync_pol = 1;
+ 
+-		ret = ov5640_write_reg(sensor,
++		ret = ov5640_write_reg8(sensor,
+ 				       OV5640_REG_POLARITY_CTRL00,
+ 				       (pclk_pol << 5) |
+ 				       (hsync_pol << 1) |
+@@ -1160,7 +1168,7 @@
+ 	 * 3:	 PWDN PHY RX
+ 	 * 2:	 MIPI enable
+ 	 */
+-	ret = ov5640_write_reg(sensor,
++	ret = ov5640_write_reg8(sensor,
+ 			       OV5640_REG_IO_MIPI_CTRL00, on ? 0x18 : 0);
+ 	if (ret)
+ 		return ret;
+@@ -1175,7 +1183,7 @@
+ 	 * - 4:		PCLK output enable
+ 	 * - [3:0]:	D[9:6] output enable
+ 	 */
+-	ret = ov5640_write_reg(sensor,
++	ret = ov5640_write_reg8(sensor,
+ 			       OV5640_REG_PAD_OUTPUT_ENABLE01,
+ 			       on ? 0x7f : 0);
+ 	if (ret)
+@@ -1187,7 +1195,7 @@
+ 	 * PAD OUTPUT ENABLE 02
+ 	 * - [7:2]:	D[5:0] output enable
+ 	 */
+-	return ov5640_write_reg(sensor,
++	return ov5640_write_reg8(sensor,
+ 				OV5640_REG_PAD_OUTPUT_ENABLE02,
+ 				on ? 0xfc : 0);
+ }
+@@ -1200,12 +1208,12 @@
+ 			     on ? 0 : BIT(5));
+ 	if (ret)
+ 		return ret;
+-	ret = ov5640_write_reg(sensor, OV5640_REG_PAD_OUTPUT00,
++	ret = ov5640_write_reg8(sensor, OV5640_REG_PAD_OUTPUT00,
+ 			       on ? 0x00 : 0x70);
+ 	if (ret)
+ 		return ret;
+ 
+-	return ov5640_write_reg(sensor, OV5640_REG_FRAME_CTRL01,
++	return ov5640_write_reg8(sensor, OV5640_REG_FRAME_CTRL01,
+ 				on ? 0x00 : 0x0f);
+ }
+ 
+@@ -1270,7 +1278,7 @@
+ 	if (ret)
+ 		return ret;
+ 	mode &= 0xfb;
+-	return ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL00, mode);
++	return ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL00, mode);
+ }
+ 
+ static int ov5640_get_hts(struct ov5640_dev *sensor)
+@@ -1377,7 +1385,7 @@
+ 	if (!band_step60)
+ 		return -EINVAL;
+ 	max_band60 = (int)((prev_vts - 4) / band_step60);
+-	ret = ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL0D, max_band60);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL0D, max_band60);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1389,7 +1397,7 @@
+ 	if (!band_step50)
+ 		return -EINVAL;
+ 	max_band50 = (int)((prev_vts - 4) / band_step50);
+-	return ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL0E, max_band50);
++	return ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL0E, max_band50);
+ }
+ 
+ static int ov5640_set_ae_target(struct ov5640_dev *sensor, int target)
+@@ -1407,22 +1415,22 @@
+ 
+ 	fast_low = sensor->ae_low >> 1;
+ 
+-	ret = ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL0F, sensor->ae_high);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL0F, sensor->ae_high);
+ 	if (ret)
+ 		return ret;
+-	ret = ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL10, sensor->ae_low);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL10, sensor->ae_low);
+ 	if (ret)
+ 		return ret;
+-	ret = ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL1B, sensor->ae_high);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL1B, sensor->ae_high);
+ 	if (ret)
+ 		return ret;
+-	ret = ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL1E, sensor->ae_low);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL1E, sensor->ae_low);
+ 	if (ret)
+ 		return ret;
+-	ret = ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL11, fast_high);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL11, fast_high);
+ 	if (ret)
+ 		return ret;
+-	return ov5640_write_reg(sensor, OV5640_REG_AEC_CTRL1F, fast_low);
++	return ov5640_write_reg8(sensor, OV5640_REG_AEC_CTRL1F, fast_low);
+ }
+ 
+ static int ov5640_get_binning(struct ov5640_dev *sensor)
+@@ -1476,7 +1484,7 @@
+ 		return ret;
+ 	temp &= ~(3 << 6);
+ 	temp |= (channel << 6);
+-	return ov5640_write_reg(sensor, OV5640_REG_DEBUG_MODE, temp);
++	return ov5640_write_reg8(sensor, OV5640_REG_DEBUG_MODE, temp);
+ }
+ 
+ static const struct ov5640_mode_info *
+@@ -1687,6 +1695,8 @@
+ 	dn_mode = mode->dn_mode;
+ 	orig_dn_mode = orig_mode->dn_mode;
+ 
++    printk( KERN_ALERT "**** %s  bus_type: %i\n", __func__, (int )sensor->ep.bus_type );
++
+ 	/* auto gain and exposure must be turned off when changing modes */
+ 	if (auto_gain) {
+ 		ret = ov5640_set_autogain(sensor, false);
+@@ -1881,6 +1891,7 @@
+ 		if (ret)
+ 			goto power_off;
+ 
++        printk( KERN_ALERT "**** %s  bus_type: %i\n", __func__, (int )sensor->ep.bus_type );
+ 		if (sensor->ep.bus_type == V4L2_MBUS_CSI2) {
+ 			/*
+ 			 * start streaming briefly followed by stream off in
+@@ -2111,12 +2122,12 @@
+ 	}
+ 
+ 	/* FORMAT CONTROL00: YUV and RGB formatting */
+-	ret = ov5640_write_reg(sensor, OV5640_REG_FORMAT_CONTROL00, val);
++	ret = ov5640_write_reg8(sensor, OV5640_REG_FORMAT_CONTROL00, val);
+ 	if (ret)
+ 		return ret;
+ 
+ 	/* FORMAT MUX CONTROL: ISP YUV or RGB */
+-	ret = ov5640_write_reg(sensor, OV5640_REG_ISP_FORMAT_MUX_CTRL,
++	ret = ov5640_write_reg8(sensor, OV5640_REG_ISP_FORMAT_MUX_CTRL,
+ 			       is_rgb ? 0x01 : 0x00);
+ 	if (ret)
+ 		return ret;
+@@ -2182,7 +2193,7 @@
+ 				     BIT(2), BIT(2));
+ 		if (ret)
+ 			return ret;
+-		ret = ov5640_write_reg(sensor, OV5640_REG_SDE_CTRL5,
++		ret = ov5640_write_reg8(sensor, OV5640_REG_SDE_CTRL5,
+ 				       value & 0xff);
+ 	} else {
+ 		ret = ov5640_mod_reg(sensor, OV5640_REG_SDE_CTRL0, BIT(2), 0);
+@@ -2200,11 +2211,11 @@
+ 				     BIT(1), BIT(1));
+ 		if (ret)
+ 			return ret;
+-		ret = ov5640_write_reg(sensor, OV5640_REG_SDE_CTRL3,
++		ret = ov5640_write_reg8(sensor, OV5640_REG_SDE_CTRL3,
+ 				       value & 0xff);
+ 		if (ret)
+ 			return ret;
+-		ret = ov5640_write_reg(sensor, OV5640_REG_SDE_CTRL4,
++		ret = ov5640_write_reg8(sensor, OV5640_REG_SDE_CTRL4,
+ 				       value & 0xff);
+ 	} else {
+ 		ret = ov5640_mod_reg(sensor, OV5640_REG_SDE_CTRL0, BIT(1), 0);
+@@ -2604,6 +2615,7 @@
+ 
+ 	mutex_lock(&sensor->lock);
+ 
++    printk( KERN_ALERT "**** %s  bus_type: %i\n", __func__, (int )sensor->ep.bus_type );
+ 	if (sensor->streaming == !enable) {
+ 		if (enable && sensor->pending_mode_change) {
+ 			ret = ov5640_set_mode(sensor, sensor->last_mode);
+@@ -2706,6 +2718,8 @@
+ 	u32 rotation;
+ 	int ret;
+ 
++    printk( KERN_ALERT "**** %s %i\n", __func__, __LINE__ );
++
+ 	sensor = devm_kzalloc(dev, sizeof(*sensor), GFP_KERNEL);
+ 	if (!sensor)
+ 		return -ENOMEM;
+@@ -2756,6 +2770,8 @@
+ 		return -EINVAL;
+ 	}
+ 
++    printk( KERN_ALERT "**** %s %i\n", __func__, __LINE__ );
++
+ 	ret = v4l2_fwnode_endpoint_parse(endpoint, &sensor->ep);
+ 	fwnode_handle_put(endpoint);
+ 	if (ret) {
+@@ -2794,6 +2810,8 @@
+ 	if (ret)
+ 		return ret;
+ 
++    printk( KERN_ALERT "**** %s %i\n", __func__, __LINE__ );
++
+ 	ret = ov5640_get_regulators(sensor);
+ 	if (ret)
+ 		return ret;
+@@ -2804,6 +2822,8 @@
+ 	if (ret)
+ 		goto entity_cleanup;
+ 
++    printk( KERN_ALERT "**** %s %i\n", __func__, __LINE__ );
++
+ 	ret = ov5640_init_controls(sensor);
+ 	if (ret)
+ 		goto entity_cleanup;
+@@ -2812,6 +2832,8 @@
+ 	if (ret)
+ 		goto free_ctrls;
+ 
++    printk( KERN_ALERT "**** %s %i\n", __func__, __LINE__ );
++
+ 	return 0;
+ 
+ free_ctrls:
 diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
 --- ./drivers/net/phy/micrel.c	2018-06-05 11:42:00.000000000 +0200
 +++ ../kernel-source/drivers/net/phy/micrel.c	2019-03-19 13:42:46.834785259 +0100
