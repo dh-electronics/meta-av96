@@ -31,7 +31,8 @@ of temporary hacks.
 
     Finalizing card image
 
-    Some file need to be added to the uSD image in order to make WiFi work.
+    Some file need to be added to the uSD image in order to make WiFi work and
+adding release info.
     - insert uSD card into PC and let PC mount rootfs and bootfs partitions
     - copy necessary files from ./sdcrad/ to uSD card
 

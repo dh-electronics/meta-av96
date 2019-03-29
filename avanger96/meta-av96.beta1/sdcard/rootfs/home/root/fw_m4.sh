@@ -2,7 +2,7 @@
 
 rproc_class_dir="/sys/class/remoteproc/remoteproc0/"
 fw_dir="/lib/firmware"
-fw_name="GPIO_EXTI.elf"
+fw_name="OpenAMP_TTY_echo.elf"
 echo "fw_m4.sh: firmware name=${fw_name}"
 rproc_state=`tr -d '\0' < $rproc_class_dir/state`
 

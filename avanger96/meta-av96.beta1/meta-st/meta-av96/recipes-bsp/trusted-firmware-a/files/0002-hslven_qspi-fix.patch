@@ -1,0 +1,455 @@
+diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dtsi
+--- ./fdts/stm32mp157a-av96.dtsi	2019-03-26 15:33:43.154544406 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-03-28 10:28:13.790414831 +0100
+@@ -128,6 +128,10 @@
+ 	status = "okay";
+ };
+ 
++&pwr {
++	pwr-supply = <&vdd>;
++};
++
+ &sdmmc1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc1_b4_pins_a &sdmmc1_dir_pins_a>;
+diff -Naurw ./fdts/stm32mp157a-dk1.dts ../tfa-source/fdts/stm32mp157a-dk1.dts
+--- ./fdts/stm32mp157a-dk1.dts	2019-03-26 15:33:43.062544406 +0100
++++ ../tfa-source/fdts/stm32mp157a-dk1.dts	2019-03-28 10:26:33.058414831 +0100
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+ /*
+- * Copyright (C) STMicroelectronics 2018 - All Rights Reserved
++ * Copyright (C) STMicroelectronics 2018-2019 - All Rights Reserved
+  * Author: Alexandre Torgue <alexandre.torgue@st.com>.
+  */
+ 
+@@ -131,6 +131,10 @@
+ 	status = "okay";
+ };
+ 
++&pwr {
++	pwr-supply = <&vdd>;
++};
++
+ &sdmmc1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc1_b4_pins_a>;
+diff -Naurw ./fdts/stm32mp157a.dtsi ../tfa-source/fdts/stm32mp157a.dtsi
+--- ./fdts/stm32mp157a.dtsi	2019-03-26 15:33:43.154544406 +0100
++++ ../tfa-source/fdts/stm32mp157a.dtsi	2019-03-28 10:36:27.258414831 +0100
+@@ -199,6 +199,12 @@
+ 			reg = <0x5000d000 0x400>;
+ 		};
+ 
++		syscfg: syscon@50020000 {
++			compatible = "st,stm32mp157-syscfg", "syscon";
++			reg = <0x50020000 0x400>;
++			clocks = <&rcc SYSCFG>;
++		};
++
+ 		hash1: hash@54002000 {
+ 			compatible = "st,stm32f756-hash";
+ 			reg = <0x54002000 0x400>;
+diff -Naurw ./fdts/stm32mp157c.dtsi ../tfa-source/fdts/stm32mp157c.dtsi
+--- ./fdts/stm32mp157c.dtsi	2019-03-26 15:33:42.238544406 +0100
++++ ../tfa-source/fdts/stm32mp157c.dtsi	2019-03-28 10:26:33.058414831 +0100
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+ /*
+- * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
++ * Copyright (C) STMicroelectronics 2017-2019 - All Rights Reserved
+  * Author: Ludovic Barre <ludovic.barre@st.com> for STMicroelectronics.
+  */
+ 
+@@ -199,6 +199,12 @@
+ 			reg = <0x5000d000 0x400>;
+ 		};
+ 
++		syscfg: syscon@50020000 {
++			compatible = "st,stm32mp157-syscfg", "syscon";
++			reg = <0x50020000 0x400>;
++			clocks = <&rcc SYSCFG>;
++		};
++
+ 		cryp1: cryp@54001000 {
+ 			compatible = "st,stm32mp1-cryp";
+ 			reg = <0x54001000 0x400>;
+diff -Naurw ./fdts/stm32mp157c-ed1.dts ../tfa-source/fdts/stm32mp157c-ed1.dts
+--- ./fdts/stm32mp157c-ed1.dts	2019-03-26 15:33:43.066544406 +0100
++++ ../tfa-source/fdts/stm32mp157c-ed1.dts	2019-03-28 10:26:33.058414831 +0100
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+ /*
+- * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
++ * Copyright (C) STMicroelectronics 2017-2019 - All Rights Reserved
+  * Author: Ludovic Barre <ludovic.barre@st.com> for STMicroelectronics.
+  */
+ 
+@@ -128,6 +128,10 @@
+ 	status = "okay";
+ };
+ 
++&pwr {
++	pwr-supply = <&vdd>;
++};
++
+ &sdmmc1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc1_b4_pins_a &sdmmc1_dir_pins_a>;
+diff -Naurw ./plat/st/stm32mp1/bl2_plat_setup.c ../tfa-source/plat/st/stm32mp1/bl2_plat_setup.c
+--- ./plat/st/stm32mp1/bl2_plat_setup.c	2019-03-26 15:33:42.630544406 +0100
++++ ../tfa-source/plat/st/stm32mp1/bl2_plat_setup.c	2019-03-28 10:26:33.058414831 +0100
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
++ * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -318,6 +318,8 @@
+ 	stm32mp1_arch_security_setup();
+ 
+ 	stm32mp1_io_setup();
++
++	stm32mp1_syscfg_init();
+ }
+ 
+ #if defined(AARCH32_SP_OPTEE)
+diff -Naurw ./plat/st/stm32mp1/include/stm32mp1_dt.h ../tfa-source/plat/st/stm32mp1/include/stm32mp1_dt.h
+--- ./plat/st/stm32mp1/include/stm32mp1_dt.h	2019-03-26 15:33:42.630544406 +0100
++++ ../tfa-source/plat/st/stm32mp1/include/stm32mp1_dt.h	2019-03-28 10:26:33.062414831 +0100
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
++ * Copyright (c) 2017-2019, ARM Limited and Contributors. All rights reserved.
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -45,6 +45,8 @@
+ uintptr_t dt_get_ddrctrl_base(void);
+ uintptr_t dt_get_ddrphyc_base(void);
+ uintptr_t dt_get_pwr_base(void);
++uint32_t dt_get_pwr_vdd_voltage(void);
++uintptr_t dt_get_syscfg_base(void);
+ const char *dt_get_board_model(void);
+ int fdt_get_gpio_bank_pinctrl_node(unsigned int bank);
+ int fdt_get_gpioz_nbpins_from_dt(void);
+diff -Naurw ./plat/st/stm32mp1/include/stm32mp1_private.h ../tfa-source/plat/st/stm32mp1/include/stm32mp1_private.h
+--- ./plat/st/stm32mp1/include/stm32mp1_private.h	2019-03-26 15:33:42.630544406 +0100
++++ ../tfa-source/plat/st/stm32mp1/include/stm32mp1_private.h	2019-03-28 10:26:33.062414831 +0100
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
++ * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -37,4 +37,6 @@
+ 
+ int stm32mp1_is_single_core(void);
+ 
+-#endif /* __STM32MP1_PRIVATE_H__ */
++void stm32mp1_syscfg_init(void);
++
++#endif /* STM32MP1_PRIVATE_H */
+\ No newline at end of file
+diff -Naurw ./plat/st/stm32mp1/platform.mk ../tfa-source/plat/st/stm32mp1/platform.mk
+--- ./plat/st/stm32mp1/platform.mk	2019-03-26 15:33:42.878544406 +0100
++++ ../tfa-source/plat/st/stm32mp1/platform.mk	2019-03-28 10:26:33.062414831 +0100
+@@ -1,5 +1,5 @@
+ #
+-# Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
++# Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+ #
+ # SPDX-License-Identifier: BSD-3-Clause
+ #
+@@ -119,7 +119,8 @@
+ 				plat/st/stm32mp1/bl2_io_storage.c			\
+ 				plat/st/stm32mp1/bl2_plat_setup.c			\
+ 				plat/st/stm32mp1/plat_aximc.c				\
+-				plat/st/stm32mp1/stm32mp1_auth.c
++				plat/st/stm32mp1/stm32mp1_auth.c			\
++				plat/st/stm32mp1/stm32mp1_syscfg.c
+ 
+ ifeq (${STM32MP1_QSPI_NOR},1)
+ BL2_SOURCES		+=	drivers/st/qspi/io_qspi.c
+diff -Naurw ./plat/st/stm32mp1/stm32mp1_def.h ../tfa-source/plat/st/stm32mp1/stm32mp1_def.h
+--- ./plat/st/stm32mp1/stm32mp1_def.h	2019-03-26 15:33:42.634544406 +0100
++++ ../tfa-source/plat/st/stm32mp1/stm32mp1_def.h	2019-03-28 10:26:33.066414831 +0100
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
++ * Copyright (c) 2015-2019, ARM Limited and Contributors. All rights reserved.
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -107,11 +107,19 @@
+ 					 STM32MP1_SRAM_SIZE - \
+ 					 STM32MP1_BL32_SIZE)
+ 
++#ifdef AARCH32_SP_OPTEE
++#if STACK_PROTECTOR_ENABLED
++#define STM32MP_BL2_SIZE		U(0x00019000)	/* 100 Ko for BL2 */
++#else
++#define STM32MP_BL2_SIZE		U(0x00017000)	/* 92 Ko for BL2 */
++#endif
++#else
+ #if STACK_PROTECTOR_ENABLED
+ #define STM32MP1_BL2_SIZE		U(0x00018000)	/* 96 Ko for BL2 */
+ #else
+ #define STM32MP1_BL2_SIZE		U(0x00016000)	/* 88 Ko for BL2 */
+ #endif
++#endif
+ 
+ #define STM32MP1_BL2_BASE		(STM32MP1_BL32_BASE - \
+ 					 STM32MP1_BL2_SIZE)
+@@ -379,6 +387,9 @@
+ #define IWDG_FZ_STOP_POS		5
+ #define IWDG_FZ_STANDBY_POS		7
+ 
++/* HW2 OTP */
++#define HW2_OTP_PRODUCT_BELOW_2V5		BIT(13)
++
+ /* NAND OTP */
+ /* NAND parameter storage flag */
+ #define NAND_PARAM_STORED_IN_OTP	U(0x80000000)
+@@ -506,4 +517,11 @@
+ /*#define  DCACHE_OFF*/
+ /*#define  MMU_OFF*/
+ 
++/*******************************************************************************
++ * Device Tree defines
++ ******************************************************************************/
++#define DT_PWR_COMPAT			"st,stm32mp1-pwr"
++#define DT_RCC_CLK_COMPAT		"st,stm32mp1-rcc"
++#define DT_SYSCFG_COMPAT		"st,stm32mp157-syscfg"
++
+ #endif /* STM32MP1_DEF_H */
+diff -Naurw ./plat/st/stm32mp1/stm32mp1_dt.c ../tfa-source/plat/st/stm32mp1/stm32mp1_dt.c
+--- ./plat/st/stm32mp1/stm32mp1_dt.c	2019-03-26 15:33:42.634544406 +0100
++++ ../tfa-source/plat/st/stm32mp1/stm32mp1_dt.c	2019-03-28 10:26:33.062414831 +0100
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
++ * Copyright (c) 2017-2019, ARM Limited and Contributors. All rights reserved.
+  *
+  * SPDX-License-Identifier: BSD-3-Clause
+  */
+@@ -411,12 +411,68 @@
+ 	int node;
+ 	const fdt32_t *cuint;
+ 
+-	node = fdt_node_offset_by_compatible(fdt, -1, "st,stm32mp1-pwr");
++	node = fdt_node_offset_by_compatible(fdt, -1, DT_PWR_COMPAT);
+ 	if (node < 0) {
+ 		INFO("%s: Cannot read PWR node in DT\n", __func__);
+ 		return 0;
+ 	}
+ 
++	cuint = fdt_getprop(fdt, node, "reg", NULL);
++	if (cuint == NULL) {
++		return 0;
++	}
++
++	return fdt32_to_cpu(*cuint);
++}
++
++/*******************************************************************************
++ * This function gets PWR VDD regulator voltage information from the DT.
++ * Returns value in microvolts on success, and 0 on failure.
++ ******************************************************************************/
++uint32_t dt_get_pwr_vdd_voltage(void)
++{
++	int node;
++	const fdt32_t *cuint;
++
++	node = fdt_node_offset_by_compatible(fdt, -1, DT_PWR_COMPAT);
++	if (node < 0) {
++		INFO("%s: Cannot read PWR node in DT\n", __func__);
++		return 0;
++	}
++
++	cuint = fdt_getprop(fdt, node, "pwr-supply", NULL);
++	if (cuint == NULL) {
++		return 0;
++	}
++
++	node = fdt_node_offset_by_phandle(fdt, fdt32_to_cpu(*cuint));
++	if (node < 0) {
++		return 0;
++	}
++
++	cuint = fdt_getprop(fdt, node, "regulator-min-microvolt", NULL);
++	if (cuint == NULL) {
++		return 0;
++	}
++
++	return fdt32_to_cpu(*cuint);
++}
++
++/*******************************************************************************
++ * This function gets SYSCFG base address information from the DT.
++ * Returns value on success, and 0 on failure.
++ ******************************************************************************/
++uintptr_t dt_get_syscfg_base(void)
++{
++	int node;
++	const fdt32_t *cuint;
++
++	node = fdt_node_offset_by_compatible(fdt, -1, DT_SYSCFG_COMPAT);
++	if (node < 0) {
++		INFO("%s: Cannot read SYSCFG node in DT\n", __func__);
++		return 0;
++	}
++
+ 	cuint = fdt_getprop(fdt, node, "reg", NULL);
+ 	if (cuint == NULL) {
+ 		return 0;
+diff -Naurw ./plat/st/stm32mp1/stm32mp1_syscfg.c ../tfa-source/plat/st/stm32mp1/stm32mp1_syscfg.c
+--- ./plat/st/stm32mp1/stm32mp1_syscfg.c	1970-01-01 01:00:00.000000000 +0100
++++ ../tfa-source/plat/st/stm32mp1/stm32mp1_syscfg.c	2019-03-28 10:26:33.070414831 +0100
+@@ -0,0 +1,144 @@
++/*
++ * Copyright (c) 2019, ARM Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#include <bsec.h>
++#include <debug.h>
++#include <mmio.h>
++#include <platform_def.h>
++#include <stm32mp1_dt.h>
++#include <stm32mp1_private.h>
++#include <stpmic1.h>
++
++/*
++ * SYSCFG REGISTER OFFSET (base relative)
++ */
++#define SYSCFG_BOOTR				0x00U
++#define SYSCFG_IOCTRLSETR			0x18U
++#define SYSCFG_ICNR				0x1CU
++#define SYSCFG_CMPCR				0x20U
++#define SYSCFG_CMPENSETR			0x24U
++
++/*
++ * SYSCFG_BOOTR Register
++ */
++#define SYSCFG_BOOTR_BOOT_MASK			GENMASK(2, 0)
++#define SYSCFG_BOOTR_BOOTPD_SHIFT		4
++/*
++ * SYSCFG_IOCTRLSETR Register
++ */
++#define SYSCFG_IOCTRLSETR_HSLVEN_TRACE		BIT(0)
++#define SYSCFG_IOCTRLSETR_HSLVEN_QUADSPI	BIT(1)
++#define SYSCFG_IOCTRLSETR_HSLVEN_ETH		BIT(2)
++#define SYSCFG_IOCTRLSETR_HSLVEN_SDMMC		BIT(3)
++#define SYSCFG_IOCTRLSETR_HSLVEN_SPI		BIT(4)
++
++/*
++ * SYSCFG_ICNR Register
++ */
++#define SYSCFG_ICNR_AXI_M9			BIT(9)
++
++/*
++ * SYSCFG_CMPCR Register
++ */
++#define SYSCFG_CMPCR_SW_CTRL			BIT(1)
++#define SYSCFG_CMPCR_READY			BIT(8)
++
++/*
++ * SYSCFG_CMPENSETR Register
++ */
++#define SYSCFG_CMPENSETR_MPU_EN			BIT(0)
++
++void stm32mp1_syscfg_init(void)
++{
++	uint32_t bootr;
++	uint32_t otp = 0;
++	uint32_t vdd_voltage;
++	uintptr_t syscfg_base = dt_get_syscfg_base();
++
++	/*
++	 * Interconnect update : select master using the port 1.
++	 * LTDC = AXI_M9.
++	 */
++	mmio_write_32(syscfg_base + SYSCFG_ICNR, SYSCFG_ICNR_AXI_M9);
++	VERBOSE("[0x%x] SYSCFG.icnr = 0x%08x (LTDC)\n",
++		(uint32_t)syscfg_base + SYSCFG_ICNR,
++		mmio_read_32(syscfg_base + SYSCFG_ICNR));
++
++	/* Disable Pull-Down for boot pin connected to VDD */
++	bootr = mmio_read_32(syscfg_base + SYSCFG_BOOTR);
++	bootr &= ~(SYSCFG_BOOTR_BOOT_MASK << SYSCFG_BOOTR_BOOTPD_SHIFT);
++	bootr |= (bootr & SYSCFG_BOOTR_BOOT_MASK) << SYSCFG_BOOTR_BOOTPD_SHIFT;
++	mmio_write_32(syscfg_base + SYSCFG_BOOTR, bootr);
++	VERBOSE("[0x%x] SYSCFG.bootr = 0x%08x\n",
++		(uint32_t)syscfg_base + SYSCFG_BOOTR,
++		mmio_read_32(syscfg_base + SYSCFG_BOOTR));
++
++	/*
++	 * High Speed Low Voltage Pad mode Enable for SPI, SDMMC, ETH, QSPI
++	 * and TRACE. Needed above ~50MHz and conditioned by AFMUX selection.
++	 * It could be disabled for low frequencies or if AFMUX is selected
++	 * but the function not used, typically for TRACE.
++	 * Otherwise, impact on power consumption.
++	 *
++	 * WARNING:
++	 *   Enabling High Speed mode while VDD > 2.7V
++	 *   with the OTP product_below_2v5 (OTP 18, BIT 13)
++	 *   erroneously set to 1 can damage the IC!
++	 *   => TF-A enables the low power mode only if VDD < 2.7V (in DT)
++	 *      but this value needs to be consistent with board design.
++	 */
++	if (bsec_read_otp(&otp, HW2_OTP) != BSEC_OK) {
++		panic();
++	}
++
++	otp = otp & HW2_OTP_PRODUCT_BELOW_2V5;
++
++	/* Get VDD = pwr-supply */
++	vdd_voltage = dt_get_pwr_vdd_voltage();
++	VERBOSE("VDD regulator voltage = %d\n", vdd_voltage);
++
++	/* Check if VDD is Low Voltage */
++	if (vdd_voltage == 0U) {
++		WARN("VDD unknown");
++	} else if (vdd_voltage < 2700000U) {
++		mmio_write_32(syscfg_base + SYSCFG_IOCTRLSETR,
++			      SYSCFG_IOCTRLSETR_HSLVEN_TRACE |
++			      SYSCFG_IOCTRLSETR_HSLVEN_QUADSPI |
++			      SYSCFG_IOCTRLSETR_HSLVEN_ETH |
++			      SYSCFG_IOCTRLSETR_HSLVEN_SDMMC |
++			      SYSCFG_IOCTRLSETR_HSLVEN_SPI);
++
++		if (otp == 0U) {
++			INFO("Product_below_2v5=0: HSLVEN protected by HW\n");
++		}
++	} else {
++		if (otp != 0U) {
++			ERROR("Product_below_2v5=1: HSLVEN update is destructive, no update as VDD>2.7V\n");
++			panic();
++		}
++	}
++
++	VERBOSE("[0x%x] SYSCFG.IOCTRLSETR = 0x%08x\n",
++		(uint32_t)syscfg_base + SYSCFG_IOCTRLSETR,
++		mmio_read_32(syscfg_base + SYSCFG_IOCTRLSETR));
++
++	/*
++	 * Activate automatic I/O compensation.
++	 * Warning: need to ensure CSI enabled and ready in clock driver.
++	 */
++	mmio_write_32(syscfg_base + SYSCFG_CMPENSETR, SYSCFG_CMPENSETR_MPU_EN);
++
++	while ((mmio_read_32(syscfg_base + SYSCFG_CMPCR) &
++		SYSCFG_CMPCR_READY) == 0U) {
++		;
++	}
++
++	mmio_clrbits_32(syscfg_base + SYSCFG_CMPCR, SYSCFG_CMPCR_SW_CTRL);
++
++	VERBOSE("[0x%x] SYSCFG.cmpcr = 0x%08x\n",
++		(uint32_t)syscfg_base + SYSCFG_CMPCR,
++		mmio_read_32(syscfg_base + SYSCFG_CMPCR));
++}
