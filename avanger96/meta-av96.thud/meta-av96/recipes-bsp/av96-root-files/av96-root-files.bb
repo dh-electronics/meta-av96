@@ -7,6 +7,7 @@ SRC_URI = "file://etc/issue"
 SRC_URI += "file://lib/firmware/brcm/brcmfmac43455-sdio.bin"
 SRC_URI += "file://lib/firmware/brcm/brcmfmac43455-sdio.clm_blob"
 SRC_URI += "file://lib/firmware/brcm/brcmfmac43455-sdio.txt"
+SRC_URI += "file://lib/firmware/brcm/BCM4345C0.hcd"
 
 do_install() {
     install -d ${D}${sysconfdir}

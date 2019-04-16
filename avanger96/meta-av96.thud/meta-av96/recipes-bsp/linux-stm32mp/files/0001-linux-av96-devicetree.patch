@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2019-04-10 18:13:30.899840503 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2019-04-16 13:51:35.124334027 +0200
 @@ -0,0 +1,78 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -82,8 +82,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-04-10 18:13:30.899840503 +0200
-@@ -0,0 +1,870 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-04-16 13:51:35.124334027 +0200
+@@ -0,0 +1,884 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -105,9 +105,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	};
 +
 +	aliases {
-+#if 0
-+		serial1 = &usart3;
-+#endif
++		serial1 = &usart2;
 +		ethernet0 = &ethernet0;
 +	};
 +
@@ -954,9 +952,25 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +	};
 +};
 +
++/* Bluetooth */
++&usart2 {
++	pinctrl-names = "default", "sleep", "idle";
++	pinctrl-0 = <&usart2_pins_a>;
++	pinctrl-1 = <&usart2_sleep_pins_a>;
++	pinctrl-2 = <&usart2_idle_pins_a>;
++	st,hw-flow-ctrl;
++	status = "okay";
++
++	bluetooth {
++		pinctrl-names = "default";
++		pinctrl-0 = <&btreg>;
++		compatible = "brcm,bcm43438-bt";
++		max-speed = <3000000>;
++	};
++};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2019-04-12 12:59:00.854128781 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2019-04-16 13:51:35.124334027 +0200
 @@ -0,0 +1,444 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -1404,7 +1418,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-04-10 18:13:30.899840503 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-04-16 14:25:21.424334027 +0200
 @@ -0,0 +1,1720 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -2890,7 +2904,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +
 +			usart2_pins_a: usart2-0 {
 +				pins1 {
-+					pinmux = <STM32_PINMUX('D', 5, AF7)>, /* USART2_TX */
++					pinmux = <STM32_PINMUX('F', 5, AF7)>, /* USART2_TX */
 +						 <STM32_PINMUX('D', 4, AF7)>; /* USART2_RTS */
 +					bias-disable;
 +					drive-push-pull;
@@ -2905,7 +2919,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +
 +			usart2_idle_pins_a: usart2-idle-0 {
 +				pins1 {
-+					pinmux = <STM32_PINMUX('D', 5, ANALOG)>, /* USART2_TX */
++					pinmux = <STM32_PINMUX('F', 5, ANALOG)>, /* USART2_TX */
 +						 <STM32_PINMUX('D', 4, ANALOG)>, /* USART2_RTS */
 +						 <STM32_PINMUX('D', 3, ANALOG)>; /* USART2_CTS_NSS */
 +				};
@@ -2917,7 +2931,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +
 +			usart2_sleep_pins_a: usart2-sleep-0 {
 +				pins {
-+					pinmux = <STM32_PINMUX('D', 5, ANALOG)>, /* USART2_TX */
++					pinmux = <STM32_PINMUX('F', 5, ANALOG)>, /* USART2_TX */
 +						 <STM32_PINMUX('D', 4, ANALOG)>, /* USART2_RTS */
 +						 <STM32_PINMUX('D', 6, ANALOG)>, /* USART2_RX */
 +						 <STM32_PINMUX('D', 3, ANALOG)>; /* USART2_CTS_NSS */
@@ -3128,7 +3142,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +};
 diff -Naurw ./drivers/clk/clk-stm32mp1.c ../kernel-source/drivers/clk/clk-stm32mp1.c
 --- ./drivers/clk/clk-stm32mp1.c	2019-02-28 15:06:22.000000000 +0100
-+++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-04-10 18:13:30.899840503 +0200
++++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-04-16 13:51:35.128334027 +0200
 @@ -2529,7 +2529,11 @@
  		  _NO_DIV),
  
@@ -3143,7 +3157,7 @@ diff -Naurw ./drivers/clk/clk-stm32mp1.c ../kernel-source/drivers/clk/clk-stm32m
  		  _MUX(RCC_MCO1CFGR, 0, 3, 0),
 diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c
 --- ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-04-10 18:13:30.899840503 +0200
++++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-04-16 13:51:35.128334027 +0200
 @@ -649,8 +649,9 @@
  	 * there is a pending HPD interrupt and the cable is connected there was
  	 * at least one transition from disconnected to connected and the chip
@@ -3157,7 +3171,7 @@ diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/driv
  		if (adv7511->status == connector_status_connected)
 diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/drm/drm_probe_helper.c
 --- ./drivers/gpu/drm/drm_probe_helper.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2019-04-10 18:13:30.899840503 +0200
++++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2019-04-16 13:51:35.128334027 +0200
 @@ -93,6 +93,11 @@
  	struct drm_encoder *encoder;
  	int i;
@@ -3172,7 +3186,7 @@ diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/dr
  	if (ret != MODE_OK)
 diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/ltdc.c
 --- ./drivers/gpu/drm/stm/ltdc.c	2019-02-28 15:05:49.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-04-10 18:13:30.907840503 +0200
++++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-04-16 13:51:35.128334027 +0200
 @@ -495,6 +495,9 @@
  
  	result = clk_round_rate(ldev->pixel_clk, target);
@@ -3196,7 +3210,7 @@ diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/lt
  		ldev->caps.reg_ofs = REG_OFS_4;
 diff -Naurw ./drivers/mmc/core/host.c ../kernel-source/drivers/mmc/core/host.c
 --- ./drivers/mmc/core/host.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/mmc/core/host.c	2019-04-12 14:22:08.324964620 +0200
++++ ../kernel-source/drivers/mmc/core/host.c	2019-04-16 13:51:35.128334027 +0200
 @@ -359,6 +359,7 @@
  {
  	int err;
@@ -3225,9 +3239,20 @@ diff -Naurw ./drivers/mmc/core/host.c ../kernel-source/drivers/mmc/core/host.c
  	host->index = err;
  
  	dev_set_name(&host->class_dev, "mmc%d", host->index);
+diff -Naurw ./drivers/mmc/host/mmci.c ../kernel-source/drivers/mmc/host/mmci.c
+--- ./drivers/mmc/host/mmci.c	2019-02-28 15:06:14.000000000 +0100
++++ ../kernel-source/drivers/mmc/host/mmci.c	2019-04-16 13:51:35.128334027 +0200
+@@ -2054,6 +2054,7 @@
+ 				fmax : min(host->mclk, fmax);
+ 
+ 
++	/* printk( KERN_ALERT "**** %s   card: %s   f_max: %i\n", __func__, mmc_hostname( mmc ), mmc->f_max ); */
+ 	dev_dbg(mmc_dev(mmc), "clocking block at %u Hz\n", mmc->f_max);
+ 
+ 	host->rst = devm_reset_control_get_optional_exclusive(&dev->dev, NULL);
 diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
 --- ./drivers/net/phy/micrel.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/net/phy/micrel.c	2019-04-10 18:13:30.907840503 +0200
++++ ../kernel-source/drivers/net/phy/micrel.c	2019-04-16 13:51:35.128334027 +0200
 @@ -493,6 +493,7 @@
  					<< (field_sz * i));
  		}
@@ -3236,9 +3261,21 @@ diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
  	return ksz9031_extended_write(phydev, OP_DATA, 2, reg, newval);
  }
  
+diff -Naurw ./drivers/pinctrl/stm32/pinctrl-stm32.c ../kernel-source/drivers/pinctrl/stm32/pinctrl-stm32.c
+--- ./drivers/pinctrl/stm32/pinctrl-stm32.c	2019-02-28 15:06:08.000000000 +0100
++++ ../kernel-source/drivers/pinctrl/stm32/pinctrl-stm32.c	2019-04-16 13:51:35.128334027 +0200
+@@ -842,6 +842,8 @@
+ 	u32 val;
+ 	int err = 0;
+ 
++	/* printk( KERN_ALERT "**** %s   %s_%i   speed: %i\n", __func__, bank->gpio_chip.label, offset, speed ); */
++
+ 	clk_enable(bank->clk);
+ 	spin_lock_irqsave(&bank->lock, flags);
+ 
 diff -Naurw ./init/main.c ../kernel-source/init/main.c
 --- ./init/main.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/init/main.c	2019-04-10 18:13:30.907840503 +0200
++++ ../kernel-source/init/main.c	2019-04-16 13:51:35.132334027 +0200
 @@ -533,6 +533,13 @@
  	char *command_line;
  	char *after_dashes;
