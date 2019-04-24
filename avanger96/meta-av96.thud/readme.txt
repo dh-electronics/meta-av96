@@ -4,11 +4,13 @@
       https://wiki.st.com/stm32mpu/index.php/STM32MP1_Distribution_Package
     Follow the steps on this page up to and including "repo sync". When "repo sync" finishes it downloaded all the required Yocto layers for building a standard BSP. Now we need to add meta-av96 layer.
     In the same folder execute the following commands:
+        $ cp .../meta-av96.thud/meta-av96 layers/ -R
+        $ mv layers/meta-av96/conf/machine/stm32mp1-av96.conf layers/meta-st/meta-st-stm32mp/conf/machine/
+        $ pushd .
         $ cd layers/meta-st/meta-st-stm32mp/conf/eula/
         $ ln -s ST_EULA_SLA stm32mp1-av96
-        $ cd ../../../../../
+        $ popd
         $ DISTRO=openstlinux-weston MACHINE=stm32mp1-av96 source layers/meta-st/scripts/envsetup.sh
-        $ cp .../meta-av96.v10/meta-av96 ../layers/ -R
         $ bitbake-layers add-layer ../layers/meta-av96/
 
     Building a Weston image:
@@ -19,6 +21,7 @@
         $ ./scripts/create_sdcard_from_flashlayout.sh flashlayout_av96-weston/FlashLayout_sdcard_stm32mp157a-av96-trusted.tsv
 
     The last command creates flashlayout_av96-weston_FlashLayout_sdcard_stm32mp157a-av96-trusted.raw . We can write it to a uSD card with:
-        $ sudo dd if=flashlayout_av96-weston_FlashLayout_sdcard_stm32mp157a-av96-trusted.raw bs=1M of=/dev/sdh && sync
+        $ sudo dd if=flashlayout_av96-weston_FlashLayout_sdcard_stm32mp157a-av96-trusted.raw bs=1M of=/dev/sdX && sync
+    where /dev/sdX is the block device of the inserted uSD card.
 
 
