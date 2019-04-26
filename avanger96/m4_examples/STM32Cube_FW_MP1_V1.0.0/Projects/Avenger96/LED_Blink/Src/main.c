@@ -68,6 +68,7 @@ static void Exti14FallingCb(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  GPIO_InitTypeDef  gpio_init_structure;
   /* STM32MP1xx HAL library initialization:
        - Systick timer is configured by default as source of time base, but user
          can eventually implement his proper time base source (a general purpose
@@ -90,6 +91,7 @@ int main(void)
      /* Configure the system clock */
      SystemClock_Config();
   }
+  __HAL_RCC_GPIOG_CLK_ENABLE();
   /* USER CODE END Init */
 
   /*HW semaphore Clock enable*/
@@ -99,14 +101,15 @@ int main(void)
 
   /* USER CODE END SysInit */
 
+  /* USER CODE BEGIN 2 */
   /* Initialize all configured peripherals */
 
-  /* USER CODE BEGIN 2 */
-  /* -1- Initialize LEDs mounted on STM32MP157C-EV1 board */
-  BSP_LED_Init(LED4);
+  gpio_init_structure.Pin = GPIO_PIN_1;
+  gpio_init_structure.Mode = GPIO_MODE_OUTPUT_PP;
+  gpio_init_structure.Pull = GPIO_PULLUP;
+  gpio_init_structure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 
-  /* -2- Configure EXTI14 (connected to PA.14 pin) in interrupt mode */
-  EXTI14_IRQHandler_Config();
+  HAL_GPIO_Init(GPIOG, &gpio_init_structure);
 
   /* USER CODE END 2 */
 
@@ -114,12 +117,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+	  volatile int a = 3000000;
+	  while ( a-- )
+		  ;
 
-    /* USER CODE BEGIN 3 */
-
+	  HAL_GPIO_TogglePin( GPIOG, GPIO_PIN_1 );
   }
-  /* USER CODE END 3 */
+  /* USER CODE END WHILE */
 }
 
 /**
