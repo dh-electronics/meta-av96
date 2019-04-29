@@ -115,4 +115,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     ${IMAGE_TPM_PART}                           \
     "
 
-IMAGE_INSTALL += "av96-root-files"
+IMAGE_INSTALL += "dhcp-server \
+                  av96-root-files"
+
