@@ -1,4 +1,0 @@
-Selected	PartId	PartName	PartType	IP	Offset	Bin2flash	Bin2boot
-1	0x11	bootfs	System	SDMMC1	0x00304400	st-image-bootfs-openstlinux-weston-stm32mp1.ext4	none
-1	0x12	rootfs	FileSystem	SDMMC1	0x04304400	st-image-weston-openstlinux-weston-stm32mp1.ext4	none
-1	0x13	userfs	FileSystem	SDMMC1	0x34304400	st-image-userfs-openstlinux-weston-stm32mp1.ext4	none
