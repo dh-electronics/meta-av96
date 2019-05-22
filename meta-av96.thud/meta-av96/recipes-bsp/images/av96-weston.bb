@@ -116,5 +116,12 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     "
 
 IMAGE_INSTALL += "dhcp-server \
+                  openssl \
+                  openssl-bin \
+                  tpm2-tools \
+                  libtss2 \
+                  trousers \
+                  tpm2-tss-engine \
+                  stress-ng \
                   av96-root-files"
 

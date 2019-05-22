@@ -7,7 +7,9 @@
         $ cp .../meta-av96.thud/meta-av96 layers/ -R
         $ mv layers/meta-av96/conf/machine/stm32mp1-av96.conf layers/meta-st/meta-st-stm32mp/conf/machine/
         $ pushd .
-        $ cd layers/meta-st/meta-st-stm32mp/conf/eula/
+        $ cd layers
+        $ git clone git://git.yoctoproject.org/meta-security
+        $ cd meta-st/meta-st-stm32mp/conf/eula/
         $ ln -s ST_EULA_SLA stm32mp1-av96
         $ popd
         $ DISTRO=openstlinux-weston MACHINE=stm32mp1-av96 source layers/meta-st/scripts/envsetup.sh
