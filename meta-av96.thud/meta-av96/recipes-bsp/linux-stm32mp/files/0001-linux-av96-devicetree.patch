@@ -1499,7 +1499,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
 +++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-05-21 10:27:09.642711479 +0200
-@@ -0,0 +1,1805 @@
+@@ -0,0 +1,1811 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -2180,9 +2180,15 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +			};
 +
 +			ltdc_pins_a: ltdc-a-0 {
-+				pins {
-+					pinmux = <STM32_PINMUX('G',  7, AF14)>, /* LCD_CLK */
-+						 <STM32_PINMUX('I', 10, AF14)>, /* LCD_HSYNC */
++				pins1 {
++					pinmux = <STM32_PINMUX('G',  7, AF14)>; /* LCD_CLK */
++					bias-disable;
++					drive-push-pull;
++					slew-rate = <3>;
++				};
++
++				pins2 {
++					pinmux = <STM32_PINMUX('I', 10, AF14)>, /* LCD_HSYNC */
 +						 <STM32_PINMUX('I',  9, AF14)>, /* LCD_VSYNC */
 +						 <STM32_PINMUX('E', 13, AF14)>, /* LCD_DE */
 +						 <STM32_PINMUX('G', 13, AF14)>, /* LCD_R0 */
@@ -2211,7 +2217,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +						 <STM32_PINMUX('I',  7, AF14)>; /* LCD_B7 */
 +					bias-disable;
 +					drive-push-pull;
-+					slew-rate = <1>;
++					slew-rate = <2>;
 +				};
 +			};
 +
@@ -3362,17 +3368,6 @@ diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/lt
  	DRM_DEBUG_DRIVER("clk rate target %d, available %d\n", target, result);
  
  	/* Filter modes according to the max frequency supported by the pads */
-@@ -1100,9 +1103,7 @@
- 		 * does not work on 2nd layer.
- 		 */
- 		ldev->caps.non_alpha_only_l1 = true;
--		ldev->caps.pad_max_freq_hz = 90000000;
--		if (ldev->caps.hw_version == HWVER_10200)
--			ldev->caps.pad_max_freq_hz = 65000000;
-+		ldev->caps.pad_max_freq_hz = 45000000;
- 		break;
- 	case HWVER_20101:
- 		ldev->caps.reg_ofs = REG_OFS_4;
 diff -Naurw ./drivers/mmc/core/host.c ../kernel-source/drivers/mmc/core/host.c
 --- ./drivers/mmc/core/host.c	2018-12-13 09:16:23.000000000 +0100
 +++ ../kernel-source/drivers/mmc/core/host.c	2019-05-20 16:50:22.617763383 +0200

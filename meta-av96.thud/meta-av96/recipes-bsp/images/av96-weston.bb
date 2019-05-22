@@ -122,5 +122,6 @@ IMAGE_INSTALL += "dhcp-server \
                   libtss2 \
                   trousers \
                   tpm2-tss-engine \
+                  stress-ng \
                   av96-root-files"
 
