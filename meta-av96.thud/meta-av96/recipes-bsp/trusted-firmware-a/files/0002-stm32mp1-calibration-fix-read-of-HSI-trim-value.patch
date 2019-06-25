@@ -1,0 +1,66 @@
+From 54e653cffd61e29c672e22f677b038ea815566df Mon Sep 17 00:00:00 2001
+From: Lionel Debieve <lionel.debieve@st.com>
+Date: Thu, 14 Feb 2019 15:27:35 +0100
+Subject: [PATCH] stm32mp1: calibration: fix read of HSI trim value
+
+Fix the read of HSI trim value which is a signed value
+based on 7 bits. Convert the 7 bit signed value into a
+8 bit signed value to manage calibration.
+Changing mask value to only use 9 lower bits for calibration.
+The 3 upper bits from register are only used to manage temperature,
+not required for the calibration.
+
+Change-Id: Iaec64ffc17436de59a29459b15f74ec059dfdabf
+Signed-off-by: Lionel Debieve <lionel.debieve@st.com>
+Reviewed-on: https://gerrit.st.com/125624
+Reviewed-by: CITOOLS <smet-aci-reviews@lists.codex.cro.st.com>
+Reviewed-by: CIBUILD <smet-aci-builds@lists.codex.cro.st.com>
+Reviewed-by: Yann GAUTIER <yann.gautier@st.com>
+---
+ drivers/st/clk/stm32mp1_clk.c     | 8 +++++++-
+ include/drivers/st/stm32mp1_rcc.h | 3 ++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/st/clk/stm32mp1_clk.c b/drivers/st/clk/stm32mp1_clk.c
+index d67fa141..7a9faa61 100644
+--- a/drivers/st/clk/stm32mp1_clk.c
++++ b/drivers/st/clk/stm32mp1_clk.c
+@@ -2148,6 +2148,11 @@ static void stm32mp1_osc_clk_init(const char *name,
+ /*
+  * HSI Calibration part
+  */
++static int get_signed_value(uint8_t val)
++{
++	return ((int8_t)(val << 1)) >> 1;
++}
++
+ static void hsi_set_trim(unsigned int cal)
+ {
+ 	int clk_trim = (int)cal - (int)stm32mp1_clk_cal_hsi.cal_ref;
+@@ -2163,7 +2168,8 @@ static unsigned int hsi_get_trimed_cal(void)
+ 	uint32_t utrim = (mmio_read_32(stm32mp_rcc_base() + RCC_HSICFGR) &
+ 			  RCC_HSICFGR_HSITRIM_MASK) >>
+ 			 RCC_HSICFGR_HSITRIM_SHIFT;
+-	int trim = (int)utrim - stm32mp1_clk_cal_hsi.trim_max;
++
++	int trim = get_signed_value((uint8_t)utrim);
+ 
+ 	if (trim + (int)stm32mp1_clk_cal_hsi.cal_ref < 0) {
+ 		return 0;
+diff --git a/include/drivers/st/stm32mp1_rcc.h b/include/drivers/st/stm32mp1_rcc.h
+index 7e1b3372..4fb7d34c 100644
+--- a/include/drivers/st/stm32mp1_rcc.h
++++ b/include/drivers/st/stm32mp1_rcc.h
+@@ -387,7 +387,8 @@
+ #define RCC_HSICFGR_HSITRIM_SHIFT	8
+ #define RCC_HSICFGR_HSITRIM_MASK	GENMASK(14, 8)
+ #define RCC_HSICFGR_HSICAL_SHIFT	16
+-#define RCC_HSICFGR_HSICAL_MASK		GENMASK(27, 16)
++#define RCC_HSICFGR_HSICAL_MASK		GENMASK(24, 16)
++#define RCC_HSICFGR_HSICAL_TEMP_MASK	GENMASK(27, 25)
+ 
+ /* Fields of RCC_CSICFGR register */
+ #define RCC_CSICFGR_CSITRIM_SHIFT	8
+-- 
+2.11.0
+
