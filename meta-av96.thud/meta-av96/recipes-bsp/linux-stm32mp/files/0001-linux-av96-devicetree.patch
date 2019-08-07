@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2019-05-20 16:50:22.617763383 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi	2019-08-05 17:11:28.463413755 +0200
 @@ -0,0 +1,78 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -82,7 +82,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-05-21 10:51:34.926987479 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-08-05 17:11:28.467413718 +0200
 @@ -0,0 +1,947 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -1033,8 +1033,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2019-05-20 16:50:22.617763383 +0200
-@@ -0,0 +1,460 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2019-08-07 13:31:37.439821372 +0200
+@@ -0,0 +1,462 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -1140,15 +1140,17 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +	};
 +#endif
 +
-+	sd_switch: fixedregulator@0 {
-+		compatible = "regulator-fixed";
++	sd_switch: regulator-sd_switch {
++		compatible = "regulator-gpio";
 +		regulator-name = "sd_switch";
-+		regulator-min-microvolt = <2900000>;
++		regulator-min-microvolt = <1800000>;
 +		regulator-max-microvolt = <2900000>;
++		regulator-type = "voltage";
++		regulator-always-on;
 +
-+		gpio = <&gpioi 5 GPIO_ACTIVE_HIGH>;
-+		enable-active-high;
-+		regulator-boot-on;
++		gpios = <&gpioi 5 GPIO_ACTIVE_HIGH>;
++		gpios-states = <0>;
++		states = <1800000 0x1 2900000 0x0>;
 +	};
 +
 +	wlreg_on: fixedregulator@1 {
@@ -1497,7 +1499,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-05-21 10:27:09.642711479 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi	2019-08-05 17:11:28.467413718 +0200
 @@ -0,0 +1,1804 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -3304,8 +3306,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi ../kernel-source/arch/a
 +	};
 +};
 diff -Naurw ./drivers/clk/clk-stm32mp1.c ../kernel-source/drivers/clk/clk-stm32mp1.c
---- ./drivers/clk/clk-stm32mp1.c	2019-05-12 20:34:46.000000000 +0200
-+++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-05-20 16:50:22.617763383 +0200
+--- ./drivers/clk/clk-stm32mp1.c	2019-05-20 15:56:17.806965767 +0200
++++ ../kernel-source/drivers/clk/clk-stm32mp1.c	2019-08-05 17:11:28.467413718 +0200
 @@ -2529,7 +2529,11 @@
  		  _NO_DIV),
  
@@ -3320,7 +3322,7 @@ diff -Naurw ./drivers/clk/clk-stm32mp1.c ../kernel-source/drivers/clk/clk-stm32m
  		  _MUX(RCC_MCO1CFGR, 0, 3, 0),
 diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c
 --- ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-05-20 16:50:22.617763383 +0200
++++ ../kernel-source/drivers/gpu/drm/bridge/adv7511/adv7511_drv.c	2019-08-05 17:11:28.467413718 +0200
 @@ -649,8 +649,9 @@
  	 * there is a pending HPD interrupt and the cable is connected there was
  	 * at least one transition from disconnected to connected and the chip
@@ -3334,7 +3336,7 @@ diff -Naurw ./drivers/gpu/drm/bridge/adv7511/adv7511_drv.c ../kernel-source/driv
  		if (adv7511->status == connector_status_connected)
 diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/drm/drm_probe_helper.c
 --- ./drivers/gpu/drm/drm_probe_helper.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2019-05-20 16:50:22.617763383 +0200
++++ ../kernel-source/drivers/gpu/drm/drm_probe_helper.c	2019-08-05 17:11:28.467413718 +0200
 @@ -93,6 +93,11 @@
  	struct drm_encoder *encoder;
  	int i;
@@ -3348,8 +3350,8 @@ diff -Naurw ./drivers/gpu/drm/drm_probe_helper.c ../kernel-source/drivers/gpu/dr
  	ret = drm_connector_mode_valid(connector, mode);
  	if (ret != MODE_OK)
 diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/ltdc.c
---- ./drivers/gpu/drm/stm/ltdc.c	2019-05-12 20:34:39.000000000 +0200
-+++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-05-20 16:50:22.617763383 +0200
+--- ./drivers/gpu/drm/stm/ltdc.c	2019-05-20 15:56:10.434965767 +0200
++++ ../kernel-source/drivers/gpu/drm/stm/ltdc.c	2019-08-05 17:11:28.467413718 +0200
 @@ -495,6 +495,9 @@
  
  	result = clk_round_rate(ldev->pixel_clk, target);
@@ -3362,7 +3364,7 @@ diff -Naurw ./drivers/gpu/drm/stm/ltdc.c ../kernel-source/drivers/gpu/drm/stm/lt
  	/* Filter modes according to the max frequency supported by the pads */
 diff -Naurw ./drivers/mmc/core/host.c ../kernel-source/drivers/mmc/core/host.c
 --- ./drivers/mmc/core/host.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/mmc/core/host.c	2019-05-20 16:50:22.617763383 +0200
++++ ../kernel-source/drivers/mmc/core/host.c	2019-08-05 17:11:28.467413718 +0200
 @@ -359,6 +359,7 @@
  {
  	int err;
@@ -3392,8 +3394,8 @@ diff -Naurw ./drivers/mmc/core/host.c ../kernel-source/drivers/mmc/core/host.c
  
  	dev_set_name(&host->class_dev, "mmc%d", host->index);
 diff -Naurw ./drivers/mmc/host/mmci.c ../kernel-source/drivers/mmc/host/mmci.c
---- ./drivers/mmc/host/mmci.c	2019-05-12 20:34:44.000000000 +0200
-+++ ../kernel-source/drivers/mmc/host/mmci.c	2019-05-20 16:50:22.617763383 +0200
+--- ./drivers/mmc/host/mmci.c	2019-05-20 15:56:15.734965767 +0200
++++ ../kernel-source/drivers/mmc/host/mmci.c	2019-08-05 17:11:28.467413718 +0200
 @@ -2054,6 +2054,7 @@
  				fmax : min(host->mclk, fmax);
  
@@ -3404,7 +3406,7 @@ diff -Naurw ./drivers/mmc/host/mmci.c ../kernel-source/drivers/mmc/host/mmci.c
  	host->rst = devm_reset_control_get_optional_exclusive(&dev->dev, NULL);
 diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
 --- ./drivers/net/phy/micrel.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/drivers/net/phy/micrel.c	2019-05-20 16:50:22.617763383 +0200
++++ ../kernel-source/drivers/net/phy/micrel.c	2019-08-05 17:11:28.467413718 +0200
 @@ -493,6 +493,7 @@
  					<< (field_sz * i));
  		}
@@ -3414,8 +3416,8 @@ diff -Naurw ./drivers/net/phy/micrel.c ../kernel-source/drivers/net/phy/micrel.c
  }
  
 diff -Naurw ./drivers/pinctrl/stm32/pinctrl-stm32.c ../kernel-source/drivers/pinctrl/stm32/pinctrl-stm32.c
---- ./drivers/pinctrl/stm32/pinctrl-stm32.c	2019-05-12 20:34:43.000000000 +0200
-+++ ../kernel-source/drivers/pinctrl/stm32/pinctrl-stm32.c	2019-05-20 16:50:22.617763383 +0200
+--- ./drivers/pinctrl/stm32/pinctrl-stm32.c	2019-05-20 15:56:14.650965767 +0200
++++ ../kernel-source/drivers/pinctrl/stm32/pinctrl-stm32.c	2019-08-05 17:11:28.467413718 +0200
 @@ -842,6 +842,8 @@
  	u32 val;
  	int err = 0;
@@ -3427,7 +3429,7 @@ diff -Naurw ./drivers/pinctrl/stm32/pinctrl-stm32.c ../kernel-source/drivers/pin
  
 diff -Naurw ./init/main.c ../kernel-source/init/main.c
 --- ./init/main.c	2018-12-13 09:16:23.000000000 +0100
-+++ ../kernel-source/init/main.c	2019-05-20 16:50:22.617763383 +0200
++++ ../kernel-source/init/main.c	2019-08-05 17:11:28.467413718 +0200
 @@ -533,6 +533,13 @@
  	char *command_line;
  	char *after_dashes;
