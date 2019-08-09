@@ -5,9 +5,9 @@
     Follow the steps on this page up to and including "repo sync". When "repo sync" finishes it downloaded all the required Yocto layers for building a standard BSP. Now we need to add meta-av96 layer.
     In the same folder execute the following commands:
         $ cp .../meta-av96.thud/meta-av96 layers/ -R
-        $ mv layers/meta-av96/conf/machine/stm32mp1-av96.conf layers/meta-st/meta-st-stm32mp/conf/machine/
         $ pushd .
         $ cd layers
+        $ patch -p0 < .../meta-av96.thud/meta-st.patch
         $ git clone git://git.yoctoproject.org/meta-security
         $ cd meta-security/
         $ git checkout 51a4c6b5179d087f647cf0c458edb8ab107826ef
