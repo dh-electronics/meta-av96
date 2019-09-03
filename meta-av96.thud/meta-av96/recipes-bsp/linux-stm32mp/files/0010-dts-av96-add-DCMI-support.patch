@@ -1,0 +1,35 @@
+From 178e737c07a76a3f7db388b3f4fecbe050c4084a Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Thu, 2 May 2019 14:18:54 +0200
+Subject: [PATCH 10/32] dts: av96: add DCMI support
+
+---
+ arch/arm/boot/dts/stm32mp157a-av96.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
+index 238eb20..6d708b4 100644
+--- a/arch/arm/boot/dts/stm32mp157a-av96.dts
++++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
+@@ -374,6 +374,18 @@
+ };
+ #endif
+ 
++&dcmi {
++	status = "okay";
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&dcmi_pins_a>;
++	pinctrl-1 = <&dcmi_sleep_pins_a>;
++
++	port {
++		dcmi_0: endpoint {
++		};
++	};
++};
++
+ &ethernet0 {
+ 	status = "okay";
+ 	pinctrl-0 = <&ethernet0_rgmii_pins_a>;
+-- 
+2.7.4
+

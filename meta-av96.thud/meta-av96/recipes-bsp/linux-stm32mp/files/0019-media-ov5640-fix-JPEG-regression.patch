@@ -1,0 +1,36 @@
+From 616cef24012eb49814c25efd5840968b03a1267c Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Wed, 22 May 2019 17:44:51 +0200
+Subject: [PATCH 19/32] media: ov5640: fix JPEG regression
+
+Regression introduced by commit 7cb013b1049a2a599c1fc344644528eb8bf985b8
+media: ov5640: Set JPEG output timings when outputting JPEG data
+
+disable this change...
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ drivers/media/i2c/ov5640.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
+index 2fd66944..9c182ec 100644
+--- a/drivers/media/i2c/ov5640.c
++++ b/drivers/media/i2c/ov5640.c
+@@ -1076,11 +1076,13 @@ static int ov5640_set_timings(struct ov5640_dev *sensor,
+ {
+ 	int ret;
+ 
++#if 0
+ 	if (sensor->fmt.code == MEDIA_BUS_FMT_JPEG_1X8) {
+ 		ret = ov5640_set_jpeg_timings(sensor, mode);
+ 		if (ret < 0)
+ 			return ret;
+ 	}
++#endif
+ 
+ 	ret = ov5640_write_reg16(sensor, OV5640_REG_TIMING_DVPHO, mode->hact);
+ 	if (ret < 0)
+-- 
+2.7.4
+

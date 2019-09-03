@@ -1,0 +1,30 @@
+From a2ecd03973cc6601de1ebd6783bc53d46358c741 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Mon, 13 May 2019 15:55:58 +0200
+Subject: [PATCH 03/32] dts: pinctrl: enable pull-up on dcmi pins
+
+This fix is mandatory otherwise MIPID02 CSI
+to parallel bridge signals are not seen by DCMI
+input parallel port.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi b/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
+index 6f06a7e..323769a 100644
+--- a/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
+@@ -217,7 +217,7 @@
+ 						 <STM32_PINMUX('E', 6,  AF13)>,/* DCMI_D7 */
+ 						 <STM32_PINMUX('I', 1,  AF13)>,/* DCMI_D8 */
+ 						 <STM32_PINMUX('H', 7,  AF13)>;/* DCMI_D9 */
+-					bias-disable;
++					bias-pull-up;
+ 				};
+ 			};
+ 
+-- 
+2.7.4
+

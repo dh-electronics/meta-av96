@@ -1,0 +1,59 @@
+From 9086932a4530e034903990aba3200a8f0518c4fb Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Tue, 14 May 2019 11:30:43 +0200
+Subject: [PATCH 13/32] ov5640: always-on for debug
+
+---
+ drivers/media/i2c/ov5640.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
+index 28fd1f8..1dac9c1 100644
+--- a/drivers/media/i2c/ov5640.c
++++ b/drivers/media/i2c/ov5640.c
+@@ -1869,8 +1869,8 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
+ 	return 0;
+ 
+ power_off:
+-	ov5640_power(sensor, false);
+-	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
++//	ov5640_power(sensor, false);
++//	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
+ xclk_off:
+ 	clk_disable_unprepare(sensor->xclk);
+ 	return ret;
+@@ -1878,9 +1878,9 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
+ 
+ static void ov5640_set_power_off(struct ov5640_dev *sensor)
+ {
+-	ov5640_power(sensor, false);
+-	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
+-	clk_disable_unprepare(sensor->xclk);
++//	ov5640_power(sensor, false);
++//	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
++//	clk_disable_unprepare(sensor->xclk);
+ }
+ 
+ static int ov5640_set_power(struct ov5640_dev *sensor, bool on)
+@@ -2885,8 +2885,8 @@ static int ov5640_probe(struct i2c_client *client,
+ 	mutex_init(&sensor->lock);
+ 
+ 	ret = ov5640_check_chip_id(sensor);
+-	if (ret)
+-		goto entity_cleanup;
++//	if (ret)
++//		goto entity_cleanup;
+ 
+ 	ret = ov5640_init_controls(sensor);
+ 	if (ret)
+@@ -2896,6 +2896,7 @@ static int ov5640_probe(struct i2c_client *client,
+ 	if (ret)
+ 		goto free_ctrls;
+ 
++	dev_info(dev, "HFR probe OK\n");
+ 	return 0;
+ 
+ free_ctrls:
+-- 
+2.7.4
+

@@ -1,0 +1,70 @@
+From f46e982c7e48338c0eaca9ad6d524b42f4bab05d Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Thu, 13 Jun 2019 16:35:32 +0200
+Subject: [PATCH 29/32] media: st-mipid02: add support of V4L2_CID_LINK_FREQ
+
+Ask device connected on sink pad for link frequency
+in order to configure CLK_LANE_REG1 (ui_x4).
+If not available, ask for pixel rate information to compute it.
+
+This is needed to deal with compressed format such as JPEG
+where number of bits per pixel is unknown: computation of
+link frequency from pixel rate is not possible.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+Change-Id: I5585a4758441888ec4ab3c46be06942025e09c6c
+---
+ drivers/media/i2c/st-mipid02.c | 29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/i2c/st-mipid02.c b/drivers/media/i2c/st-mipid02.c
+index fec09f6..7751960 100644
+--- a/drivers/media/i2c/st-mipid02.c
++++ b/drivers/media/i2c/st-mipid02.c
+@@ -346,6 +346,25 @@ static int mipid02_detect(struct mipid02_dev *bridge)
+ 	return mipid02_read_reg(bridge, MIPID02_CLK_LANE_WR_REG1, &reg);
+ }
+ 
++static u32 mipid02_get_link_freq_from_cid_link_freq(struct mipid02_dev *bridge,
++						    struct v4l2_subdev *subdev)
++{
++	struct v4l2_querymenu qm = {.id = V4L2_CID_LINK_FREQ, };
++	struct v4l2_ctrl *ctrl;
++	int ret;
++
++	ctrl = v4l2_ctrl_find(subdev->ctrl_handler, V4L2_CID_LINK_FREQ);
++	if (!ctrl)
++		return 0;
++	qm.index = v4l2_ctrl_g_ctrl(ctrl);
++
++	ret = v4l2_querymenu(subdev->ctrl_handler, &qm);
++	if (ret)
++		return 0;
++
++	return qm.value;
++}
++
+ static u32 mipid02_get_link_freq_from_cid_pixel_rate(struct mipid02_dev *bridge,
+ 						     struct v4l2_subdev *subdev)
+ {
+@@ -373,10 +392,14 @@ static int mipid02_configure_from_rx_speed(struct mipid02_dev *bridge)
+ 	struct v4l2_subdev *subdev = bridge->s_subdev;
+ 	u32 link_freq;
+ 
+-	link_freq = mipid02_get_link_freq_from_cid_pixel_rate(bridge, subdev);
++	link_freq = mipid02_get_link_freq_from_cid_link_freq(bridge, subdev);
+ 	if (!link_freq) {
+-		dev_err(&client->dev, "Failed to detect link frequency");
+-		return -EINVAL;
++		link_freq = mipid02_get_link_freq_from_cid_pixel_rate(bridge,
++								      subdev);
++		if (!link_freq) {
++			dev_err(&client->dev, "Failed to get link frequency");
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	dev_dbg(&client->dev, "detect link_freq = %d Hz", link_freq);
+-- 
+2.7.4
+

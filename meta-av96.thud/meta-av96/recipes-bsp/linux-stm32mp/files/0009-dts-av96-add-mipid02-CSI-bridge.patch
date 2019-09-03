@@ -1,0 +1,40 @@
+From d91b94781c49b518ebe44c0fbb52bc97ef03fa21 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Thu, 2 May 2019 12:19:18 +0200
+Subject: [PATCH 09/32] dts: av96: add mipid02 CSI bridge
+
+---
+ arch/arm/boot/dts/stm32mp157a-av96.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
+index 5eefd84..238eb20 100644
+--- a/arch/arm/boot/dts/stm32mp157a-av96.dts
++++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
+@@ -552,6 +552,23 @@
+ 		};
+ 	};
+ 
++	stmipi: stmipi@14 {
++		compatible = "st,st-mipid02";
++		reg = <0x14>;
++		status = "okay";
++		pinctrl-names = "default", "sleep";
++		pinctrl-0 = <&rcc_pins_a>;
++		pinctrl-1 = <&rcc_sleep_pins_a>;
++		clocks = <&rcc CK_MCO1>;
++		clock-names = "xclk";
++		assigned-clocks = <&rcc CK_MCO1>;
++		assigned-clock-parents = <&rcc CK_HSE>;
++		assigned-clock-rates = <24000000>;
++		VDDE-supply = <&v1v8>;
++		VDDIN-supply = <&v1v8>;
++		reset-gpios = <&gpioz 0 GPIO_ACTIVE_LOW>;
++	};
++
+ 	hdmi-transmitter@3d {
+ 		compatible = "adi,adv7513";
+ 		reg = <0x3d>;
+-- 
+2.7.4
+
