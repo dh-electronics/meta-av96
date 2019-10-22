@@ -1,0 +1,50 @@
+From f0866f99da539dca13cab68856c08951b6cffdea Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Tue, 22 Oct 2019 10:51:54 +0200
+Subject: [PATCH 1/1] decrease vdd voltage due to "product below 2.5V" OTP
+ fused
+
+Vdd voltage should be 2.5V instead of 3.3V (like it is done in u-boot).
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ fdts/stm32mp157a-av96.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/fdts/stm32mp157a-av96.dtsi b/fdts/stm32mp157a-av96.dtsi
+index 2de6c01..fcd4ea9 100644
+--- a/fdts/stm32mp157a-av96.dtsi
++++ b/fdts/stm32mp157a-av96.dtsi
+@@ -75,8 +75,8 @@
+ 
+ 			vdd: buck3 {
+ 				regulator-name = "vdd";
+-				regulator-min-microvolt = <3300000>;
+-				regulator-max-microvolt = <3300000>;
++				regulator-min-microvolt = <2500000>;
++				regulator-max-microvolt = <2500000>;
+ 				regulator-always-on;
+ 				st,mask-reset;
+ 				regulator-initial-mode = <0>;
+@@ -376,15 +376,15 @@
+ 
+ &vdd {
+ 	lp-stop {
+-		regulator-suspend-microvolt = <3300000>;
++		regulator-suspend-microvolt = <2500000>;
+ 		regulator-on-in-suspend;
+ 	};
+ 	standby-ddr-sr {
+-		regulator-suspend-microvolt = <3300000>;
++		regulator-suspend-microvolt = <2500000>;
+ 		regulator-on-in-suspend;
+ 	};
+ 	standby-ddr-off {
+-		regulator-suspend-microvolt = <3300000>;
++		regulator-suspend-microvolt = <2500000>;
+ 		regulator-on-in-suspend;
+ 	};
+ };
+-- 
+2.7.4
+
