@@ -29,7 +29,8 @@ SRC_URI += " \
 	file://0026-media-st-mipid02-add-support-of-V4L2_CID_LINK_FREQ.patch \
 	file://0027-media-ov5640-add-support-of-V4L2_CID_LINK_FREQ.patch \
 	file://0028-media-v4l2-add-support-of-pclk_max_frequency-on-CSI-.patch \
-	file://0029-ARM-dts-stm32-limit-OV5640-pixel-clock-to-77MHz-on-s.patch"
+	file://0029-ARM-dts-stm32-limit-OV5640-pixel-clock-to-77MHz-on-s.patch \
+	file://0030-ARM-dts-stm32-fix-the-reset-gpio-information-of-the-.patch"
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-07-hdmi.config"
