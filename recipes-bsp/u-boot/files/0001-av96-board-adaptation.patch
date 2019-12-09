@@ -1,0 +1,460 @@
+From 0bee2d0f79ffd91d5d7479cda2ecf7cad59279c8 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Mon, 9 Dec 2019 17:47:35 +0100
+Subject: [PATCH 1/2] av96 board adaptation
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ Makefile                            |  3 ++-
+ arch/arm/lib/relocate.S             |  2 ++
+ arch/arm/mach-stm32mp/cpu.c         | 48 ++++++++++++++++------------------
+ board/st/stm32mp1/stm32mp1.c        | 25 ++++++++++++++++++
+ common/board_f.c                    | 52 +++++++++++++++++++++++++++++++++++++
+ common/board_r.c                    |  4 +++
+ configs/stm32mp15_basic_defconfig   |  4 +++
+ configs/stm32mp15_optee_defconfig   |  4 +++
+ configs/stm32mp15_trusted_defconfig |  6 +++++
+ drivers/net/dwc_eth_qos.c           | 35 ++++++++++++++++++++++++-
+ drivers/net/phy/micrel_ksz90x1.c    |  3 ++-
+ drivers/net/phy/phy.c               |  1 +
+ 12 files changed, 158 insertions(+), 29 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index b9579b2..bf767e7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -254,7 +254,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
+ 
+ HOSTCC       = cc
+ HOSTCXX      = c++
+-HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
++#HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
++HOSTCFLAGS   = -Wall -Wstrict-prototypes -g -O1 -fomit-frame-pointer \
+ 		$(if $(CONFIG_TOOLS_DEBUG),-g)
+ HOSTCXXFLAGS = -O2
+ 
+diff --git a/arch/arm/lib/relocate.S b/arch/arm/lib/relocate.S
+index e5f7267..9746bc9 100644
+--- a/arch/arm/lib/relocate.S
++++ b/arch/arm/lib/relocate.S
+@@ -78,6 +78,8 @@ ENDPROC(relocate_vectors)
+  */
+ 
+ ENTRY(relocate_code)
++	/* b	relocate_code */
++
+ 	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
+ 	subs	r4, r0, r1		/* r4 <- relocation offset */
+ 	beq	relocate_done		/* skip relocation */
+diff --git a/arch/arm/mach-stm32mp/cpu.c b/arch/arm/mach-stm32mp/cpu.c
+index efe8b79..7f18749 100644
+--- a/arch/arm/mach-stm32mp/cpu.c
++++ b/arch/arm/mach-stm32mp/cpu.c
+@@ -16,6 +16,7 @@
+ #include <dm/lists.h>
+ #include <dm/uclass.h>
+ #include <dt-bindings/clock/stm32mp1-clks.h>
++#include <i2c_eeprom.h>
+ 
+ /* RCC register */
+ #define RCC_TZCR		(STM32_RCC_BASE + 0x00)
+@@ -83,6 +84,9 @@
+ #define PKG_SHIFT	27
+ #define PKG_MASK	GENMASK(2, 0)
+ 
++/* MAC ADDR offset in MAC EEPROM */
++#define MAC24AA02_MAC_ADDR  0xfa
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ #if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
+@@ -453,45 +457,37 @@ static void setup_boot_mode(void)
+ 
+ /*
+  * If there is no MAC address in the environment, then it will be initialized
+- * (silently) from the value in the OTP.
++ * (silently) from the value in the MAC EEPROM.
+  */
+ static int setup_mac_address(void)
+ {
+ #if defined(CONFIG_NET)
+-	int ret;
+-	int i;
+-	u32 otp[2];
+-	uchar enetaddr[6];
+-	char buf[ARP_HLEN_ASCII + 1];
++	uchar ethaddr[6];
+ 	struct udevice *dev;
++	int ret;
+ 
+-	ret = uclass_get_device_by_driver(UCLASS_MISC,
+-					  DM_GET_DRIVER(stm32mp_bsec),
+-					  &dev);
+-	if (ret)
+-		return ret;
++	if (eth_env_get_enetaddr("ethaddr", ethaddr))
++		return 0;
+ 
+-	ret = misc_read(dev, STM32_BSEC_SHADOW(BSEC_OTP_MAC),
+-			otp, sizeof(otp));
+-	if (ret)
++	ret = uclass_first_device_err(UCLASS_I2C_EEPROM, &dev);
++	if (ret) {
++		pr_err( "MAC EEPROM not found\n" );
+ 		return ret;
++	}
+ 
+-	for (i = 0; i < 6; i++)
+-		enetaddr[i] = ((uint8_t *)&otp)[i];
++	ret = i2c_eeprom_read(dev, MAC24AA02_MAC_ADDR, ethaddr, 6);
++	if (ret) {
++		pr_err( "Failed to read MAC EEPROM\n" );
++		return ret;
++	}
+ 
+-	if (!is_valid_ethaddr(enetaddr)) {
+-		pr_err("invalid MAC address in OTP %pM", enetaddr);
++	if (is_valid_ethaddr(ethaddr))
++		eth_env_set_enetaddr("ethaddr", ethaddr);
++	else {
++		pr_err("invalid MAC address in OTP %pM\n", ethaddr);
+ 		return -EINVAL;
+ 	}
+-
+-	pr_debug("OTP MAC address = %pM\n", enetaddr);
+-	sprintf(buf, "%pM", enetaddr);
+-	ret = env_set("ethaddr", buf);
+-	if (ret)
+-		pr_err("Failed to set mac address %pM from OTP: %d\n",
+-		       enetaddr, ret);
+ #endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/board/st/stm32mp1/stm32mp1.c b/board/st/stm32mp1/stm32mp1.c
+index f852b1e..900e7e2 100644
+--- a/board/st/stm32mp1/stm32mp1.c
++++ b/board/st/stm32mp1/stm32mp1.c
+@@ -33,6 +33,7 @@
+ #include <jffs2/load_kernel.h>
+ #include <power/regulator.h>
+ #include <usb/dwc2_udc.h>
++#include <fuse.h>
+ 
+ /* SYSCFG registers */
+ #define SYSCFG_BOOTR		0x00
+@@ -399,6 +400,24 @@ int g_dnl_bind_fixup(struct usb_device_descriptor *dev, const char *name)
+ }
+ #endif /* CONFIG_USB_GADGET */
+ 
++static int check_product_below_2v5( void )
++{
++	int ret;
++	u32 otp;
++
++	ret = fuse_read( 0, 18, &otp );
++	if ( !ret ) {
++		if ( !( otp & ( 1u << 13 ) ) ) {
++			pr_err( "PRODUCT_BELOW_2V5 fuse not set. Programming ...\n" );
++			ret = fuse_prog( 0, 18, ( 1u << 13 ) );
++			mdelay( 3000 );
++			do_reset(NULL, 0, 0, NULL);
++		}
++	}
++
++	return ret;
++}
++
+ /* board interface eth init */
+ /* this is a weak define that we are overriding */
+ int board_interface_eth_init(int interface_type, bool eth_clk_sel_reg,
+@@ -717,6 +736,12 @@ static void sysconf_init(void)
+ 			return;
+ 		}
+ 
++		ret = check_product_below_2v5( );
++		if (ret) {
++			pr_err("Reading fuse failed\n");
++			return;
++		}
++
+ 		ret = misc_read(dev, STM32_BSEC_SHADOW(18), &otp, 4);
+ 		if (!ret)
+ 			otp = otp & BIT(13);
+diff --git a/common/board_f.c b/common/board_f.c
+index 1a3b1c7..2df8fca 100644
+--- a/common/board_f.c
++++ b/common/board_f.c
+@@ -36,6 +36,7 @@
+ #include <asm/mp.h>
+ #endif
+ #include <asm/io.h>
++#include <asm/gpio.h>
+ #include <asm/sections.h>
+ #include <dm/root.h>
+ #include <linux/errno.h>
+@@ -773,6 +774,56 @@ __weak int arch_cpu_init_dm(void)
+ 	return 0;
+ }
+ 
++/**
++ * check_hw_ver() checks Avenger96 board HW coding
++ * see PD9 and PG13 pins in schematics
++ */
++static int check_hw_ver(void)
++{
++	ofnode node;
++	struct gpio_desc gpio;
++	int dts_av96_ver;
++	unsigned int board_ver = 0u;
++
++	dts_av96_ver = fdtdec_get_config_int(gd->fdt_blob, "dh,avenger96-hwver", -1) & 0xff;
++
++	node = ofnode_path("/config");
++	if (!ofnode_valid(node)) {
++		debug("%s: no /config node?\n", __func__);
++		return EINVAL;
++	}
++
++	if (gpio_request_by_name_nodev(node, "dh,hwver-gpios", 0, &gpio, GPIOD_IS_IN)) {
++		debug("%s: could not find /config/dh,hwver-gpios/0\n", __func__);
++		return EINVAL;
++	}
++
++	if (dm_gpio_get_value(&gpio))
++		board_ver |= 0x01u;
++
++	dm_gpio_free(NULL, &gpio);
++
++
++	if (gpio_request_by_name_nodev(node, "dh,hwver-gpios", 1, &gpio, GPIOD_IS_IN)) {
++		debug("%s: could not find /config/dh,hwver-gpios/1\n", __func__);
++		return EINVAL;
++	}
++
++	if (dm_gpio_get_value(&gpio))
++		board_ver |= 0x02u;
++
++	dm_gpio_free(NULL, &gpio);
++
++	if ( board_ver != dts_av96_ver ) {
++		printf( "\n********************************************\n" );
++		printf( "* HW coding should be 0x%02x, detected: 0x%02x *\n", dts_av96_ver, (int )board_ver );
++		printf( "********************************************\n\n" );
++		mdelay( 10000 );
++	}
++
++	return 0;
++}
++
+ static const init_fnc_t init_sequence_f[] = {
+ 	setup_mon_len,
+ #ifdef CONFIG_OF_CONTROL
+@@ -825,6 +876,7 @@ static const init_fnc_t init_sequence_f[] = {
+ #endif
+ #if defined(CONFIG_DISPLAY_BOARDINFO)
+ 	show_board_info,
++	check_hw_ver,
+ #endif
+ 	INIT_FUNC_WATCHDOG_INIT
+ #if defined(CONFIG_MISC_INIT_F)
+diff --git a/common/board_r.c b/common/board_r.c
+index c55e33e..837cb90 100644
+--- a/common/board_r.c
++++ b/common/board_r.c
+@@ -746,12 +746,16 @@ static init_fnc_t init_sequence_r[] = {
+ #ifdef CONFIG_PPC
+ 	initr_spi,
+ #endif
++
++#if 0
+ #ifdef CONFIG_CMD_NAND
+ 	initr_nand,
+ #endif
+ #ifdef CONFIG_CMD_ONENAND
+ 	initr_onenand,
+ #endif
++#endif
++
+ #ifdef CONFIG_MMC
+ 	initr_mmc,
+ #endif
+diff --git a/configs/stm32mp15_basic_defconfig b/configs/stm32mp15_basic_defconfig
+index 3eff6b5..89f8e95 100644
+--- a/configs/stm32mp15_basic_defconfig
++++ b/configs/stm32mp15_basic_defconfig
+@@ -16,6 +16,8 @@ CONFIG_SPL_I2C_SUPPORT=y
+ CONFIG_SPL_MTD_SUPPORT=y
+ CONFIG_SPL_POWER_SUPPORT=y
+ CONFIG_SYS_PROMPT="STM32MP> "
++CONFIG_MISC=y
++CONFIG_I2C_EEPROM=y
+ # CONFIG_CMD_BOOTD is not set
+ CONFIG_CMD_DTIMG=y
+ # CONFIG_CMD_ELF is not set
+@@ -31,6 +33,8 @@ CONFIG_CMD_DFU=y
+ CONFIG_CMD_FUSE=y
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_I2C=y
++CONFIG_CMD_MISC=y
++CONFIG_CMD_I2C_EEPROM=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_REMOTEPROC=y
+ CONFIG_CMD_SF=y
+diff --git a/configs/stm32mp15_optee_defconfig b/configs/stm32mp15_optee_defconfig
+index 9ef8f62..47372c1 100644
+--- a/configs/stm32mp15_optee_defconfig
++++ b/configs/stm32mp15_optee_defconfig
+@@ -7,6 +7,8 @@ CONFIG_DISTRO_DEFAULTS=y
+ CONFIG_FIT=y
+ CONFIG_BOOTCOMMAND="run bootcmd_stm32mp"
+ CONFIG_SYS_PROMPT="STM32MP> "
++CONFIG_MISC=y
++CONFIG_I2C_EEPROM=y
+ # CONFIG_CMD_BOOTD is not set
+ CONFIG_CMD_DTIMG=y
+ # CONFIG_CMD_ELF is not set
+@@ -22,6 +24,8 @@ CONFIG_CMD_DFU=y
+ CONFIG_CMD_FUSE=y
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_I2C=y
++CONFIG_CMD_MISC=y
++CONFIG_CMD_I2C_EEPROM=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_REMOTEPROC=y
+ CONFIG_CMD_SF=y
+diff --git a/configs/stm32mp15_trusted_defconfig b/configs/stm32mp15_trusted_defconfig
+index 7635d7f..5def8eb 100644
+--- a/configs/stm32mp15_trusted_defconfig
++++ b/configs/stm32mp15_trusted_defconfig
+@@ -6,6 +6,8 @@ CONFIG_DISTRO_DEFAULTS=y
+ CONFIG_FIT=y
+ CONFIG_BOOTCOMMAND="run bootcmd_stm32mp"
+ CONFIG_SYS_PROMPT="STM32MP> "
++CONFIG_MISC=y
++CONFIG_I2C_EEPROM=y
+ # CONFIG_CMD_BOOTD is not set
+ CONFIG_CMD_DTIMG=y
+ # CONFIG_CMD_ELF is not set
+@@ -21,6 +23,8 @@ CONFIG_CMD_DFU=y
+ CONFIG_CMD_FUSE=y
+ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_I2C=y
++CONFIG_CMD_MISC=y
++CONFIG_CMD_I2C_EEPROM=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_REMOTEPROC=y
+ CONFIG_CMD_SF=y
+@@ -76,6 +80,8 @@ CONFIG_SPI_FLASH_MTD=y
+ CONFIG_DM_ETH=y
+ CONFIG_DWC_ETH_QOS=y
+ CONFIG_PHY=y
++CONFIG_PHY_MICREL=y
++CONFIG_PHY_MICREL_KSZ90X1=y
+ CONFIG_PHY_STM32_USBPHYC=y
+ CONFIG_PINCONF=y
+ CONFIG_PINCTRL_STMFX=y
+diff --git a/drivers/net/dwc_eth_qos.c b/drivers/net/dwc_eth_qos.c
+index 5b933fb..2fa7dc0 100644
+--- a/drivers/net/dwc_eth_qos.c
++++ b/drivers/net/dwc_eth_qos.c
+@@ -692,6 +692,27 @@ static int eqos_start_resets_tegra186(struct udevice *dev)
+ 
+ static int eqos_start_resets_stm32(struct udevice *dev)
+ {
++	struct eqos_priv *eqos = dev_get_priv(dev);
++	int ret;
++
++	debug("%s(dev=%p):\n", __func__, dev);
++
++	ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 1);
++	if (ret < 0) {
++		pr_err("dm_gpio_set_value(phy_reset, assert) failed: %d", ret);
++		return ret;
++	}
++
++	udelay(2);
++
++	ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 0);
++	if (ret < 0) {
++		pr_err("dm_gpio_set_value(phy_reset, deassert) failed: %d", ret);
++		return ret;
++	}
++
++	debug("%s: OK\n", __func__);
++
+ 	return 0;
+ }
+ 
+@@ -1044,7 +1065,7 @@ static int eqos_start(struct udevice *dev)
+ 	 * don't need to reconnect/reconfigure again
+ 	 */
+ 	if (!eqos->phy) {
+-		eqos->phy = phy_connect(eqos->mii, 0, dev,
++		eqos->phy = phy_connect(eqos->mii, 7, dev,
+ 					eqos->config->interface(dev));
+ 		if (!eqos->phy) {
+ 			pr_err("phy_connect() failed");
+@@ -1627,6 +1648,16 @@ static int eqos_probe_resources_stm32(struct udevice *dev)
+ 	if (ret)
+ 		return -EINVAL;
+ 
++	debug("%s(dev=%p):\n", __func__, dev);
++
++	ret = gpio_request_by_name(dev, "phy-reset-gpios", 0,
++							   &eqos->phy_reset_gpio,
++							   GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE);
++	if (ret) {
++		pr_err("gpio_request_by_name(phy reset) failed: %d", ret);
++		return ret;
++	}
++
+ 	ret = clk_get_by_name(dev, "stmmaceth", &eqos->clk_master_bus);
+ 	if (ret) {
+ 		pr_err("clk_get_by_name(master_bus) failed: %d", ret);
+@@ -1713,6 +1744,8 @@ static int eqos_remove_resources_stm32(struct udevice *dev)
+ 	if (clk_valid(&eqos->clk_ck))
+ 		clk_free(&eqos->clk_ck);
+ 
++	dm_gpio_free(dev, &eqos->phy_reset_gpio);
++
+ 	debug("%s: OK\n", __func__);
+ 	return 0;
+ }
+diff --git a/drivers/net/phy/micrel_ksz90x1.c b/drivers/net/phy/micrel_ksz90x1.c
+index 3951535..c750938 100644
+--- a/drivers/net/phy/micrel_ksz90x1.c
++++ b/drivers/net/phy/micrel_ksz90x1.c
+@@ -123,7 +123,7 @@ static int ksz90x1_of_config_group(struct phy_device *phydev,
+ 		} else {
+ 			changed = 1;	/* Value was changed in OF */
+ 			/* Calculate the register value and fix corner cases */
+-			if (val[i] > ps_to_regval * 0xf) {
++			if (val[i] > ps_to_regval * 0x1f) {
+ 				max = (1 << ofcfg->grp[i].size) - 1;
+ 				regval |= max << offset;
+ 			} else {
+@@ -135,6 +135,7 @@ static int ksz90x1_of_config_group(struct phy_device *phydev,
+ 	if (!changed)
+ 		return 0;
+ 
++	/* printf( "ksz90x1 writeext( %i, 0x%04x )\n", (int )ofcfg->reg, (int )regval ); */
+ 	return drv->writeext(phydev, 0, ofcfg->devad, ofcfg->reg, regval);
+ }
+ 
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index e837eb7..575e70b 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -737,6 +737,7 @@ static struct phy_device *get_phy_device_by_mask(struct mii_dev *bus,
+ 	int i;
+ 	struct phy_device *phydev;
+ 
++	mdelay(5);		/* 5 ms */
+ 	phydev = search_for_existing_phy(bus, phy_mask, interface);
+ 	if (phydev)
+ 		return phydev;
+-- 
+2.7.4
+
