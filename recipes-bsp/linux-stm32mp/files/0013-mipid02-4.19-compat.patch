@@ -1,8 +1,9 @@
-From aa2902d4f02df7b4eb2caf4fb51c2866d1be91cb Mon Sep 17 00:00:00 2001
+From 856e14e570fea1bbba9e40c35d23e7345d9a36bd Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Tue, 14 May 2019 11:30:55 +0200
-Subject: [PATCH 14/32] mipid02: 4.19 compat
+Subject: [PATCH 13/31] mipid02: 4.19 compat
 
+%% original patch: 0014-mipid02-4.19-compat.patch
 ---
  drivers/media/i2c/st-mipid02.c | 19 ++++++++++---------
  1 file changed, 10 insertions(+), 9 deletions(-)

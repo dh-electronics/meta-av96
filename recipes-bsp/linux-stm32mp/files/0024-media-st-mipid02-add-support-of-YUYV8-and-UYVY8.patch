@@ -1,7 +1,7 @@
-From d576d39c74235bcccf481a3a8ffcde61e823a3b4 Mon Sep 17 00:00:00 2001
+From 1bafed32df5b542f4762505debf6ad80d438d6a0 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 22 May 2019 17:47:34 +0200
-Subject: [PATCH 27/32] media: st-mipid02: add support of YUYV8 and UYVY8
+Subject: [PATCH 24/31] media: st-mipid02: add support of YUYV8 and UYVY8
 
 Add support of YUYV8 and UYVY8 pixel formats.
 

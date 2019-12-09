@@ -1,7 +1,7 @@
-From 87b726b26c336fc6423b7fe2db0e2cfba02fbe5a Mon Sep 17 00:00:00 2001
+From 395fce8fcdef9dbfe98ea343b21b245d818f232e Mon Sep 17 00:00:00 2001
 From: Mickael Guene <mickael.guene@st.com>
 Date: Tue, 9 Apr 2019 08:15:48 +0200
-Subject: [PATCH 06/32] dt-bindings: Document MIPID02 bindings
+Subject: [PATCH 05/31] dt-bindings: Document MIPID02 bindings
 
 This adds documentation of device tree for MIPID02 CSI-2 to PARALLEL
 bridge.
@@ -9,6 +9,8 @@ bridge.
 Reviewed-by: Rob Herring <robh@kernel.org>
 
 Signed-off-by: Mickael Guene <mickael.guene@st.com>
+
+%% original patch: 0006-dt-bindings-Document-MIPID02-bindings.patch
 ---
  MAINTAINERS | 7 +++++++
  1 file changed, 7 insertions(+)

@@ -1,14 +1,15 @@
-From 178e737c07a76a3f7db388b3f4fecbe050c4084a Mon Sep 17 00:00:00 2001
+From 4d874fcf25300f42d1f5dc1bb369022f458784fb Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 2 May 2019 14:18:54 +0200
-Subject: [PATCH 10/32] dts: av96: add DCMI support
+Subject: [PATCH 09/31] dts: av96: add DCMI support
 
+%% original patch: 0010-dts-av96-add-DCMI-support.patch
 ---
  arch/arm/boot/dts/stm32mp157a-av96.dts | 12 ++++++++++++
  1 file changed, 12 insertions(+)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
-index 238eb20..6d708b4 100644
+index 9a51eaa..83702b1 100644
 --- a/arch/arm/boot/dts/stm32mp157a-av96.dts
 +++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
 @@ -374,6 +374,18 @@

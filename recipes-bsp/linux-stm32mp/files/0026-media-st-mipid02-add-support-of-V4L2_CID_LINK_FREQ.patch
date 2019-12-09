@@ -1,7 +1,7 @@
-From f46e982c7e48338c0eaca9ad6d524b42f4bab05d Mon Sep 17 00:00:00 2001
+From 6d801c0fdbd46942fa63d5e5db377ae82d57f9cb Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 13 Jun 2019 16:35:32 +0200
-Subject: [PATCH 29/32] media: st-mipid02: add support of V4L2_CID_LINK_FREQ
+Subject: [PATCH 26/31] media: st-mipid02: add support of V4L2_CID_LINK_FREQ
 
 Ask device connected on sink pad for link frequency
 in order to configure CLK_LANE_REG1 (ui_x4).

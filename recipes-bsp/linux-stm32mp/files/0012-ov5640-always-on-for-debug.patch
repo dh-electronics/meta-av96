@@ -1,17 +1,18 @@
-From 9086932a4530e034903990aba3200a8f0518c4fb Mon Sep 17 00:00:00 2001
+From 1bfdf9f884d8468e92266adddd99b5ceb3aaf6db Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Tue, 14 May 2019 11:30:43 +0200
-Subject: [PATCH 13/32] ov5640: always-on for debug
+Subject: [PATCH 12/31] ov5640: always-on for debug
 
+%% original patch: 0013-ov5640-always-on-for-debug.patch
 ---
  drivers/media/i2c/ov5640.c | 15 ++++++++-------
  1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
-index 28fd1f8..1dac9c1 100644
+index 4432188..9ac7962 100644
 --- a/drivers/media/i2c/ov5640.c
 +++ b/drivers/media/i2c/ov5640.c
-@@ -1869,8 +1869,8 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
+@@ -2005,8 +2005,8 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
  	return 0;
  
  power_off:
@@ -22,7 +23,7 @@ index 28fd1f8..1dac9c1 100644
  xclk_off:
  	clk_disable_unprepare(sensor->xclk);
  	return ret;
-@@ -1878,9 +1878,9 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
+@@ -2014,9 +2014,9 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
  
  static void ov5640_set_power_off(struct ov5640_dev *sensor)
  {
@@ -35,7 +36,7 @@ index 28fd1f8..1dac9c1 100644
  }
  
  static int ov5640_set_power(struct ov5640_dev *sensor, bool on)
-@@ -2885,8 +2885,8 @@ static int ov5640_probe(struct i2c_client *client,
+@@ -3076,8 +3076,8 @@ static int ov5640_probe(struct i2c_client *client,
  	mutex_init(&sensor->lock);
  
  	ret = ov5640_check_chip_id(sensor);
@@ -46,7 +47,7 @@ index 28fd1f8..1dac9c1 100644
  
  	ret = ov5640_init_controls(sensor);
  	if (ret)
-@@ -2896,6 +2896,7 @@ static int ov5640_probe(struct i2c_client *client,
+@@ -3087,6 +3087,7 @@ static int ov5640_probe(struct i2c_client *client,
  	if (ret)
  		goto free_ctrls;
  

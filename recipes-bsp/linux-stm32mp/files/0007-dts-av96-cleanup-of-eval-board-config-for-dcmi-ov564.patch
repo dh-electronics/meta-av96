@@ -1,15 +1,16 @@
-From 79f74fdb03022fd5fad0c4f623a7129ee933cb3b Mon Sep 17 00:00:00 2001
+From 2500b246d611adabea35b9a9ff9869dd0390c4cb Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 13 May 2019 16:51:44 +0200
-Subject: [PATCH 08/32] dts: av96: cleanup of eval board config for dcmi +
+Subject: [PATCH 07/31] dts: av96: cleanup of eval board config for dcmi +
  ov5640
 
+%% original patch: 0008-dts-av96-cleanup-of-eval-board-config-for-dcmi-ov564.patch
 ---
  arch/arm/boot/dts/stm32mp157a-av96.dts | 44 ----------------------------------
  1 file changed, 44 deletions(-)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
-index 910ab9d..5eefd84 100644
+index ad94740..eb7ecea 100644
 --- a/arch/arm/boot/dts/stm32mp157a-av96.dts
 +++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
 @@ -228,24 +228,6 @@
@@ -37,7 +38,7 @@ index 910ab9d..5eefd84 100644
  &dfsdm {
  	pinctrl-names = "default", "sleep";
  	pinctrl-0 = <&dfsdm_clkout_pins_a
-@@ -477,26 +459,6 @@
+@@ -476,26 +458,6 @@
  	/delete-property/dma-names;
  
  #if 0
@@ -64,7 +65,7 @@ index 910ab9d..5eefd84 100644
  	wm8994: wm8994@1b {
  		compatible = "wlf,wm8994";
  		#sound-dai-cells = <0>;
-@@ -567,12 +529,6 @@
+@@ -566,12 +528,6 @@
  				drive-push-pull;
  				bias-pull-down;
  			};

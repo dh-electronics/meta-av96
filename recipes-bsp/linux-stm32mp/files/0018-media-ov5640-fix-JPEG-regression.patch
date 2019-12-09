@@ -1,7 +1,7 @@
-From 616cef24012eb49814c25efd5840968b03a1267c Mon Sep 17 00:00:00 2001
-From: Hugues Fruchet <hugues.fruchet@st.com>
-Date: Wed, 22 May 2019 17:44:51 +0200
-Subject: [PATCH 19/32] media: ov5640: fix JPEG regression
+From a9c5a5d98c12cf03e60dbcc61744a154d0da54a1 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Fri, 6 Dec 2019 10:34:39 +0100
+Subject: [PATCH 18/31] media: ov5640: fix JPEG regression
 
 Regression introduced by commit 7cb013b1049a2a599c1fc344644528eb8bf985b8
 media: ov5640: Set JPEG output timings when outputting JPEG data
@@ -14,10 +14,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
-index 2fd66944..9c182ec 100644
+index 554106e..d5d8b1a 100644
 --- a/drivers/media/i2c/ov5640.c
 +++ b/drivers/media/i2c/ov5640.c
-@@ -1076,11 +1076,13 @@ static int ov5640_set_timings(struct ov5640_dev *sensor,
+@@ -1597,11 +1597,13 @@ static int ov5640_set_timings(struct ov5640_dev *sensor,
  {
  	int ret;
  

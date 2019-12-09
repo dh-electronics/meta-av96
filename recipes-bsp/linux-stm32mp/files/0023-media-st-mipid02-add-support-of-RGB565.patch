@@ -1,7 +1,7 @@
-From 25119faabaa034195672e48e3829f8323117c8ea Mon Sep 17 00:00:00 2001
+From 87831af0c58b59bd62b8a68e89547ad8f43290e6 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 15 May 2019 15:32:28 +0200
-Subject: [PATCH 26/32] media: st-mipid02: add support of RGB565
+Subject: [PATCH 23/31] media: st-mipid02: add support of RGB565
 
 Add support of RGB565 pixel format.
 

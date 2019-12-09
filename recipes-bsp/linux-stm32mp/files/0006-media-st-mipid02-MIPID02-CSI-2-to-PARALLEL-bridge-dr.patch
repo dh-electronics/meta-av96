@@ -1,12 +1,14 @@
-From 8a7928e384a47a9c8cd99d136f6eae0291e49c15 Mon Sep 17 00:00:00 2001
+From 682e39893a30eb50752bde1b4c8d88b8466b5a88 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 13 May 2019 16:50:34 +0200
-Subject: [PATCH 07/32] media: st-mipid02: MIPID02 CSI-2 to PARALLEL bridge
+Subject: [PATCH 06/31] media: st-mipid02: MIPID02 CSI-2 to PARALLEL bridge
  driver
 
 This V4L2 subdev driver enables STMicroelectronics MIPID02 device.
 
 Signed-off-by: Mickael Guene <mickael.guene@st.com>
+
+%% original patch: 0007-media-st-mipid02-MIPID02-CSI-2-to-PARALLEL-bridge-dr.patch
 ---
  .../bindings/media/i2c/st,st-mipid02.txt           |   82 ++
  MAINTAINERS                                        |    1 +

@@ -1,0 +1,55 @@
+From 91a982c2861b1cf6f9e8fd8232c415fa50c89cfb Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Fri, 6 Dec 2019 10:38:07 +0100
+Subject: [PATCH 19/31] media: ov5640: reduce mipi rate according to maximum
+ pixel clock frequency
+
+Reduce mipi port rate according to maximum pixel clock frequency
+admissible by camera interface.
+This allows to support any resolutions/framerate requests by decreasing
+the framerate according to maximum camera interface capabiliti
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ drivers/media/i2c/ov5640.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
+index d5d8b1a..48da5d1 100644
+--- a/drivers/media/i2c/ov5640.c
++++ b/drivers/media/i2c/ov5640.c
+@@ -945,8 +945,10 @@ static unsigned long ov5640_calc_sys_clk(struct ov5640_dev *sensor,
+ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
+ 				unsigned long rate)
+ {
++	struct i2c_client *client = sensor->i2c_client;
+ 	const struct ov5640_mode_info *mode = sensor->current_mode;
+ 	u8 prediv, mult, sysdiv;
++	unsigned int pclk_freq, max_pclk_freq;
+ 	u8 mipi_div;
+ 	int ret;
+ 
+@@ -961,6 +963,20 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
+ 	else
+ 		mipi_div = OV5640_MIPI_DIV_PCLK;
+ 
++	pclk_freq = 2 * /* 2 clocks per pixel */
++		    rate *
++		    sensor->ep.bus.mipi_csi2.num_data_lanes / 16 / mipi_div;
++	max_pclk_freq = sensor->ep.bus.mipi_csi2.pclk_max_frequency;
++
++	/* clip rate according to optional maximum pixel clock limit */
++	if (max_pclk_freq && (pclk_freq > max_pclk_freq)) {
++		rate = max_pclk_freq *
++		       mipi_div * 16 / sensor->ep.bus.mipi_csi2.num_data_lanes
++		       / 2;
++		dev_dbg(&client->dev, "MIPI pixel clock too high (%d > %d Hz), reducing rate...\n",
++			pclk_freq, max_pclk_freq);
++	}
++
+ 	ov5640_calc_sys_clk(sensor, rate, &prediv, &mult, &sysdiv);
+ 
+ 	ret = ov5640_mod_reg(sensor, OV5640_REG_SC_PLL_CTRL0,
+-- 
+2.7.4
+

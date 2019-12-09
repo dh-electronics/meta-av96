@@ -1,7 +1,7 @@
-From 5ffae3fc3d7fc30581f247f83a0bb6aefa4551e5 Mon Sep 17 00:00:00 2001
+From c078e177820b6aa1d7032ef0607ad6d59a7551d4 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 13 Jun 2019 17:33:30 +0200
-Subject: [PATCH 32/32] ARM: dts: stm32: limit OV5640 pixel clock to 77MHz on
+Subject: [PATCH 29/31] ARM: dts: stm32: limit OV5640 pixel clock to 77MHz on
  stm32mp157a-av96 board
 
 Limit OV5640 pixel clock to 77MHz in order to fit with DCMI camera interface
@@ -14,10 +14,10 @@ Change-Id: I60450e9df85f7f99fe2474e520cfd064baae7fd2
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
-index 4bd1db2..5a55f16 100644
+index b6de574..b963385 100644
 --- a/arch/arm/boot/dts/stm32mp157a-av96.dts
 +++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
-@@ -498,6 +498,7 @@
+@@ -497,6 +497,7 @@
  				remote-endpoint = <&mipid02_0>;
  				clock-lanes = <0>;
  				data-lanes = <1 2>;
