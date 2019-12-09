@@ -1,13 +1,15 @@
-From 89f376fff546212e0f7eb0ea327fdeb2dbb74878 Mon Sep 17 00:00:00 2001
+From 825048129852f9a4c8abb0b4a0c9e1e02c96c186 Mon Sep 17 00:00:00 2001
 From: Mickael Guene <mickael.guene@st.com>
 Date: Tue, 9 Apr 2019 08:15:47 +0200
-Subject: [PATCH 05/32] media: uapi: Add MEDIA_BUS_FMT_BGR888_3X8 media bus
+Subject: [PATCH 04/31] media: uapi: Add MEDIA_BUS_FMT_BGR888_3X8 media bus
  format
 
 This patch adds MEDIA_BUS_FMT_BGR888_3X8 used by STM MIPID02 CSI-2 to
 PARALLEL bridge driver when input format is MEDIA_BUS_FMT_BGR888_1X24.
 
 Signed-off-by: Mickael Guene <mickael.guene@st.com>
+
+%% original patch: 0005-media-uapi-Add-MEDIA_BUS_FMT_BGR888_3X8-media-bus-fo.patch
 ---
  Documentation/media/uapi/v4l/subdev-formats.rst | 107 ++++++++++++++++++++++++
  include/uapi/linux/media-bus-format.h           |   3 +-

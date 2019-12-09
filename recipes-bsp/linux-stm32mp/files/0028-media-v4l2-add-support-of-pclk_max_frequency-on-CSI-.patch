@@ -1,7 +1,7 @@
-From 24e8587c2665249c4db299db7a54040b2071377f Mon Sep 17 00:00:00 2001
+From 0848717eff968ad1c09c0d847fbbfdadd9efba75 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 13 Jun 2019 16:29:15 +0200
-Subject: [PATCH 31/32] media: v4l2: add support of pclk_max_frequency on CSI
+Subject: [PATCH 28/31] media: v4l2: add support of pclk_max_frequency on CSI
  bus
 
 Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>

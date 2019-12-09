@@ -1,7 +1,7 @@
-From 179a44f8d42b21a963feabe7f1fff606fb69a924 Mon Sep 17 00:00:00 2001
+From 69b00d029e9061c1a6dc794f4e1d76981cf44681 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 29 May 2019 10:19:14 +0200
-Subject: [PATCH 25/32] media: stm32-dcmi: add support of several sub-devices
+Subject: [PATCH 22/31] media: stm32-dcmi: add support of several sub-devices
 
 Add support of several sub-devices within pipeline instead
 of a single one.

@@ -1,7 +1,7 @@
-From 33687cee4003c35598a052da37deff3301704fa1 Mon Sep 17 00:00:00 2001
+From 3170b98a73015a48d0fbeabf5e48ff0be008237a Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Tue, 28 May 2019 15:35:18 +0200
-Subject: [PATCH 23/32] media: stm32-dcmi: improve sensor subdev naming
+Subject: [PATCH 20/31] media: stm32-dcmi: improve sensor subdev naming
 
 Add a new "sensor" field to dcmi struct instead of
 reusing entity->subdev to address sensor subdev.

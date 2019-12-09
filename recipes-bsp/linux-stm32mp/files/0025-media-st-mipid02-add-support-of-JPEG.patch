@@ -1,7 +1,7 @@
-From e1e8e171429cec15606dca97c135ee6cc31df5f7 Mon Sep 17 00:00:00 2001
+From 5c9ab75833e2629350bde57380287d7cce885e39 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 22 May 2019 17:47:50 +0200
-Subject: [PATCH 28/32] media: st-mipid02: add support of JPEG
+Subject: [PATCH 25/31] media: st-mipid02: add support of JPEG
 
 Add support of JPEG pixel format.
 This requires auto detection of data type from CSI-2 stream.

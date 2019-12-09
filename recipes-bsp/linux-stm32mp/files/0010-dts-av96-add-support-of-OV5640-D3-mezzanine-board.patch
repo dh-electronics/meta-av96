@@ -1,17 +1,19 @@
-From b61fbcec86503c2d66da3454b124a95f7e51f3e5 Mon Sep 17 00:00:00 2001
+From f137d47fe794878b545e8e32d39e3c97e3807e74 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 2 May 2019 14:20:44 +0200
-Subject: [PATCH 11/32] dts: av96: add support of OV5640 D3 mezzanine board
+Subject: [PATCH 10/31] dts: av96: add support of OV5640 D3 mezzanine board
 
 OV5640 connected to CSI input port of MIPID02 CSI bridge.
 
 Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+
+%% original patch: 0011-dts-av96-add-support-of-OV5640-D3-mezzanine-board.patch
 ---
  arch/arm/boot/dts/stm32mp157a-av96.dts | 54 +++++++++++++++++++++++++++++++++-
  1 file changed, 53 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
-index 6d708b4..1a65253 100644
+index 83702b1..f04a88c 100644
 --- a/arch/arm/boot/dts/stm32mp157a-av96.dts
 +++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
 @@ -382,6 +382,12 @@
@@ -27,7 +29,7 @@ index 6d708b4..1a65253 100644
  		};
  	};
  };
-@@ -470,6 +476,29 @@
+@@ -469,6 +475,29 @@
  	/delete-property/dmas;
  	/delete-property/dma-names;
  
@@ -57,7 +59,7 @@ index 6d708b4..1a65253 100644
  #if 0
  	wm8994: wm8994@1b {
  		compatible = "wlf,wm8994";
-@@ -564,7 +593,7 @@
+@@ -563,7 +592,7 @@
  		};
  	};
  
@@ -66,7 +68,7 @@ index 6d708b4..1a65253 100644
  		compatible = "st,st-mipid02";
  		reg = <0x14>;
  		status = "okay";
-@@ -579,6 +608,29 @@
+@@ -578,6 +607,29 @@
  		VDDE-supply = <&v1v8>;
  		VDDIN-supply = <&v1v8>;
  		reset-gpios = <&gpioz 0 GPIO_ACTIVE_LOW>;

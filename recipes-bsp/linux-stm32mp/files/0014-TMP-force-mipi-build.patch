@@ -1,8 +1,9 @@
-From 89b5441ab4f1cfeabf2b976fcff56d309bb6a2b2 Mon Sep 17 00:00:00 2001
+From 303c6e866075855e3532a438ebcbdf32b225ee65 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Tue, 14 May 2019 17:35:50 +0200
-Subject: [PATCH 15/32] TMP force mipi build
+Subject: [PATCH 14/31] TMP force mipi build
 
+%% original patch: 0015-TMP-force-mipi-build.patch
 ---
  drivers/media/i2c/Makefile | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

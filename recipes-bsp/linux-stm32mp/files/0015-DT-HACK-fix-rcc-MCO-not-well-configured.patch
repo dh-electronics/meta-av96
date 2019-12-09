@@ -1,18 +1,20 @@
-From 28e4ad544e2410f986530cd743b3bbe4b2570745 Mon Sep 17 00:00:00 2001
+From bfde852c533ed53eb9b6cb948dda50ce79e34660 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Tue, 14 May 2019 17:37:09 +0200
-Subject: [PATCH 16/32] DT: HACK fix rcc MCO not well configured
+Subject: [PATCH 15/31] DT: HACK fix rcc MCO not well configured
 
 ==> TO BE DEBUGGED
+
+%% original patch: 0016-DT-HACK-fix-rcc-MCO-not-well-configured.patch
 ---
  arch/arm/boot/dts/stm32mp157a-av96.dts | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
-index 0b13a03..4bd1db2 100644
+index 1f48e5d..b6de574 100644
 --- a/arch/arm/boot/dts/stm32mp157a-av96.dts
 +++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
-@@ -479,6 +479,9 @@
+@@ -478,6 +478,9 @@
  	ov5640: camera@3c {
  		compatible = "ovti,ov5640";
  		reg = <0x3c>;
@@ -22,7 +24,7 @@ index 0b13a03..4bd1db2 100644
  		clocks = <&rcc CK_MCO1>;
  		clock-names = "xclk";
  		assigned-clocks = <&rcc CK_MCO1>;
-@@ -598,9 +601,6 @@
+@@ -597,9 +600,6 @@
  		compatible = "st,st-mipid02";
  		reg = <0x14>;
  		status = "okay";
