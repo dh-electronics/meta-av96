@@ -1,88 +1,25 @@
-diff -Naurw ./fdts/stm32mp157aac-pinctrl.dtsi ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi
---- ./fdts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi	2019-03-25 17:20:24.539715008 +0100
-@@ -0,0 +1,78 @@
-+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
-+/*
-+ * Copyright (C) Arrow Electronics 2019 - All Rights Reserved
-+ * Author: Botond Kardos <botond.kardos@arroweurope.com>
-+ */
-+
-+#include "stm32mp157a-pinctrl.dtsi"
-+/ {
-+	soc {
-+		pinctrl: pin-controller@50002000 {
-+			st,package = <STM32MP157CAC>;
-+
-+			gpioa: gpio@50002000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 0 16>;
-+			};
-+
-+			gpiob: gpio@50003000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 16 16>;
-+			};
-+
-+			gpioc: gpio@50004000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 32 16>;
-+			};
-+
-+			gpiod: gpio@50005000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 48 16>;
-+			};
-+
-+			gpioe: gpio@50006000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 64 16>;
-+			};
-+
-+			gpiof: gpio@50007000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 80 16>;
-+			};
-+
-+			gpiog: gpio@50008000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 96 16>;
-+			};
-+
-+			gpioh: gpio@50009000 {
-+				status = "okay";
-+				ngpios = <16>;
-+				gpio-ranges = <&pinctrl 0 112 16>;
-+			};
-+
-+			gpioi: gpio@5000a000 {
-+				status = "okay";
-+				ngpios = <12>;
-+				gpio-ranges = <&pinctrl 0 128 12>;
-+			};
-+		};
-+
-+		pinctrl_z: pin-controller-z@54004000 {
-+			st,package = <STM32MP157CAC>;
-+
-+			gpioz: gpio@54004000 {
-+				status = "okay";
-+				ngpios = <8>;
-+				gpio-ranges = <&pinctrl_z 0 400 8>;
-+			};
-+		};
-+	};
-+};
-diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
---- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-03-25 17:20:24.539715008 +0100
+From c780f1e604a565874a64865754e567cac88a998e Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Thu, 12 Dec 2019 15:54:55 +0100
+Subject: [PATCH 1/1] tf-a-av96-devicetree
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ fdts/stm32mp157a-av96.dts       |  57 +++++
+ fdts/stm32mp157a-av96.dtsi      | 478 ++++++++++++++++++++++++++++++++++++++++
+ fdts/stm32mp157a-pinctrl.dtsi   | 350 +++++++++++++++++++++++++++++
+ fdts/stm32mp157aac-pinctrl.dtsi |  78 +++++++
+ 4 files changed, 963 insertions(+)
+ create mode 100644 fdts/stm32mp157a-av96.dts
+ create mode 100644 fdts/stm32mp157a-av96.dtsi
+ create mode 100644 fdts/stm32mp157a-pinctrl.dtsi
+ create mode 100644 fdts/stm32mp157aac-pinctrl.dtsi
+
+diff --git a/fdts/stm32mp157a-av96.dts b/fdts/stm32mp157a-av96.dts
+new file mode 100644
+index 0000000..664ded0
+--- /dev/null
++++ b/fdts/stm32mp157a-av96.dts
 @@ -0,0 +1,57 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -141,10 +78,12 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 +		#size-cells = <1>;
 +	};
 +};
-diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dtsi
---- ./fdts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-03-26 13:19:58.934544406 +0100
-@@ -0,0 +1,468 @@
+diff --git a/fdts/stm32mp157a-av96.dtsi b/fdts/stm32mp157a-av96.dtsi
+new file mode 100644
+index 0000000..fac1e81
+--- /dev/null
++++ b/fdts/stm32mp157a-av96.dtsi
+@@ -0,0 +1,478 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) Arrow Electronics 2019 - All Rights Reserved
@@ -293,7 +232,9 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +};
 +
 +&pwr {
-+	pwr-supply = <&vdd>;
++	pwr-regulators {
++		vdd-supply = <&vdd>;
++	};
 +};
 +
 +&rng1 {
@@ -425,7 +366,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +		CLK_UART6_HSI
 +		CLK_UART78_HSI
 +		CLK_SPDIF_PLL4P
-+		CLK_FDCAN_PLL4Q
++		CLK_FDCAN_PLL4R
 +		CLK_SAI1_PLL3Q
 +		CLK_SAI2_PLL3Q
 +		CLK_SAI3_PLL3Q
@@ -462,6 +403,14 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +};
 +
 +/* Security specific */
++&bsec {
++	board_id: board_id@ec {
++		reg = <0xec 0x4>;
++		status = "okay";
++		secure-status = "okay";
++	};
++};
++
 +&etzpc {
 +	st,decprot = <
 +		DECPROT(STM32MP1_ETZPC_USART1_ID, DECPROT_NS_RW, DECPROT_UNLOCK)
@@ -490,7 +439,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +&timers15 {
 +	secure-status = "okay";
 +	st,hsi-cal-input = <7>;
-+	st,csi_cal-input = <8>;
++	st,csi-cal-input = <8>;
 +};
 +
 +/* Low-power states of regulators */
@@ -613,9 +562,11 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +		regulator-off-in-suspend;
 +	};
 +};
-diff -Naurw ./fdts/stm32mp157a-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi
---- ./fdts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi	2019-03-25 17:20:24.539715008 +0100
+diff --git a/fdts/stm32mp157a-pinctrl.dtsi b/fdts/stm32mp157a-pinctrl.dtsi
+new file mode 100644
+index 0000000..d149a02
+--- /dev/null
++++ b/fdts/stm32mp157a-pinctrl.dtsi
 @@ -0,0 +1,350 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -967,3 +918,90 @@ diff -Naurw ./fdts/stm32mp157a-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-pinct
 +		};
 +	};
 +};
+diff --git a/fdts/stm32mp157aac-pinctrl.dtsi b/fdts/stm32mp157aac-pinctrl.dtsi
+new file mode 100644
+index 0000000..b44c239
+--- /dev/null
++++ b/fdts/stm32mp157aac-pinctrl.dtsi
+@@ -0,0 +1,78 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
++/*
++ * Copyright (C) Arrow Electronics 2019 - All Rights Reserved
++ * Author: Botond Kardos <botond.kardos@arroweurope.com>
++ */
++
++#include "stm32mp157a-pinctrl.dtsi"
++/ {
++	soc {
++		pinctrl: pin-controller@50002000 {
++			st,package = <STM32MP157CAC>;
++
++			gpioa: gpio@50002000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 0 16>;
++			};
++
++			gpiob: gpio@50003000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 16 16>;
++			};
++
++			gpioc: gpio@50004000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 32 16>;
++			};
++
++			gpiod: gpio@50005000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 48 16>;
++			};
++
++			gpioe: gpio@50006000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 64 16>;
++			};
++
++			gpiof: gpio@50007000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 80 16>;
++			};
++
++			gpiog: gpio@50008000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 96 16>;
++			};
++
++			gpioh: gpio@50009000 {
++				status = "okay";
++				ngpios = <16>;
++				gpio-ranges = <&pinctrl 0 112 16>;
++			};
++
++			gpioi: gpio@5000a000 {
++				status = "okay";
++				ngpios = <12>;
++				gpio-ranges = <&pinctrl 0 128 12>;
++			};
++		};
++
++		pinctrl_z: pin-controller-z@54004000 {
++			st,package = <STM32MP157CAC>;
++
++			gpioz: gpio@54004000 {
++				status = "okay";
++				ngpios = <8>;
++				gpio-ranges = <&pinctrl_z 0 400 8>;
++			};
++		};
++	};
++};
+-- 
+2.7.4
+
