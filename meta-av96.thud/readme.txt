@@ -11,7 +11,7 @@
         $ git clone git://git.yoctoproject.org/meta-security
         $ cd meta-security/
         $ git checkout 51a4c6b5179d087f647cf0c458edb8ab107826ef
-        $ cd ../meta-st/meta-st-stm32mp/conf/eula/
+        $ cd ../meta-st/meta-st-stm32mp-addons/conf/eula/
         $ ln -s ST_EULA_SLA stm32mp1-av96
         $ popd
         $ DISTRO=openstlinux-weston MACHINE=stm32mp1-av96 source layers/meta-st/scripts/envsetup.sh
