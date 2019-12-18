@@ -31,7 +31,8 @@ SRC_URI += " \
 	file://0028-media-v4l2-add-support-of-pclk_max_frequency-on-CSI-.patch \
 	file://0029-ARM-dts-stm32-limit-OV5640-pixel-clock-to-77MHz-on-s.patch \
 	file://0030-ARM-dts-stm32-fix-the-reset-gpio-information-of-the-.patch \
-	file://0031-media-ov5640-add-the-support-of-the-auto-focus.patch"
+	file://0031-media-ov5640-add-the-support-of-the-auto-focus.patch \
+	file://0032-media-ov5640-fix-overflow-while-calculating-the-mipi.patch"
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-07-hdmi.config"
