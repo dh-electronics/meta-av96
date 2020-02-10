@@ -3,6 +3,7 @@
   <remote fetch="https://github.com" name="github"/>
   <remote fetch="http://git.openembedded.org" name="oe"/>
   <remote fetch="https://github.com/STMicroelectronics" name="OpenSTLinux"/>
+  <remote fetch="git://git.yoctoproject.org" name="yocto" />
   
   <default remote="OpenSTLinux"/>
   
@@ -12,7 +13,15 @@
   <project name="meta-qt5/meta-qt5" path="layers/meta-qt5" remote="github" revision="1520d5b2b2beec5e1c3209d3178219e93ef08bca"/>
   <project name="meta-st-openstlinux" path="layers/meta-st/meta-st-openstlinux" revision="ee276cb390d7dd1175d386ba2bfd384c1b206808"/>
   <project name="meta-st-stm32mp" path="layers/meta-st/meta-st-stm32mp" revision="d8cbac759e1275b1a27d4ba38b64a0d83d0e8c9f"/>
-  <project name="meta-st-stm32mp-addons" path="layers/meta-st/meta-st-stm32mp-addons" revision="db898de3834a8a2a889a6b43993b8faf22de798c"/>
+  <project name="meta-st-stm32mp-addons" path="layers/meta-st/meta-st-stm32mp-addons" revision="db898de3834a8a2a889a6b43993b8faf22de798c">
+    <linkfile src="conf/eula/ST_EULA_SLA" dest="layers/meta-st/meta-st-stm32mp-addons/conf/eula/stm32mp1-av96"/>
+  </project>
   <project name="meta-st-scripts" path="layers/meta-st/scripts" revision="09bc7b8639a227f4bcba3223de144520e4c31d09"/>
   <project name="openembedded-core" path="layers/openembedded-core" remote="oe" revision="d3d3f443039b03f1200a14bfe99f985592632018"/>
+  <project name="meta-security" path="layers/meta-security" remote="yocto" revision="51a4c6b5179d087f647cf0c458edb8ab107826ef"/>
+  <project name="dh-electronics/meta-av96" path="layers/meta-av96" remote="github" revision="refs/tags/av96_v40">
+    <copyfile src="files/bblayers.conf" dest="build-openstlinuxweston-stm32mp1-av96/conf/bblayers.conf"/>
+    <copyfile src="files/stm32mp1-av96.conf" dest="layers/meta-st/meta-st-stm32mp-addons/conf/machine/stm32mp1-av96.conf"/>
+    <copyfile src="files/st-machine-flashlayout-stm32mp.inc" dest="layers/meta-st/meta-st-stm32mp/conf/machine/include/st-machine-flashlayout-stm32mp.inc"/>
+  </project>
 </manifest>
