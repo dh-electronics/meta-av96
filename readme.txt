@@ -14,8 +14,10 @@ process but starts with a different 'repo' manifest file:
       $ DISTRO=openstlinux-weston MACHINE=stm32mp1-av96 source layers/meta-st/scripts/envsetup.sh
       $ bitbake av96-weston
 
-    The last command will build the BSP. When the build completes it puts all
-the required files into the 'deploy' folder. Execute the following commands:
+    The last command will build the BSP. The full build will take about 1-2
+hours dpending on machine and internate speed and will require around 25GB
+disk space. When the build completes it puts all the required files into the
+'deploy' folder. Execute the following commands:
       $ cd tmp-glibc/deploy/images/stm32mp1-av96/
       $ ./scripts/create_sdcard_from_flashlayout.sh flashlayout_av96-weston/FlashLayout_sdcard_stm32mp157a-av96-trusted.tsv
 

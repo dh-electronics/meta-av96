@@ -83,7 +83,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157aac-pinctrl.dtsi ../kernel-source/arch
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
 +++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2019-08-05 17:11:28.467413718 +0200
-@@ -0,0 +1,947 @@
+@@ -0,0 +1,948 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) STMicroelectronics 2017 - All Rights Reserved
@@ -677,6 +677,7 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/b
 +		regulators {
 +			v1v8: ldo6 {
 +				regulator-enable-ramp-delay = <300000>;
++				regulator-always-on;
 +			};
 +		};
 +	};

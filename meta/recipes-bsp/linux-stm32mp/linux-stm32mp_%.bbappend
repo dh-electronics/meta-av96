@@ -10,7 +10,6 @@ SRC_URI += "file://0001-linux-av96-devicetree.patch \
         file://0008-dts-av96-add-mipid02-CSI-bridge.patch \
         file://0009-dts-av96-add-DCMI-support.patch \
         file://0010-dts-av96-add-support-of-OV5640-D3-mezzanine-board.patch \
-        file://0011-dt-disable-i2c1.patch \
         file://0012-ov5640-always-on-for-debug.patch \
         file://0013-mipid02-4.19-compat.patch \
         file://0014-TMP-force-mipi-build.patch \
