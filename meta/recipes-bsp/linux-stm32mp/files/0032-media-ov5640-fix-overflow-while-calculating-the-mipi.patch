@@ -1,0 +1,54 @@
+From 6510d9d9c63beecff3c521df52db178cde33d777 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Wed, 18 Dec 2019 16:04:23 +0100
+Subject: [PATCH 1/1] media: ov5640: fix overflow while calculating the
+ mipi_pclk
+
+Inverts the order of the operation while calculing the pclk_freq.
+Do the division before the multiplication to avoid u32 overflow.
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ drivers/media/i2c/ov5640.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
+index 5ddf394..f128872 100644
+--- a/drivers/media/i2c/ov5640.c
++++ b/drivers/media/i2c/ov5640.c
+@@ -1213,7 +1213,7 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
+ 	struct i2c_client *client = sensor->i2c_client;
+ 	const struct ov5640_mode_info *mode = sensor->current_mode;
+ 	u8 prediv, mult, sysdiv;
+-	unsigned int pclk_freq, max_pclk_freq;
++	unsigned long pclk_freq, max_pclk_freq;
+ 	u8 mipi_div;
+ 	int ret;
+ 
+@@ -1228,17 +1228,16 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
+ 	else
+ 		mipi_div = OV5640_MIPI_DIV_PCLK;
+ 
+-	pclk_freq = 2 * /* 2 clocks per pixel */
+-		    rate *
+-		    sensor->ep.bus.mipi_csi2.num_data_lanes / 16 / mipi_div;
++	pclk_freq = rate / 16 / mipi_div;
++	pclk_freq = pclk_freq * 2 * /* 2 clocks per pixel */
++		    sensor->ep.bus.mipi_csi2.num_data_lanes;
+ 	max_pclk_freq = sensor->ep.bus.mipi_csi2.pclk_max_frequency;
+-
+ 	/* clip rate according to optional maximum pixel clock limit */
+ 	if (max_pclk_freq && (pclk_freq > max_pclk_freq)) {
+-		rate = max_pclk_freq *
+-		       mipi_div * 16 / sensor->ep.bus.mipi_csi2.num_data_lanes
++		rate = max_pclk_freq / sensor->ep.bus.mipi_csi2.num_data_lanes
+ 		       / 2;
+-		dev_dbg(&client->dev, "MIPI pixel clock too high (%d > %d Hz), reducing rate...\n",
++		rate = rate * mipi_div * 16;
++		dev_dbg(&client->dev, "MIPI pixel clock too high (%lu > %lu Hz), reducing rate...\n",
+ 			pclk_freq, max_pclk_freq);
+ 	}
+ 
+-- 
+2.7.4
+

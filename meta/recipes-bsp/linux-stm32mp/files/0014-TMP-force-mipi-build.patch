@@ -1,0 +1,26 @@
+From 303c6e866075855e3532a438ebcbdf32b225ee65 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Tue, 14 May 2019 17:35:50 +0200
+Subject: [PATCH 14/31] TMP force mipi build
+
+%% original patch: 0015-TMP-force-mipi-build.patch
+---
+ drivers/media/i2c/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/i2c/Makefile b/drivers/media/i2c/Makefile
+index a65e311..9d86813 100644
+--- a/drivers/media/i2c/Makefile
++++ b/drivers/media/i2c/Makefile
+@@ -108,7 +108,7 @@ obj-$(CONFIG_VIDEO_OV2659)	+= ov2659.o
+ obj-$(CONFIG_VIDEO_TC358743)	+= tc358743.o
+ obj-$(CONFIG_VIDEO_IMX258)	+= imx258.o
+ obj-$(CONFIG_VIDEO_IMX274)	+= imx274.o
+-obj-$(CONFIG_VIDEO_ST_MIPID02) += st-mipid02.o
++obj-m += st-mipid02.o
+ 
+ 
+ obj-$(CONFIG_SDR_MAX2175) += max2175.o
+-- 
+2.7.4
+

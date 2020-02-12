@@ -1,0 +1,34 @@
+From a9b936f950e2de40e7c36eea15247e7de6c41343 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Tue, 14 May 2019 11:29:31 +0200
+Subject: [PATCH 11/31] dt: disable i2c1
+
+%% original patch: 0012-dt-disable-i2c1.patch
+---
+ arch/arm/boot/dts/stm32mp157a-av96.dts | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
+index f04a88c..1f48e5d 100644
+--- a/arch/arm/boot/dts/stm32mp157a-av96.dts
++++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
+@@ -462,7 +462,7 @@
+ 	pinctrl-1 = <&i2c1_pins_sleep_a>;
+ 	i2c-scl-rising-time-ns = <185>;
+ 	i2c-scl-falling-time-ns = <20>;
+-	status = "okay";
++	status = "disable";
+ };
+ 
+ &i2c2 {
+@@ -588,6 +588,7 @@
+ 		regulators {
+ 			v1v8: ldo6 {
+ 				regulator-enable-ramp-delay = <300000>;
++				regulator-always-on;
+ 			};
+ 		};
+ 	};
+-- 
+2.7.4
+

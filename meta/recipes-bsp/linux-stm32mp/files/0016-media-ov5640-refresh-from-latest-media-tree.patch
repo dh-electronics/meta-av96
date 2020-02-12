@@ -1,0 +1,91 @@
+From 7e2fcaba632f1fbfa5e42fcf09dcd3826f333ca8 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Fri, 6 Dec 2019 10:39:21 +0100
+Subject: [PATCH 16/31] media: ov5640: refresh from latest media-tree
+
+Needed otherwise the OV5640 subdevice is not bounding on dcmi side...
+We also benefits from latest clock tree changes from Maxime Ripard.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ drivers/media/i2c/ov5640.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
+index 9ac7962..554106e 100644
+--- a/drivers/media/i2c/ov5640.c
++++ b/drivers/media/i2c/ov5640.c
+@@ -25,6 +25,7 @@
+ #include <media/v4l2-async.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
++#include <media/v4l2-event.h>
+ #include <media/v4l2-fwnode.h>
+ #include <media/v4l2-subdev.h>
+ 
+@@ -2005,8 +2006,8 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
+ 	return 0;
+ 
+ power_off:
+-//	ov5640_power(sensor, false);
+-//	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
++	ov5640_power(sensor, false);
++	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
+ xclk_off:
+ 	clk_disable_unprepare(sensor->xclk);
+ 	return ret;
+@@ -2014,9 +2015,9 @@ static int ov5640_set_power_on(struct ov5640_dev *sensor)
+ 
+ static void ov5640_set_power_off(struct ov5640_dev *sensor)
+ {
+-//	ov5640_power(sensor, false);
+-//	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
+-//	clk_disable_unprepare(sensor->xclk);
++	ov5640_power(sensor, false);
++	regulator_bulk_disable(OV5640_NUM_SUPPLIES, sensor->supplies);
++	clk_disable_unprepare(sensor->xclk);
+ }
+ 
+ static int ov5640_set_power(struct ov5640_dev *sensor, bool on)
+@@ -2908,6 +2909,9 @@ static int ov5640_s_stream(struct v4l2_subdev *sd, int enable)
+ 
+ static const struct v4l2_subdev_core_ops ov5640_core_ops = {
+ 	.s_power = ov5640_s_power,
++	.log_status = v4l2_ctrl_subdev_log_status,
++	.subscribe_event = v4l2_ctrl_subdev_subscribe_event,
++	.unsubscribe_event = v4l2_event_subdev_unsubscribe,
+ };
+ 
+ static const struct v4l2_subdev_video_ops ov5640_video_ops = {
+@@ -3062,7 +3066,8 @@ static int ov5640_probe(struct i2c_client *client,
+ 
+ 	v4l2_i2c_subdev_init(&sensor->sd, client, &ov5640_subdev_ops);
+ 
+-	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
++	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
++			    V4L2_SUBDEV_FL_HAS_EVENTS;
+ 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
+ 	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+ 	ret = media_entity_pads_init(&sensor->sd.entity, 1, &sensor->pad);
+@@ -3076,8 +3081,8 @@ static int ov5640_probe(struct i2c_client *client,
+ 	mutex_init(&sensor->lock);
+ 
+ 	ret = ov5640_check_chip_id(sensor);
+-//	if (ret)
+-//		goto entity_cleanup;
++	if (ret)
++		goto entity_cleanup;
+ 
+ 	ret = ov5640_init_controls(sensor);
+ 	if (ret)
+@@ -3087,7 +3092,6 @@ static int ov5640_probe(struct i2c_client *client,
+ 	if (ret)
+ 		goto free_ctrls;
+ 
+-	dev_info(dev, "HFR probe OK\n");
+ 	return 0;
+ 
+ free_ctrls:
+-- 
+2.7.4
+

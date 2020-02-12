@@ -19,7 +19,7 @@
   <project name="meta-st-scripts" path="layers/meta-st/scripts" revision="09bc7b8639a227f4bcba3223de144520e4c31d09"/>
   <project name="openembedded-core" path="layers/openembedded-core" remote="oe" revision="d3d3f443039b03f1200a14bfe99f985592632018"/>
   <project name="meta-security" path="layers/meta-security" remote="yocto" revision="51a4c6b5179d087f647cf0c458edb8ab107826ef"/>
-  <project name="dh-electronics/meta-av96" path="layers/meta-av96" remote="github" revision="refs/tags/av96_v40">
+  <project name="dh-electronics/meta-av96" path="layers/meta-av96" remote="github" revision="refs/tags/av96_v41">
     <copyfile src="files/bblayers.conf" dest="build-openstlinuxweston-stm32mp1-av96/conf/bblayers.conf"/>
     <copyfile src="files/stm32mp1-av96.conf" dest="layers/meta-st/meta-st-stm32mp-addons/conf/machine/stm32mp1-av96.conf"/>
     <copyfile src="files/st-machine-flashlayout-stm32mp.inc" dest="layers/meta-st/meta-st-stm32mp/conf/machine/include/st-machine-flashlayout-stm32mp.inc"/>

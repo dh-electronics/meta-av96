@@ -1,0 +1,103 @@
+From f137d47fe794878b545e8e32d39e3c97e3807e74 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Thu, 2 May 2019 14:20:44 +0200
+Subject: [PATCH 10/31] dts: av96: add support of OV5640 D3 mezzanine board
+
+OV5640 connected to CSI input port of MIPID02 CSI bridge.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+
+%% original patch: 0011-dts-av96-add-support-of-OV5640-D3-mezzanine-board.patch
+---
+ arch/arm/boot/dts/stm32mp157a-av96.dts | 54 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 53 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
+index 83702b1..f04a88c 100644
+--- a/arch/arm/boot/dts/stm32mp157a-av96.dts
++++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
+@@ -382,6 +382,12 @@
+ 
+ 	port {
+ 		dcmi_0: endpoint {
++			remote-endpoint = <&mipid02_2>;
++			bus-width = <8>;
++			hsync-active = <0>;
++			vsync-active = <0>;
++			pclk-sample = <0>;
++			pclk-max-frequency = <77000000>;
+ 		};
+ 	};
+ };
+@@ -469,6 +475,29 @@
+ 	/delete-property/dmas;
+ 	/delete-property/dma-names;
+ 
++	ov5640: camera@3c {
++		compatible = "ovti,ov5640";
++		reg = <0x3c>;
++		clocks = <&rcc CK_MCO1>;
++		clock-names = "xclk";
++		assigned-clocks = <&rcc CK_MCO1>;
++		assigned-clock-parents = <&rcc CK_HSE>;
++		assigned-clock-rates = <24000000>;
++		DOVDD-supply = <&v1v8>;
++		reset-gpios = <&gpioa 12 GPIO_ACTIVE_LOW>;/* 31 PA12 TP54 - D3 mezz= GPIOI= TP6 CSI0_RESET (31 low speed) */
++		powerdown-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;/* 32 PB5 TP60 - D3 mezz= GPIOJ= TP7 CSI0_PWDN (32 low speed) */
++		rotation = <180>;
++		status = "okay";
++
++		port {
++			ov5640_0: endpoint {
++				remote-endpoint = <&mipid02_0>;
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
++			};
++		};
++	};
++
+ #if 0
+ 	wm8994: wm8994@1b {
+ 		compatible = "wlf,wm8994";
+@@ -563,7 +592,7 @@
+ 		};
+ 	};
+ 
+-	stmipi: stmipi@14 {
++	mipid02: mipid02@14 {
+ 		compatible = "st,st-mipid02";
+ 		reg = <0x14>;
+ 		status = "okay";
+@@ -578,6 +607,29 @@
+ 		VDDE-supply = <&v1v8>;
+ 		VDDIN-supply = <&v1v8>;
+ 		reset-gpios = <&gpioz 0 GPIO_ACTIVE_LOW>;
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			port@0 {
++				reg = <0>;
++
++				mipid02_0: endpoint {
++					data-lanes = <1 2>;
++					remote-endpoint = <&ov5640_0>;
++				};
++			};
++			port@2 {
++				reg = <2>;
++
++				mipid02_2: endpoint {
++					bus-width = <8>;
++					hsync-active = <0>;
++					vsync-active = <0>;
++					pclk-sample = <0>;
++					remote-endpoint = <&dcmi_0>;
++				};
++			};
++		};
+ 	};
+ 
+ 	hdmi-transmitter@3d {
+-- 
+2.7.4
+

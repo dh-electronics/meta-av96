@@ -1,0 +1,83 @@
+From 2500b246d611adabea35b9a9ff9869dd0390c4cb Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Mon, 13 May 2019 16:51:44 +0200
+Subject: [PATCH 07/31] dts: av96: cleanup of eval board config for dcmi +
+ ov5640
+
+%% original patch: 0008-dts-av96-cleanup-of-eval-board-config-for-dcmi-ov564.patch
+---
+ arch/arm/boot/dts/stm32mp157a-av96.dts | 44 ----------------------------------
+ 1 file changed, 44 deletions(-)
+
+diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
+index ad94740..eb7ecea 100644
+--- a/arch/arm/boot/dts/stm32mp157a-av96.dts
++++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
+@@ -228,24 +228,6 @@
+ 	pinctrl-1 = <&cec_pins_sleep_a>;
+ };
+ 
+-&dcmi {
+-	status = "okay";
+-	pinctrl-names = "default", "sleep";
+-	pinctrl-0 = <&dcmi_pins_a>;
+-	pinctrl-1 = <&dcmi_sleep_pins_a>;
+-
+-	port {
+-		dcmi_0: endpoint {
+-			remote-endpoint = <&ov5640_0>;
+-			bus-width = <8>;
+-			hsync-active = <0>;
+-			vsync-active = <0>;
+-			pclk-sample = <1>;
+-			pclk-max-frequency = <77000000>;
+-		};
+-	};
+-};
+-
+ &dfsdm {
+ 	pinctrl-names = "default", "sleep";
+ 	pinctrl-0 = <&dfsdm_clkout_pins_a
+@@ -476,26 +458,6 @@
+ 	/delete-property/dma-names;
+ 
+ #if 0
+-	ov5640: camera@3c {
+-		compatible = "ovti,ov5640";
+-		reg = <0x3c>;
+-		clocks = <&clk_ext_camera>;
+-		clock-names = "xclk";
+-		DOVDD-supply = <&v1v8>;
+-		status = "okay";
+-		powerdown-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+-		reset-gpios = <&gpioa 12 GPIO_ACTIVE_LOW>;
+-		rotation = <180>;
+-
+-		port {
+-			ov5640_0: endpoint {
+-				remote-endpoint = <&dcmi_0>;
+-				clock-lanes = <1>;
+-				data-lanes = <0 2>;
+-			};
+-		};
+-	};
+-
+ 	wm8994: wm8994@1b {
+ 		compatible = "wlf,wm8994";
+ 		#sound-dai-cells = <0>;
+@@ -566,12 +528,6 @@
+ 				drive-push-pull;
+ 				bias-pull-down;
+ 			};
+-
+-			ov5640_pins: camera {
+-				pins = "agpio2", "agpio3"; /* stmfx pins 18 & 19 */
+-				drive-push-pull;
+-				output-low;
+-			};
+ 		};
+ 	};
+ 
+-- 
+2.7.4
+
