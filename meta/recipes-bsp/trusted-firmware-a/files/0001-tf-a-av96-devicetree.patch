@@ -1,6 +1,6 @@
 diff -Naurw ./fdts/stm32mp157aac-pinctrl.dtsi ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi
 --- ./fdts/stm32mp157aac-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi	2019-03-25 17:20:24.539715008 +0100
++++ ../tfa-source/fdts/stm32mp157aac-pinctrl.dtsi	2020-03-10 14:23:42.606780874 +0100
 @@ -0,0 +1,78 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -82,7 +82,7 @@ diff -Naurw ./fdts/stm32mp157aac-pinctrl.dtsi ../tfa-source/fdts/stm32mp157aac-p
 +};
 diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 --- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dts	2019-03-25 17:20:24.539715008 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dts	2020-03-10 14:23:42.606780874 +0100
 @@ -0,0 +1,57 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -143,8 +143,8 @@ diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
 +};
 diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dtsi
 --- ./fdts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2019-03-26 13:19:58.934544406 +0100
-@@ -0,0 +1,470 @@
++++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2020-03-10 14:48:49.604438582 +0100
+@@ -0,0 +1,468 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) Arrow Electronics 2019 - All Rights Reserved
@@ -323,7 +323,6 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +	status = "okay";
 +};
 +
-+#if 0
 +&sdmmc2 {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&sdmmc2_b4_pins_a &sdmmc2_d47_pins_a>;
@@ -337,7 +336,6 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +	mmc-ddr-3_3v;
 +	status = "okay";
 +};
-+#endif
 +
 +&uart4 {
 +	pinctrl-names = "default";
@@ -617,7 +615,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +};
 diff -Naurw ./fdts/stm32mp157a-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi
 --- ./fdts/stm32mp157a-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi	2019-03-25 17:20:24.539715008 +0100
++++ ../tfa-source/fdts/stm32mp157a-pinctrl.dtsi	2020-03-10 14:46:23.651426595 +0100
 @@ -0,0 +1,350 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -857,7 +855,7 @@ diff -Naurw ./fdts/stm32mp157a-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-pinct
 +						 <STM32_PINMUX('B', 3, AF9)>, /* SDMMC2_D2 */
 +						 <STM32_PINMUX('B', 4, AF9)>, /* SDMMC2_D3 */
 +						 <STM32_PINMUX('G', 6, AF10)>; /* SDMMC2_CMD */
-+					slew-rate = <1>;
++					slew-rate = <2>;
 +					drive-push-pull;
 +					bias-pull-up;
 +				};
@@ -875,7 +873,7 @@ diff -Naurw ./fdts/stm32mp157a-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-pinct
 +						 <STM32_PINMUX('A', 15, AF9)>, /* SDMMC2_D5 */
 +						 <STM32_PINMUX('C', 6, AF10)>, /* SDMMC2_D6 */
 +						 <STM32_PINMUX('C', 7, AF10)>; /* SDMMC2_D7 */
-+					slew-rate = <1>;
++					slew-rate = <2>;
 +					drive-push-pull;
 +					bias-pull-up;
 +				};
