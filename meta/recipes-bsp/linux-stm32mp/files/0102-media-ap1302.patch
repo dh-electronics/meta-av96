@@ -1,0 +1,288 @@
+diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
+--- ./drivers/media/i2c/ap1302.c	2020-03-24 20:29:19.059905810 +0100
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-03-24 20:10:44.314514603 +0100
+@@ -60,6 +60,7 @@
+ #define AP1302_REG_UPTIME_SEC_FRAC      0x0E38
+ 
+ #define AP1302_REG_BOOTDATA_STAGE       0x6002
++#define AP1302_REG_SENSOR_SELECT		0x600c
+ #define AP1302_REG_SYS_START            0x601a
+ #define AP1302_REG_BOOTDATA_CHSUM       0x6134
+ 
+@@ -273,6 +274,7 @@
+ 	struct mutex lock;
+ 
+ 	int power_count;
++	int power_state;
+ 
+ 	struct v4l2_mbus_framefmt fmt;
+ 	bool pending_fmt_change;
+@@ -290,6 +292,7 @@
+ 	u8 tmp_buf[ 8196 ];
+ 	bool pending_mode_change;
+ 	bool streaming;
++	bool fw_down;
+ 	const struct firmware *fw_sensor;
+ 	const struct firmware *fw_test;
+ };
+@@ -660,13 +663,14 @@
+ 
+ static int ap1302_write_reg16(struct ap1302_dev *sensor, u16 reg, u16 val)
+ {
+-	int ret;
++	u8 buf[ 4 ];
+ 
+-	ret = ap1302_write_reg(sensor, reg, val >> 8);
+-	if (ret)
+-		return ret;
++	buf[ 0 ] = reg >> 8;
++	buf[ 1 ] = reg & 0xff;
++	buf[ 2 ] = val >> 8;
++	buf[ 3 ] = val & 0xff;
+ 
+-	return ap1302_write_reg(sensor, reg + 1, val & 0xff);
++	return ap1302_write_buf( sensor, buf, sizeof( buf ) );
+ }
+ 
+ static int ap1302_mod_reg(struct ap1302_dev *sensor, u16 reg,
+@@ -2008,6 +2012,7 @@
+ 
+ 	ap1302_reset(sensor);
+ 	ap1302_power(sensor, true);
++	sensor->power_state = 1;
+ 
+ 	return 0;
+ 
+@@ -2018,6 +2023,7 @@
+ 
+ static void ap1302_set_power_off(struct ap1302_dev *sensor)
+ {
++	sensor->power_state = 0;
+ 	ap1302_power(sensor, false);
+ 	regulator_bulk_disable(AP1302_NUM_SUPPLIES, sensor->supplies);
+ 	clk_disable_unprepare(sensor->xclk);
+@@ -2031,7 +2037,8 @@
+ 
+ static const char * const test_pattern_menu[] = {
+ 	"Disabled",
+-	"Enabled",
++	"Color Bars",
++	"Color Bars Fade to Grey",
+ };
+ 
+ 
+@@ -2785,6 +2792,27 @@
+ 
+ #endif
+ 
++static int ap1302_set_ctrl_test_pattern(struct ap1302_dev *sensor, int value)
++{
++	int val;
++
++	switch ( value ) {
++		case 0:
++			val = 0x0211;
++			break;
++
++		case 1:
++			val = 0x0310;
++			break;
++
++		default:
++			val = 0x0410;
++			break;
++	}
++
++	return ap1302_write_reg16( sensor, AP1302_REG_SENSOR_SELECT, val );
++}
++
+ static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
+ 				  struct v4l2_subdev_pad_config *cfg,
+ 				  struct v4l2_subdev_frame_size_enum *fse)
+@@ -2919,8 +2947,28 @@
+ 
+ #else
+ 
++	/* v4l2_ctrl_lock() locks our own mutex */
++
++	/*
++	 * If the device is not powered up by the host driver do
++	 * not apply any controls to H/W at this time. Instead
++	 * the controls will be restored right after power-up.
++	 */
++	if ( !sensor->power_state )
+ 	return 0;
+ 
++	switch (ctrl->id) {
++		case V4L2_CID_TEST_PATTERN:
++			ret = ap1302_set_ctrl_test_pattern(sensor, ctrl->val);
++			break;
++
++		default:
++			ret = -EINVAL;
++			break;
++	}
++
++	return ret;
++
+ #endif
+ 
+ }
+@@ -3084,9 +3132,23 @@
+ 
+ static int ap1302_s_power(struct v4l2_subdev *sd, int on)
+ {
+-    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++	struct ap1302_dev *sensor = to_ap1302_dev(sd);
++	int ret = 0;
+ 
+-	return 0;
++    printk( KERN_ALERT "**** %s %i   on: %i\n", __func__, (int )__LINE__, on );
++
++	mutex_lock(&sensor->lock);
++
++	if ( on )
++		ret = ap1302_set_power_on( sensor );
++	else {
++		sensor->streaming = false;
++		sensor->fw_down = false;
++		ap1302_set_power_off( sensor );
++	}
++
++	mutex_unlock(&sensor->lock);
++	return ret;
+ }
+ 
+ static int ap1302_g_frame_interval(struct v4l2_subdev *sd,
+@@ -3111,11 +3173,41 @@
+ 	return 0;
+ }
+ 
++/* format of binary firmware files */
++struct ap1302_fw_data {
++	int chksum;
++	int pll_init_size;
++	int total_size;
++	u8  bootdata[ ];
++};
++
++static int ap1302_fw_loop(struct ap1302_dev *sensor, struct ap1302_fw_data *p_fw_data );
++
+ static int ap1302_s_stream(struct v4l2_subdev *sd, int enable)
+ {
+-    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++	struct ap1302_dev *sensor = to_ap1302_dev(sd);
++	int ret = 0;
+ 
+-	return 0;
++    printk( KERN_ALERT "**** %s %i   enable: %i\n", __func__, (int )__LINE__, enable );
++
++	mutex_lock(&sensor->lock);
++
++	if ( enable && sensor->ep.bus_type == V4L2_MBUS_CSI2 ) {
++		if ( !sensor->streaming && !sensor->fw_down ) {
++			ret = ap1302_fw_loop( sensor, (struct ap1302_fw_data *)sensor->fw_sensor->data );
++			printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++		}
++
++		if (!ret)
++			sensor->streaming = true;
++	}
++
++	if ( !enable ) {
++		sensor->streaming = false;
++	}
++
++	mutex_unlock(&sensor->lock);
++	return ret;
+ }
+ 
+ static int ap1302_get_fmt(struct v4l2_subdev *sd,
+@@ -3243,14 +3335,6 @@
+ }
+ 
+ 
+-/* format of binary firmware files */
+-struct ap1302_fw_data {
+-	int chksum;
+-	int pll_init_size;
+-	int total_size;
+-	u8  bootdata[ ];
+-};
+-
+ struct read_reg {
+ 	const u16 reg;
+ 	const int len;
+@@ -3530,12 +3614,14 @@
+ 		msleep( 200 );
+ 	}
+ 
++	if ( !ret )
++		sensor->fw_down = true;
++
+ 	return ret;
+-}
++} /* fw_loop */
+ 
+ static int ap1302_download_fw(struct ap1302_dev *sensor)
+ {
+-	struct ap1302_fw_data *p_fw_data;
+ 	int ret, cnt, total, idx;
+ 	u16 val;
+ 
+@@ -3546,6 +3632,9 @@
+ 	ret = request_firmware(&sensor->fw_test, "ap1302/test_pattern.bin", &sensor->i2c_client->dev);
+ 	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
+ 
++	if ( !ret && sensor->fw_test->data == NULL )
++		ret = -EINVAL;
++
+ 	if ( ret ) {
+ 		dev_err( &sensor->i2c_client->dev, "failed to download firmware\n" );
+ 		goto power_off;
+@@ -3556,25 +3645,15 @@
+ 	ret = request_firmware(&sensor->fw_sensor, "ap1302/on_ar1337.bin", &sensor->i2c_client->dev);
+ 	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
+ 
++	if ( !ret && sensor->fw_sensor->data == NULL )
++		ret = -EINVAL;
++
+ 	if ( ret ) {
+ 		dev_err( &sensor->i2c_client->dev, "failed to download firmware\n" );
+ 		goto release_fw;
+ 	}
+ 
+ 	printk( KERN_ALERT "**** %s %i   size: %i\n", __func__, (int )__LINE__, sensor->fw_sensor->size );
+-
+-	p_fw_data = (struct ap1302_fw_data *)sensor->fw_test->data;
+-	if ( p_fw_data == NULL ) {
+-		ret = -EINVAL;
+-		goto release_fw;
+-	}
+-
+-	ret = ap1302_fw_loop( sensor, p_fw_data );
+-	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
+-
+-	if ( ret )
+-		dev_err( &sensor->i2c_client->dev, "failed to download firmware\n" );
+-	else
+ 		return 0;
+ 
+ release_fw:
+diff -Naurw ./drivers/media/i2c/st-mipid02.c ../kernel-source/drivers/media/i2c/st-mipid02.c
+--- ./drivers/media/i2c/st-mipid02.c	2020-03-24 20:29:19.063905872 +0100
++++ ../kernel-source/drivers/media/i2c/st-mipid02.c	2020-03-24 19:52:47.353513382 +0100
+@@ -694,13 +694,6 @@
+ 	if (ret)
+ 		goto error;
+ 
+-	for ( cnt = 0 ; cnt < 4 ; cnt++ ) {
+-		msleep( 500 );
+-		ret = dump_regs(bridge);
+-	}
+-
+-	printk( KERN_ALERT "**** %s %i  ret: %i   cnt: %i", __func__, (int )__LINE__, ret, cnt );
+-
+ 	return 0;
+ 
+ error:
