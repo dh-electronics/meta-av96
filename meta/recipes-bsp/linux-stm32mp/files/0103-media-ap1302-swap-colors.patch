@@ -1,0 +1,907 @@
+diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
+--- ./drivers/media/i2c/ap1302.c	2020-03-30 19:02:30.967310380 +0200
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-03-30 18:26:12.215230629 +0200
+@@ -32,12 +32,15 @@
+ #include <media/v4l2-subdev.h>
+ 
+ 
++#define AP1302_DBG_CONSOLE_OUTPUT   0
++
+ /* min/typical/max system clock (xclk) frequencies */
+ #define AP1302_XCLK_MIN 24000000
+ #define AP1302_XCLK_MAX 24000000
+ 
++#define AP1302_TMP_BUF_SIZE     8196
++
+ #define AP1302_I2C_LINE_MAX     256
+-#define AP1302_BOOTDATA_WRAP    0xa000
+ 
+ #define AP1302_DEFAULT_SLAVE_ID 0x3d
+ 
+@@ -56,9 +59,12 @@
+ #define AP1302_REG_SENSOR_WIDTH         0x00c4
+ #define AP1302_REG_SENSOR_HEIGHT        0x00c6
+ 
++#define AP1302_REG_CON_BUF_0_1          0x0a2c
++
+ #define AP1302_REG_UPTIME_SEC           0x0E34
+ #define AP1302_REG_UPTIME_SEC_FRAC      0x0E38
+ 
++#define AP1302_REG_ORIENTATION  		0x100c
+ #define AP1302_REG_BOOTDATA_STAGE       0x6002
+ #define AP1302_REG_SENSOR_SELECT		0x600c
+ #define AP1302_REG_SYS_START            0x601a
+@@ -70,6 +76,10 @@
+ #define AP1302_REG_BOOTDATA_START       0x8000
+ #define AP1302_REG_BOOTDATA_WRAP        0xa000
+ 
++#if AP1302_TMP_BUF_SIZE < ( AP1302_REG_BOOTDATA_WRAP - AP1302_REG_BOOTDATA_START + 2 )
++ #error "AP1302_TMP_BUF_SIZE too small"
++#endif
++
+ #define AP1302_REG_ADVANCED_BASE        0xf038
+ 
+ #define AP1302_SYS_START_PLL_LOCK       0x8000
+@@ -169,7 +179,7 @@
+ 	u32 colorspace;
+ };
+ 
+-#if 1
++#if 0
+ static const struct ap1302_pixfmt ap1302_formats[] = {
+ 	{ MEDIA_BUS_FMT_RGB565_2X8_LE, V4L2_COLORSPACE_SRGB, },
+ 	{ MEDIA_BUS_FMT_RGB565_2X8_BE, V4L2_COLORSPACE_SRGB, },
+@@ -289,7 +299,12 @@
+ 	u32 prev_sysclk, prev_hts;
+ 	u32 ae_low, ae_high, ae_target;
+ 
+-	u8 tmp_buf[ 8196 ];
++	u8 tmp_buf[ AP1302_TMP_BUF_SIZE ];
++#if AP1302_DBG_CONSOLE_OUTPUT
++	u8 dbg_buf1[ 512 ];
++	u8 dbg_buf2[ 512 ];
++#endif
++	int last_end;
+ 	bool pending_mode_change;
+ 	bool streaming;
+ 	bool fw_down;
+@@ -647,18 +662,13 @@
+ 
+ static int ap1302_read_reg16(struct ap1302_dev *sensor, u16 reg, u16 *val)
+ {
+-	u8 hi, lo;
+ 	int ret;
+ 
+-	ret = ap1302_read_reg(sensor, reg, &hi);
+-	if (ret)
+-		return ret;
+-	ret = ap1302_read_reg(sensor, reg + 1, &lo);
+-	if (ret)
+-		return ret;
++	ret = ap1302_read_buf(sensor, reg, (u8 *)val, 2 );
++	if ( !ret )
++		*val = be16_to_cpu( *val );
+ 
+-	*val = ((u16)hi << 8) | (u16)lo;
+-	return 0;
++	return ret;
+ }
+ 
+ static int ap1302_write_reg16(struct ap1302_dev *sensor, u16 reg, u16 val)
+@@ -690,6 +700,22 @@
+ 	return ap1302_write_reg(sensor, reg, val);
+ }
+ 
++static int ap1302_mod_reg16(struct ap1302_dev *sensor,
++							u16 reg, u16 mask, u16 val)
++{
++	int ret;
++	u16 readval;
++
++	ret = ap1302_read_reg16(sensor, reg, &readval );
++	if ( !ret ) {
++		readval &= ~mask;
++		readval |= ( val & mask );
++		ret = ap1302_write_reg16( sensor, reg, readval );
++	}
++
++	return ret;
++}
++
+ /*
+  * After trying the various combinations, reading various
+  * documentations spreaded around the net, and from the various
+@@ -2794,7 +2820,7 @@
+ 
+ static int ap1302_set_ctrl_test_pattern(struct ap1302_dev *sensor, int value)
+ {
+-	int val;
++	u16 val;
+ 
+ 	switch ( value ) {
+ 		case 0:
+@@ -2813,6 +2839,16 @@
+ 	return ap1302_write_reg16( sensor, AP1302_REG_SENSOR_SELECT, val );
+ }
+ 
++static int ap1302_set_ctrl_hflip(struct ap1302_dev *sensor, int value)
++{
++	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 0, !!value );
++}
++
++static int ap1302_set_ctrl_vflip(struct ap1302_dev *sensor, int value)
++{
++	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 1, !!value << 1 );
++}
++
+ static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
+ 				  struct v4l2_subdev_pad_config *cfg,
+ 				  struct v4l2_subdev_frame_size_enum *fse)
+@@ -2962,6 +2998,14 @@
+ 			ret = ap1302_set_ctrl_test_pattern(sensor, ctrl->val);
+ 			break;
+ 
++		case V4L2_CID_HFLIP:
++			ret = ap1302_set_ctrl_hflip(sensor, ctrl->val);
++			break;
++
++		case V4L2_CID_VFLIP:
++			ret = ap1302_set_ctrl_vflip(sensor, ctrl->val);
++			break;
++
+ 		default:
+ 			ret = -EINVAL;
+ 			break;
+@@ -2995,6 +3039,11 @@
+ 					     ARRAY_SIZE(test_pattern_menu) - 1,
+ 					     0, 0, test_pattern_menu);
+ 
++	ctrls->hflip = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_HFLIP,
++					 0, 1, 1, 0);
++	ctrls->vflip = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_VFLIP,
++					 0, 1, 1, 0);
++
+ 	ctrls->link_freq = v4l2_ctrl_new_int_menu(hdl, ops, V4L2_CID_LINK_FREQ,
+ 						  0, 0, link_freq_menu_items);
+ 	if (ctrls->link_freq)
+@@ -3302,14 +3351,13 @@
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = ap1302_read_buf(sensor, AP1302_REG_CHIP_ID, (u8 *)&val, sizeof( val ) );
++	ret = ap1302_read_reg16(sensor, AP1302_REG_CHIP_ID, &val );
+ 	if (ret) {
+ 		dev_err(&client->dev, "%s: failed to read chip identifier\n",
+ 			__func__);
+ 		goto power_off;
+ 	}
+ 
+-	val = be16_to_cpu( val );
+     printk( KERN_ALERT "**** %s %i  CHIP ID: 0x%04x\n", __func__, (int )__LINE__, (int )val );
+ 
+ 	if ( val != AP1302_CHIP_VERSION ) {
+@@ -3377,9 +3425,15 @@
+ 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
+ 	{ 4, { 0x20, 0x20,  0x0F, 0x00 }, },
+ 	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++#if 0
+ 	{ 4, { 0x20, 0x12,  0x00, 0x41 }, },
+ 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
+ 	{ 4, { 0x20, 0x16,  0x1E, 0x22 }, },
++#else
++	{ 4, { 0x20, 0x12,  0x00, 0x30 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++	{ 4, { 0x20, 0x16,  0x1E, 0x1E }, },
++#endif
+ 	{ 4, { 0x20, 0x18,  0x00, 0x1E }, },
+ };
+ 
+@@ -3438,8 +3492,8 @@
+ 		/* wait for new BOOTDATA_STAGE  */
+ 		for ( cnt = 0 ; !ret && ( cnt < 10 ) ; cnt++ ) {
+ 			msleep( 2 );
+-			ret = ap1302_read_buf(sensor, AP1302_REG_BOOTDATA_STAGE, (u8 *)&val, sizeof( val ) );
+-			if ( ret || ( be16_to_cpu( val ) == stage ) )
++			ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
++			if ( ret || ( val == stage ) )
+ 				break;
+ 		}
+ 
+@@ -3452,6 +3506,55 @@
+ 	return ret;
+ };
+ 
++static int ap1302_dbg_record(struct ap1302_dev *sensor, int line )
++{
++#if AP1302_DBG_CONSOLE_OUTPUT
++	int ret;
++	int cnt, idx, idx2, len;
++	u16 stage;
++
++	ret = ap1302_read_buf( sensor, AP1302_REG_CON_BUF_0_1, sensor->dbg_buf2, 512 );
++	if (!ret ) {
++		len = 512;
++		idx = sensor->last_end;
++		while ( len >= 0 ) {
++			if ( --idx < 0 )
++				idx = 511;
++			if ( sensor->dbg_buf2[ idx ] != sensor->dbg_buf1[ idx ] )
++				break;
++			len--;
++		}
++
++		printk( KERN_ALERT "**** %s %i   last_end: %i   idx: %i\n", __func__, line, sensor->last_end, idx );
++
++		if ( len > 0 ) {
++			memcpy( sensor->dbg_buf1, sensor->dbg_buf2, 512 );
++			memset( sensor->dbg_buf2, 0, 512 );
++			idx2 = sensor->last_end;
++			for ( cnt = 0 ; ( cnt < 511 ) && ( idx2 != idx ) ; cnt++ ) {
++				sensor->dbg_buf2[ cnt ] = sensor->dbg_buf1[ idx2 ];
++				if ( ++idx2 > 511 )
++					idx2 = 0;
++			}
++
++			/* hex_dump( sensor->dbg_buf2, cnt, 0 ); */
++			ap1302_read_reg16( sensor, AP1302_REG_BOOTDATA_STAGE, & stage );
++			printk( KERN_ALERT "**** %s %i   stage: 0x%04x   msg: %s\n", __func__, line, (int )stage, sensor->dbg_buf2 );
++
++			if ( ++idx > 511 )
++				idx = 0;
++
++			sensor->last_end = idx;
++		}
++	}
++
++	return ret;
++
++#else
++	return 0;
++#endif
++};
++
+ static int ap1302_fw_loop(struct ap1302_dev *sensor, struct ap1302_fw_data *p_fw_data )
+ {
+ 	u8 *p_buf;
+@@ -3464,6 +3567,8 @@
+ 	ret = 0;
+ 	offs = 0;
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* let's download 1st chunk */
+ 	sensor->tmp_buf[ 0 ] = addr >> 8;
+ 	sensor->tmp_buf[ 1 ] = addr & 0xff;
+@@ -3474,24 +3579,32 @@
+ 	if ( ret )
+ 		return ret;
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* change stage */
+ 	ret = ap1302_fw_change_state( sensor, 1, true );
+ 
+ 	if ( ret )
+ 		return ret;
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* set PLL */
+ 	ret = ap1302_write_regs( sensor, ap1302_fw_pll_320M, ARRAY_SIZE( ap1302_fw_pll_320M ) );
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* change stage */
+ 	if ( !ret )
+ 		ret = ap1302_fw_change_state( sensor, 2, true );
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* see if PLL locks */
+ 	for ( cnt = 0 ; !ret && ( cnt < 10 ) ; cnt++ ) {
+ 		msleep( 2 );
+-		ret = ap1302_read_buf(sensor, AP1302_REG_SYS_START, (u8 *)&val, sizeof( val ) );
+-		if ( ret || ( be16_to_cpu( val ) & AP1302_SYS_START_PLL_LOCK ) )
++		ret = ap1302_read_reg16(sensor, AP1302_REG_SYS_START, &val );
++		if ( ret || ( val & AP1302_SYS_START_PLL_LOCK ) )
+ 			break;
+ 	}
+ 
+@@ -3503,6 +3616,8 @@
+ 	if ( ret )
+ 		return ret;
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* download the rest */
+ 	offs += p_fw_data->pll_init_size;
+ 	p_buf += p_fw_data->pll_init_size;
+@@ -3527,6 +3642,8 @@
+ 		}
+ #endif
+ 
++		(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 		addr += chunk;
+ 		if ( addr >= AP1302_REG_BOOTDATA_WRAP )
+ 			addr = AP1302_REG_BOOTDATA_START;
+@@ -3550,6 +3667,8 @@
+ 		}
+ 	}
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* continue downloading the rest */
+ 	while ( !ret && ( offs < len ) ) {
+ 		sensor->tmp_buf[ 0 ] = addr >> 8;
+@@ -3570,6 +3689,8 @@
+ 		}
+ #endif
+ 
++		(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 		addr += chunk;
+ 		if ( addr >= AP1302_REG_BOOTDATA_WRAP )
+ 			addr = AP1302_REG_BOOTDATA_START;
+@@ -3583,11 +3704,12 @@
+ 	/* change stage */
+ 	(void )ap1302_fw_change_state( sensor, 0xffff, true );
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* wait for bootdata checksum to be calculated by downloaded FW */
+ 	for( cnt = 0 ; !ret && ( cnt < 100 ) ; cnt++ ) {
+ 		msleep( 2 );
+-		ret = ap1302_read_buf(sensor, AP1302_REG_BOOTDATA_CHSUM, (u8 *)&val, sizeof( val ) );
+-		val = be16_to_cpu( val );
++		ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_CHSUM, &val );
+ 		if ( !ret && ( ( val != 0 ) && ( val != p_fw_data->chksum ) ) )
+ 			ret = -EINVAL;
+ 
+@@ -3595,6 +3717,8 @@
+ 			break;
+ 	}
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   val:0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
+ 
+ 	if ( !ret && ( cnt == 100 ) )
+@@ -3603,13 +3727,20 @@
+ 	if ( ret )
+ 		return ret;
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	/* set defaults */
+ 	ret = ap1302_write_regs( sensor, ap1302_fw_defaults, ARRAY_SIZE( ap1302_fw_defaults ) );
+     printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
+ 
++#if AP1302_DBG_CONSOLE_OUTPUT
++	for ( cnt = 0 ; !ret && ( cnt < 100 ) ; cnt++ ) {
++#else
+ 	for ( cnt = 0 ; !ret && ( cnt < 10 ) ; cnt++ ) {
+-		ret = ap1302_read_buf(sensor, AP1302_REG_FRAME_CNT, (u8 *)&val, sizeof( val ) );
+-		val = be16_to_cpu( val );
++#endif
++		(void )ap1302_dbg_record( sensor, __LINE__ );
++
++		ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
+ 		printk( KERN_ALERT "**** %s %i   ret: %i   val: 0x%04x\n", __func__, (int )__LINE__, ret, val );
+ 		msleep( 200 );
+ 	}
+@@ -3617,17 +3748,17 @@
+ 	if ( !ret )
+ 		sensor->fw_down = true;
+ 
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
+ 	return ret;
+ } /* fw_loop */
+ 
+ static int ap1302_download_fw(struct ap1302_dev *sensor)
+ {
+-	int ret, cnt, total, idx;
+-	u16 val;
++	int ret;
+ 
+     printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+ 	ret = 0;
+-	total = 0;
+ 
+ 	ret = request_firmware(&sensor->fw_test, "ap1302/test_pattern.bin", &sensor->i2c_client->dev);
+ 	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
+@@ -3670,7 +3801,10 @@
+ 
+ static struct ap1302_dev *my_sensor = NULL;
+ 
+-static ssize_t ap1302_sysfs_store16(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++/**
++ * sysfs interface function handling ".../write_reg16"
++ */
++static ssize_t ap1302_sysfs_write16(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+ {
+ 	int addr, val, ret;
+ 	u8 reg_buf[4];
+@@ -3689,11 +3823,39 @@
+ 	return count;
+ }
+ 
++/**
++ * sysfs interface function handling ".../dump"
++ */
++static ssize_t ap1302_sysfs_dump(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int addr, len, ret;
++
++	if ( ( my_sensor != NULL ) && ( sscanf( buf, "%x %x", &addr, &len ) == 2 ) ) {
++		mutex_lock(&my_sensor->lock);
++		if ( len > AP1302_TMP_BUF_SIZE )
++			len = AP1302_TMP_BUF_SIZE;
++
++		ret = ap1302_read_buf(my_sensor, addr, my_sensor->tmp_buf, len );
++		if ( !ret )
++			hex_dump( my_sensor->tmp_buf, len, addr );
++
++		mutex_unlock(&my_sensor->lock);
++	}
++
++	return count;
++}
++
+ 
+-static struct kobj_attribute sysfs_attr = {
++static struct kobj_attribute ap1302_sysfs_attr_write16 = {
+ 	.attr = { .name = "write_reg16", .mode = VERIFY_OCTAL_PERMISSIONS(0220) },
+ 	.show = NULL,
+-	.store = ap1302_sysfs_store16,
++	.store = ap1302_sysfs_write16,
++};
++
++static struct kobj_attribute ap1302_sysfs_attr_dump = {
++	.attr = { .name = "dump", .mode = VERIFY_OCTAL_PERMISSIONS(0220) },
++	.show = NULL,
++	.store = ap1302_sysfs_dump,
+ };
+ 
+ 
+@@ -3786,7 +3948,7 @@
+ 	 * YUV422 VGA@15fps
+ 	 */
+ 	fmt = &sensor->fmt;
+-#if 1
++#if 0
+ 	fmt->code = MEDIA_BUS_FMT_RGB565_2X8_LE;
+ #else
+ 	fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
+@@ -3875,12 +4037,16 @@
+ 	my_sensor = sensor;
+ 	path = kobject_get_path(&dev->kobj, GFP_KERNEL);
+ 	if ( path != NULL ) {
+-		ret = sysfs_create_file(&dev->kobj, &sysfs_attr.attr);
+-		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, sysfs_attr.attr.name );
++		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_write16.attr);
++		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_write16.attr.name );
+ 	}
+ 	else
+ 		printk( KERN_ALERT "**** %s %i   path: NULL\n", __func__, (int )__LINE__ );
+ 
++	if ( !ret ) {
++		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_dump.attr);
++		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_dump.attr.name );
++	}
+ 
+ 	return 0;
+ 
+@@ -3898,6 +4064,14 @@
+ 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+ 	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+ 
++	if ( sensor->fw_test != NULL )
++		release_firmware( sensor->fw_test );
++	if ( sensor->fw_sensor != NULL )
++		release_firmware( sensor->fw_sensor );
++
++	sysfs_remove_file(&client->dev.kobj, &ap1302_sysfs_attr_write16.attr);
++	sysfs_remove_file(&client->dev.kobj, &ap1302_sysfs_attr_dump.attr);
++
+ 	v4l2_async_unregister_subdev(&sensor->sd);
+ 	mutex_destroy(&sensor->lock);
+ 	media_entity_cleanup(&sensor->sd.entity);
+diff -Naurw ./drivers/media/i2c/ov5640.c ../kernel-source/drivers/media/i2c/ov5640.c
+--- ./drivers/media/i2c/ov5640.c	2020-03-30 19:02:30.875309018 +0200
++++ ../kernel-source/drivers/media/i2c/ov5640.c	2020-03-30 18:26:12.219230689 +0200
+@@ -30,6 +30,8 @@
+ #include <media/v4l2-fwnode.h>
+ #include <media/v4l2-subdev.h>
+ 
++#define OV5640_MINIMAL_MODE 1
++
+ /* min/typical/max system clock (xclk) frequencies */
+ #define OV5640_XCLK_MIN  6000000
+ #define OV5640_XCLK_MAX 54000000
+@@ -102,7 +104,7 @@
+ 
+ #define FOCUS_NOT_INITIALIZED		0xFFFF
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ enum ov5640_mode_id {
+ 	OV5640_MODE_QCIF_176_144 = 0,
+ 	OV5640_MODE_QVGA_320_240,
+@@ -153,7 +155,7 @@
+ 	u32 colorspace;
+ };
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ static const struct ov5640_pixfmt ov5640_formats[] = {
+ 	{ MEDIA_BUS_FMT_JPEG_1X8, V4L2_COLORSPACE_JPEG, },
+ 	{ MEDIA_BUS_FMT_UYVY8_2X8, V4L2_COLORSPACE_SRGB, },
+@@ -187,7 +189,7 @@
+ MODULE_PARM_DESC(virtual_channel,
+ 		 "MIPI CSI-2 virtual channel (0..3), default 0");
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ static const int ov5640_framerates[] = {
+ 	[OV5640_15_FPS] = 15,
+ 	[OV5640_30_FPS] = 30,
+@@ -846,7 +848,7 @@
+ 	ARRAY_SIZE(ov5640_init_setting_30fps_VGA),
+ };
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ static const struct ov5640_mode_info
+ ov5640_mode_data[OV5640_NUM_MODES] = {
+ 	{OV5640_MODE_QCIF_176_144, SUBSAMPLING,
+@@ -1345,7 +1347,7 @@
+ 	 * 1280x720 and 1024x768 are reported to use 'SUBSAMPLING' only,
+ 	 * but they seems to go through the scaler before subsampling.
+ 	 */
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ 	if (mode->dn_mode == SCALING ||
+ 	   (mode->id == OV5640_MODE_720P_1280_720) ||
+ 	   (mode->id == OV5640_MODE_XGA_1024_768))
+@@ -1936,7 +1938,7 @@
+ {
+ 	int ret;
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ 	if (sensor->fmt.code == MEDIA_BUS_FMT_JPEG_1X8) {
+ 		ret = ov5640_set_jpeg_timings(sensor, mode);
+ 		if (ret < 0)
+@@ -1978,7 +1980,7 @@
+ 	    (!nearest && (mode->hact != width || mode->vact != height)))
+ 		return NULL;
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ 	/* Only 640x480 can operate at 60fps (for now) */
+ 	if (fr == OV5640_60_FPS &&
+ 	    !(mode->hact == 640 && mode->vact == 480))
+@@ -2014,7 +2016,7 @@
+ 	ret = ov5640_get_binning(sensor);
+ 	if (ret < 0)
+ 		return ret;
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ 	if (ret && mode->id != OV5640_MODE_720P_1280_720 &&
+ 	    mode->id != OV5640_MODE_1080P_1920_1080)
+ 		prev_shutter *= 2;
+@@ -3483,11 +3485,15 @@
+ 	 * YUV422 UYVY VGA@30fps
+ 	 */
+ 	fmt = &sensor->fmt;
++#if OV5640_MINIMAL_MODE
+ #if 1
+ 	fmt->code = MEDIA_BUS_FMT_RGB565_2X8_LE;
+ #else
+ 	fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
+ #endif
++#else
++	fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
++#endif
+ 	fmt->colorspace = V4L2_COLORSPACE_SRGB;
+ 	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
+ 	fmt->quantization = V4L2_QUANTIZATION_FULL_RANGE;
+diff -Naurw ./drivers/media/i2c/st-mipid02.c ../kernel-source/drivers/media/i2c/st-mipid02.c
+--- ./drivers/media/i2c/st-mipid02.c	2020-03-30 19:02:30.967310380 +0200
++++ ../kernel-source/drivers/media/i2c/st-mipid02.c	2020-03-30 18:29:11.041908015 +0200
+@@ -263,6 +263,36 @@
+ 	return 0;
+ }
+ 
++static int mipid02_read_buf(struct mipid02_dev *bridge, u16 reg, u8 *val, int len)
++{
++	struct i2c_client *client = bridge->i2c_client;
++	struct i2c_msg msg[2];
++	u8 buf[2];
++	int ret;
++
++	buf[0] = reg >> 8;
++	buf[1] = reg & 0xff;
++
++	msg[0].addr = client->addr;
++	msg[0].flags = client->flags;
++	msg[0].buf = buf;
++	msg[0].len = sizeof(buf);
++
++	msg[1].addr = client->addr;
++	msg[1].flags = client->flags | I2C_M_RD;
++	msg[1].buf = val;
++	msg[1].len = len;
++
++	ret = i2c_transfer(client->adapter, msg, 2);
++	if (ret < 0) {
++		dev_dbg(&client->dev, "%s: %x i2c_transfer, reg: %x => %d\n",
++			    __func__, client->addr, reg, ret);
++		return ret;
++	}
++
++	return 0;
++}
++
+ static int mipid02_write_reg(struct mipid02_dev *bridge, u16 reg, u8 val)
+ {
+ 	struct i2c_client *client = bridge->i2c_client;
+@@ -574,53 +604,41 @@
+ }
+ 
+ 
+-struct read_reg {
+-	u16 addr;
+-	u8 val;
+-};
+-
+-
+-static struct read_reg read_regs[12] = {
+-	{ MIPID02_CLK_LANE_WR_REG1, 0 },
+-	{ MIPID02_DATA_LANE0_REG3, 0 },
+-	{ MIPID02_DATA_LANE0_REG4, 0 },
+-	{ MIPID02_DATA_LANE1_REG3, 0 },
+-	{ MIPID02_DATA_LANE1_REG4, 0 },
+-	{ MIPID02_ERROR_REGS, 0 },
+-	{ MIPID02_DATA_ID_WREG, 0 },
+-	{ MIPID02_FRAME_NO_LSB, 0 },
+-	{ MIPID02_FRAME_NO_MSB, 0 },
+-	{ MIPID02_ACTIVE_LINE_NO_LSB, 0 },
+-	{ MIPID02_ACTIVE_LINE_NO_MSB, 0 },
+-};
++static void hex_dump( u8 *p_buf, int len, int start )
++{
++	char line[ 128 ];
++	char word[ 8 ];
++	int cnt;
++
++	while( len > 0 ) {
++		sprintf( line, KERN_ALERT "**** %04x: ", start );
++		for( cnt = 0 ; cnt < 16 ; cnt++ ) {
++			if ( !len )
++				break;
++			len--;
++			start++;
++			sprintf( word, " %02x", *p_buf++ );
++			strcat( line, word );
++		}
++		strcat( line, "\n" );
++		printk( line );
++	}
++} /* hex_dump */
+ 
+ static int dump_regs(struct mipid02_dev *bridge)
+ {
+-	int ret, cnt;
++	int ret;
++	u8 buf[ 0x24 ];
+ 
+-	ret = 0;
++	ret = mipid02_read_buf( bridge, 0, buf, sizeof( buf ) );
++	printk( KERN_ALERT "**** %s %i  ret: %i\n", __func__, (int )__LINE__, ret );
+ 
+-	for ( cnt = 0 ; !ret && ( cnt < 11 ) ; cnt++ ) {
+-		ret = mipid02_read_reg(bridge, read_regs[cnt].addr, &read_regs[cnt].val);
+-	}
+-	printk( KERN_ALERT "**** %s %i  ret: %i   cnt: %i", __func__, (int )__LINE__, ret, cnt );
+-
+-	if ( !ret ) {
+-		printk( KERN_ALERT "**** 0x%04x: %02x   0x%04x: %02x   0x%04x: %02x   0x%04x: %02x\n",
+-				(int )read_regs[0].addr, (int )read_regs[0].val, (int )read_regs[1].addr, (int )read_regs[1].val,
+-				(int )read_regs[2].addr, (int )read_regs[2].val, (int )read_regs[3].addr, (int )read_regs[3].val );
+-		printk( KERN_ALERT "**** 0x%04x: %02x   0x%04x: %02x   0x%04x: %02x   0x%04x: %02x\n",
+-				(int )read_regs[4].addr, (int )read_regs[4].val, (int )read_regs[5].addr, (int )read_regs[5].val,
+-				(int )read_regs[6].addr, (int )read_regs[6].val, (int )read_regs[7].addr, (int )read_regs[7].val );
+-		printk( KERN_ALERT "**** 0x%04x: %02x   0x%04x: %02x   0x%04x: %02x   0x%04x: %02x\n",
+-				(int )read_regs[8].addr, (int )read_regs[8].val, (int )read_regs[9].addr, (int )read_regs[9].val,
+-				(int )read_regs[10].addr, (int )read_regs[10].val, (int )read_regs[11].addr, (int )read_regs[11].val );
+-	}
++	if ( !ret )
++		hex_dump( buf, sizeof( buf ), 0 );
+ 		
+ 	return ret;
+ }
+ 
+-
+ static int mipid02_stream_enable(struct mipid02_dev *bridge)
+ {
+ 	struct i2c_client *client = bridge->i2c_client;
+diff -Naurw ./drivers/media/platform/stm32/stm32-dcmi.c ../kernel-source/drivers/media/platform/stm32/stm32-dcmi.c
+--- ./drivers/media/platform/stm32/stm32-dcmi.c	2020-03-30 19:02:29.815293320 +0200
++++ ../kernel-source/drivers/media/platform/stm32/stm32-dcmi.c	2020-03-30 19:29:20.039419583 +0200
+@@ -38,6 +38,9 @@
+ #include <media/v4l2-rect.h>
+ #include <media/videobuf2-dma-contig.h>
+ 
++#define SWAP_RB 0
++#define SWAP_UY 1
++
+ #define DRV_NAME "stm32-dcmi"
+ 
+ /* Registers offset for DCMI */
+@@ -177,8 +180,11 @@
+ 	struct media_device		mdev;
+ 	struct media_pad		vid_cap_pad;
+ 	struct media_pipeline		pipeline;
++	int dump_len;
+ };
+ 
++static struct stm32_dcmi *my_dcmi = NULL;
++
+ static inline struct stm32_dcmi *notifier_to_dcmi(struct v4l2_async_notifier *n)
+ {
+ 	return container_of(n, struct stm32_dcmi, notifier);
+@@ -259,12 +265,72 @@
+ 	return dcmi_start_capture(dcmi, buf);
+ }
+ 
++static void hex_dump( u8 *p_buf, int len, int start )
++{
++	char line[ 128 ];
++	char word[ 8 ];
++	int cnt;
++
++	while( len > 0 ) {
++		sprintf( line, KERN_ALERT "**** %04x: ", start );
++		for( cnt = 0 ; cnt < 16 ; cnt++ ) {
++			if ( !len )
++				break;
++			len--;
++			start++;
++			sprintf( word, " %02x", *p_buf++ );
++			strcat( line, word );
++		}
++		strcat( line, "\n" );
++		printk( line );
++	}
++} /* hex_dump */
++
++static void swap_rb( u16 *buf, int len )
++{
++	int cnt;
++	u16 orig, r, b;
++
++	for ( cnt = 0 ; cnt < len ; cnt++ ) {
++		orig = buf[ cnt ];
++		r = orig >> 11;
++		b = orig << 11;
++		buf[ cnt ] = ( orig & 0x07e0 ) | r | b;
++	}
++}
++
++static void swap_uy( u16 *buf, int len )
++{
++	int cnt;
++	register u32 *p_buf;
++	register u32 orig;
++
++	p_buf = (u32 *)buf;
++	len /= 2;
++	for ( cnt = 0 ; cnt < len ; cnt++ ) {
++		orig = *p_buf;
++		*p_buf++ = ( ( orig & 0x00ff00ff ) << 8 ) | ( ( orig & 0xff00ff00 ) >> 8 );
++	}
++}
++
++static void dump_regs( struct stm32_dcmi *dcmi )
++{
++	printk( KERN_ALERT "**** %s %i   0: 0x%08x   4: 0x%08x   0x0c: 0x%08x\n", __func__, (int )__LINE__,
++			reg_read(dcmi->regs, DCMI_CR), reg_read(dcmi->regs, DCMI_SR), reg_read(dcmi->regs, DCMI_IER) );
++	printk( KERN_ALERT "**** %s %i   0x18: 0x%08x   0x1c: 0x%08x\n", __func__, (int )__LINE__,
++			reg_read(dcmi->regs, DCMI_ESCR), reg_read(dcmi->regs, DCMI_ESUR) );
++	printk( KERN_ALERT "**** %s %i   0x20: 0x%08x   0x24: 0x%08x\n", __func__, (int )__LINE__,
++			reg_read(dcmi->regs, DCMI_CWSTRT), reg_read(dcmi->regs, DCMI_CWSIZE) );
++}
++
+ static void dcmi_dma_callback(void *param)
+ {
+ 	struct stm32_dcmi *dcmi = (struct stm32_dcmi *)param;
+ 	struct dma_tx_state state;
+ 	enum dma_status status;
+ 	struct dcmi_buf *buf = dcmi->active;
++	int ret;
++	u8 *ptr;
+ 
+ 	spin_lock_irq(&dcmi->irqlock);
+ 
+@@ -285,6 +351,26 @@
+ 		dcmi_buffer_done(dcmi, buf, 0, -EIO);
+ 		break;
+ 	case DMA_COMPLETE:
++		ptr = vb2_plane_vaddr( &buf->vb.vb2_buf, 0 );
++
++#if SWAP_RB
++		if ( ptr != NULL )
++			swap_rb( (u16 *)ptr, buf->size / 2 );
++#endif
++
++#if SWAP_UY
++		if ( ptr != NULL )
++			swap_uy( (u16 *)ptr, buf->size / 2 );
++#endif
++
++		if ( dcmi->dump_len > 0 ) {
++			dump_regs( dcmi );
++
++			if ( ptr != NULL )
++				hex_dump( ptr, dcmi->dump_len, 0 );
++
++			dcmi->dump_len = 0;
++		}
+ 		dev_dbg(dcmi->dev, "%s: Received DMA_COMPLETE\n", __func__);
+ 
+ 		/* Return buffer to V4L2 */
+@@ -1847,6 +1933,29 @@
+ 	v4l2_async_notifier_cleanup(&dcmi->notifier);
+ }
+ 
++
++/**
++ * sysfs interface function handling ".../dump_image"
++ */
++static ssize_t dcmi_sysfs_dump(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int len;
++
++	if ( ( my_dcmi != NULL ) && ( sscanf( buf, "%x", &len ) == 1 ) ) {
++		my_dcmi->dump_len = len;
++		printk( KERN_ALERT "**** %s %i   len: %i\n", __func__, (int )__LINE__, len );
++	}
++
++	return count;
++}
++
++static struct kobj_attribute dcmi_sysfs_attr = {
++	.attr = { .name = "dump_image", .mode = VERIFY_OCTAL_PERMISSIONS(0220) },
++	.show = NULL,
++	.store = dcmi_sysfs_dump,
++};
++
++
+ static int dcmi_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -1858,6 +1967,7 @@
+ 	struct clk *mclk;
+ 	int irq;
+ 	int ret = 0;
++	char *path;
+ 
+ 	match = of_match_device(of_match_ptr(stm32_dcmi_of_match), &pdev->dev);
+ 	if (!match) {
+@@ -2053,6 +2163,13 @@
+ 
+ 	pm_runtime_enable(&pdev->dev);
+ 
++	path = kobject_get_path(&pdev->dev.kobj, GFP_KERNEL);
++	if ( path != NULL ) {
++		my_dcmi = dcmi;
++		ret = sysfs_create_file(&pdev->dev.kobj, &dcmi_sysfs_attr.attr);
++		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, dcmi_sysfs_attr.attr.name );
++	}
++
+ 	return 0;
+ 
+ err_graph_deinit:
