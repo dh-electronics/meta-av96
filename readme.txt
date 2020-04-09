@@ -8,10 +8,9 @@ process but starts with a different 'repo' manifest file:
     - create the build directory following ST's recommendations at
         https://wiki.st.com/stm32mpu/wiki/Example_of_directory_structure_for_Packages
     - enter the working directory and execute the following commands
-      $ repo init -u https://github.com/dh-electronics/meta-av96 -b thud
-      $ repo sync layers/meta-st/meta-st-stm32mp
+      $ repo init -u https://github.com/bkardosa/manifest-av96 -b thud
       $ repo sync
-      $ DISTRO=openstlinux-weston MACHINE=stm32mp1-av96 source layers/meta-st/scripts/envsetup.sh
+      $ layers/meta-arrow/scripts/init-build-env.sh
       $ bitbake av96-weston
 
     The last command will build the BSP. The full build will take about 1-2
