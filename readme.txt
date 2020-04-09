@@ -10,7 +10,7 @@ process but starts with a different 'repo' manifest file:
     - enter the working directory and execute the following commands
       $ repo init -u https://github.com/bkardosa/manifest-av96 -b thud
       $ repo sync
-      $ layers/meta-arrow/scripts/init-build-env.sh
+      $ source layers/meta-arrow/scripts/init-build-env.sh
       $ bitbake av96-weston
 
     The last command will build the BSP. The full build will take about 1-2
