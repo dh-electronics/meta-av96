@@ -1,0 +1,12 @@
+diff -Naurw ./include/configs/stm32mp1.h ../uboot-source/include/configs/stm32mp1.h
+--- ./include/configs/stm32mp1.h	2020-04-14 15:52:04.007411107 +0200
++++ ../uboot-source/include/configs/stm32mp1.h	2020-04-14 15:52:51.357012557 +0200
+@@ -59,7 +59,7 @@
+ 
+ #if defined(CONFIG_ENV_IS_IN_SPI_FLASH)
+ #define	CONFIG_ENV_SECT_SIZE			SZ_256K
+-#define	CONFIG_ENV_OFFSET			0x00280000
++#define	CONFIG_ENV_OFFSET			0x00180000
+ #endif
+ 
+ /* ATAGs */
