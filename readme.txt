@@ -8,7 +8,7 @@ process but starts with a different 'repo' manifest file:
     - create the build directory following ST's recommendations at
         https://wiki.st.com/stm32mpu/wiki/Example_of_directory_structure_for_Packages
     - enter the working directory and execute the following commands
-      $ repo init -u https://github.com/bkardosa/manifest-av96 -b thud
+      $ repo init -u https://github.com/dh-electronics/manifest-av96 -b thud
       $ repo sync
       $ source layers/meta-arrow/scripts/init-build-env.sh
       $ bitbake av96-weston
