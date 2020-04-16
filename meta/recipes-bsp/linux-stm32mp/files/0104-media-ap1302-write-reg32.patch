@@ -1,0 +1,336 @@
+diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
+--- ./drivers/media/i2c/ap1302.c	2020-04-15 19:23:50.058936122 +0200
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-04-15 20:01:37.317930330 +0200
+@@ -187,7 +187,6 @@
+ #else
+ static const struct ap1302_pixfmt ap1302_formats[] = {
+ 	{ MEDIA_BUS_FMT_YUYV8_2X8, V4L2_COLORSPACE_SRGB, },
+-	{ MEDIA_BUS_FMT_UYVY8_2X8, V4L2_COLORSPACE_SRGB, },
+ };
+ #endif
+ 
+@@ -235,8 +234,6 @@
+ 	u32 htot;
+ 	u32 vact;
+ 	u32 vtot;
+-	const struct reg_value *reg_data;
+-	u32 reg_data_size;
+ };
+ 
+ struct ap1302_ctrls {
+@@ -474,6 +471,15 @@
+ 
+ #endif
+ 
++static const struct ap1302_mode_info
++ap1302_mode_data[AP1302_NUM_MODES] = {
++	{AP1302_MODE_VGA_640_480, SUBSAMPLING,
++	 640, 1896, 480, 1080},
++	{AP1302_MODE_720P_1280_720, SUBSAMPLING,
++	 1280, 1892, 720, 740},
++};
++
++
+ #if 0
+ 
+ /* power-on sensor init reg table */
+@@ -484,19 +490,6 @@
+ };
+ 
+ 
+-static const struct ap1302_mode_info
+-ap1302_mode_data[AP1302_NUM_MODES] = {
+-	{AP1302_MODE_VGA_640_480, SUBSAMPLING,
+-	 640, 1896, 480, 1080,
+-	 ap1302_setting_VGA_640_480,
+-	 ARRAY_SIZE(ap1302_setting_VGA_640_480)},
+-	{AP1302_MODE_720P_1280_720, SUBSAMPLING,
+-	 1280, 1892, 720, 740,
+-	 ap1302_setting_720P_1280_720,
+-	 ARRAY_SIZE(ap1302_setting_720P_1280_720)},
+-};
+-
+-
+ static int ap1302_init_slave_id(struct ap1302_dev *sensor)
+ {
+ 	struct i2c_client *client = sensor->i2c_client;
+@@ -1651,8 +1644,6 @@
+ #endif
+ 
+ 
+-#if 0
+-
+ static const struct ap1302_mode_info *
+ ap1302_find_mode(struct ap1302_dev *sensor, enum ap1302_frame_rate fr,
+ 		 int width, int height, bool nearest)
+@@ -1671,6 +1662,8 @@
+ 	return mode;
+ }
+ 
++#if 0
++
+ /*
+  * sensor changes between scaling and subsampling, go through
+  * exposure calculation
+@@ -3224,10 +3217,10 @@
+ 
+ /* format of binary firmware files */
+ struct ap1302_fw_data {
+-	int chksum;
+-	int pll_init_size;
+-	int total_size;
+-	u8  bootdata[ ];
++	u32 chksum;
++	u32 pll_init_size;
++	u32 total_size;
++	u32 dummy;
+ };
+ 
+ static int ap1302_fw_loop(struct ap1302_dev *sensor, struct ap1302_fw_data *p_fw_data );
+@@ -3290,13 +3283,88 @@
+ 	return 0;
+ }
+ 
++static int ap1302_try_fmt_internal(struct v4l2_subdev *sd,
++				   struct v4l2_mbus_framefmt *fmt,
++				   enum ap1302_frame_rate fr,
++				   const struct ap1302_mode_info **new_mode)
++{
++	struct ap1302_dev *sensor = to_ap1302_dev(sd);
++	const struct ap1302_mode_info *mode;
++	int i;
++
++    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
++	mode = ap1302_find_mode(sensor, fr, fmt->width, fmt->height, true);
++	if (!mode)
++		return -EINVAL;
++	fmt->width = mode->hact;
++	fmt->height = mode->vact;
++
++	if (new_mode)
++		*new_mode = mode;
++
++	for (i = 0; i < ARRAY_SIZE(ap1302_formats); i++)
++		if (ap1302_formats[i].code == fmt->code)
++			break;
++	if (i >= ARRAY_SIZE(ap1302_formats))
++		i = 0;
++
++	fmt->code = ap1302_formats[i].code;
++	fmt->colorspace = ap1302_formats[i].colorspace;
++	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
++	fmt->quantization = V4L2_QUANTIZATION_FULL_RANGE;
++	fmt->xfer_func = V4L2_MAP_XFER_FUNC_DEFAULT(fmt->colorspace);
++
++    printk( KERN_ALERT "**** %s %i   code:0x%x\n", __func__, (int )__LINE__, fmt->code );
++	return 0;
++}
++
+ static int ap1302_set_fmt(struct v4l2_subdev *sd,
+ 			  struct v4l2_subdev_pad_config *cfg,
+ 			  struct v4l2_subdev_format *format)
+ {
++	struct ap1302_dev *sensor = to_ap1302_dev(sd);
++	const struct ap1302_mode_info *new_mode;
++	struct v4l2_mbus_framefmt *mbus_fmt = &format->format;
++	struct v4l2_mbus_framefmt *fmt;
++	int ret;
++
+     printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+ 
+-	return 0;
++	if (format->pad != 0)
++		return -EINVAL;
++
++	mutex_lock(&sensor->lock);
++
++	if (sensor->streaming) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	ret = ap1302_try_fmt_internal(sd, mbus_fmt,
++				      sensor->current_fr, &new_mode);
++	if (ret)
++		goto out;
++
++    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
++	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
++		fmt = v4l2_subdev_get_try_format(sd, cfg, 0);
++	else
++		fmt = &sensor->fmt;
++
++	*fmt = *mbus_fmt;
++
++	if (new_mode != sensor->current_mode) {
++		sensor->current_mode = new_mode;
++		sensor->pending_mode_change = true;
++	}
++	if (mbus_fmt->code != sensor->fmt.code)
++		sensor->pending_fmt_change = true;
++
++out:
++	mutex_unlock(&sensor->lock);
++	return ret;
+ }
+ 
+ 
+@@ -3497,7 +3565,7 @@
+ 				break;
+ 		}
+ 
+-		printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i\n", __func__, (int )__LINE__, ret, cnt );
++		printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   stage: 0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
+ 
+ 		if ( !ret && ( cnt == 10 ) )
+ 			ret = -EINVAL;
+@@ -3563,7 +3631,7 @@
+ 
+ 	len = p_fw_data->total_size;
+ 	addr = AP1302_REG_BOOTDATA_START;
+-	p_buf = p_fw_data->bootdata;
++	p_buf = (u8 *)&p_fw_data[ 1 ];
+ 	ret = 0;
+ 	offs = 0;
+ 
+@@ -3636,9 +3704,8 @@
+ 
+ #if 0
+ 		if ( !ret ) {
+-			ret = ap1302_read_buf(sensor, AP1302_REG_BOOTDATA_STAGE, (u8 *)&val, sizeof( val ) );
+-			val = be16_to_cpu( val );
+-			printk( KERN_ALERT "**** %s %i   ret: %i   cnt: %i   val: 0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
++			ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
++			printk( KERN_ALERT "**** %s %i   ret: %i   addr: 0x%04x   stage: 0x%04x\n", __func__, (int )__LINE__, ret, addr, val );
+ 		}
+ #endif
+ 
+@@ -3683,9 +3750,8 @@
+ 
+ #if 0
+ 		if ( !ret ) {
+-			ret = ap1302_read_buf(sensor, AP1302_REG_BOOTDATA_STAGE, (u8 *)&val, sizeof( val ) );
+-			val = be16_to_cpu( val );
+-			printk( KERN_ALERT "**** %s %i   ret: %i   cnt: %i   val: 0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
++			ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
++			printk( KERN_ALERT "**** %s %i   ret: %i   addr: 0x%04x   stage: 0x%04x\n", __func__, (int )__LINE__, ret, addr, val );
+ 		}
+ #endif
+ 
+@@ -3701,6 +3767,28 @@
+ 	if ( ret )
+ 		return ret;
+ 
++	/* wait for bootdata checksum to be calculated by downloaded FW */
++	for( cnt = 0 ; !ret && ( cnt < 100 ) ; cnt++ ) {
++		msleep( 2 );
++		ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_CHSUM, &val );
++		if ( !ret && ( ( val != 0 ) && ( val != p_fw_data->chksum ) ) )
++			ret = -EINVAL;
++
++		if( ret || ( val == p_fw_data->chksum ) )
++			break;
++	}
++
++	(void )ap1302_dbg_record( sensor, __LINE__ );
++
++	if ( ret )
++		return ret;
++
++	printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   val:0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
++	if ( !ret ) {
++		ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
++		printk( KERN_ALERT "**** %s %i   ret: %i   stage: 0x%04x\n", __func__, (int )__LINE__, ret, val );
++	}
++
+ 	/* change stage */
+ 	(void )ap1302_fw_change_state( sensor, 0xffff, true );
+ 
+@@ -3824,6 +3912,30 @@
+ }
+ 
+ /**
++ * sysfs interface function handling ".../write_reg32"
++ */
++static ssize_t ap1302_sysfs_write32(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int addr, val, ret;
++	u8 reg_buf[6];
++
++	if ( ( my_sensor != NULL ) && ( sscanf( buf, "%x %x", &addr, &val ) == 2 ) ) {
++		mutex_lock(&my_sensor->lock);
++		reg_buf[0] = ( addr >> 8 ) & 0xff;
++		reg_buf[1] = addr & 0xff;
++		reg_buf[2] = ( val >> 24 ) & 0xff;
++		reg_buf[3] = ( val >> 16 ) & 0xff;
++		reg_buf[4] = ( val >> 8 ) & 0xff;
++		reg_buf[5] = val & 0xff;
++		ret = ap1302_write_buf( my_sensor, reg_buf, 6 );
++		hex_dump( &reg_buf[2], 4, addr );
++		mutex_unlock(&my_sensor->lock);
++	}
++
++	return count;
++}
++
++/**
+  * sysfs interface function handling ".../dump"
+  */
+ static ssize_t ap1302_sysfs_dump(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+@@ -3852,6 +3964,12 @@
+ 	.store = ap1302_sysfs_write16,
+ };
+ 
++static struct kobj_attribute ap1302_sysfs_attr_write32 = {
++	.attr = { .name = "write_reg32", .mode = VERIFY_OCTAL_PERMISSIONS(0220) },
++	.show = NULL,
++	.store = ap1302_sysfs_write32,
++};
++
+ static struct kobj_attribute ap1302_sysfs_attr_dump = {
+ 	.attr = { .name = "dump", .mode = VERIFY_OCTAL_PERMISSIONS(0220) },
+ 	.show = NULL,
+@@ -4044,6 +4162,11 @@
+ 		printk( KERN_ALERT "**** %s %i   path: NULL\n", __func__, (int )__LINE__ );
+ 
+ 	if ( !ret ) {
++		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_write32.attr);
++		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_write32.attr.name );
++	}
++
++	if ( !ret ) {
+ 		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_dump.attr);
+ 		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_dump.attr.name );
+ 	}
+@@ -4069,6 +4192,7 @@
+ 	if ( sensor->fw_sensor != NULL )
+ 		release_firmware( sensor->fw_sensor );
+ 
++	sysfs_remove_file(&client->dev.kobj, &ap1302_sysfs_attr_write32.attr);
+ 	sysfs_remove_file(&client->dev.kobj, &ap1302_sysfs_attr_write16.attr);
+ 	sysfs_remove_file(&client->dev.kobj, &ap1302_sysfs_attr_dump.attr);
+ 
+diff -Naurw ./drivers/media/platform/stm32/stm32-dcmi.c ../kernel-source/drivers/media/platform/stm32/stm32-dcmi.c
+--- ./drivers/media/platform/stm32/stm32-dcmi.c	2020-04-15 19:23:50.062936179 +0200
++++ ../kernel-source/drivers/media/platform/stm32/stm32-dcmi.c	2020-04-15 19:26:37.945362041 +0200
+@@ -39,7 +39,7 @@
+ #include <media/videobuf2-dma-contig.h>
+ 
+ #define SWAP_RB 0
+-#define SWAP_UY 1
++#define SWAP_UY 0
+ 
+ #define DRV_NAME "stm32-dcmi"
+ 
+@@ -737,6 +737,9 @@
+ 		if (sink_pad)
+ 			pad = sink_pad;
+ 
++		printk( KERN_ALERT "**** %s %i   %s[%d] pad format set to 0x%x %ux%u\n",
++				__func__, (int )__LINE__, subdev->name, pad->index,
++				format->format.code, format->format.width, format->format.height );
+ 		dev_dbg(dcmi->dev, "%s[%d] pad format set to 0x%x %ux%u\n",
+ 			subdev->name, pad->index, format->format.code,
+ 			format->format.width, format->format.height);
