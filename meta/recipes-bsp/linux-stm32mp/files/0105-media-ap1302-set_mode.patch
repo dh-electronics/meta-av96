@@ -1,0 +1,2757 @@
+diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
+--- ./drivers/media/i2c/ap1302.c	2020-04-17 20:18:50.854736246 +0200
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-04-17 20:19:18.353396135 +0200
+@@ -65,6 +65,9 @@
+ #define AP1302_REG_UPTIME_SEC_FRAC      0x0E38
+ 
+ #define AP1302_REG_ORIENTATION  		0x100c
++
++#define AP1302_REG_PREVIEW_MAX_FPS 		0x2020
++
+ #define AP1302_REG_BOOTDATA_STAGE       0x6002
+ #define AP1302_REG_SENSOR_SELECT		0x600c
+ #define AP1302_REG_SYS_START            0x601a
+@@ -88,75 +91,6 @@
+ #define AP1302_CHIP_MFR         0x0006
+ 
+ 
+-#if 0
+-#define AP1302_REG_SYS_RESET02		0x3002
+-#define AP1302_REG_SYS_CLOCK_ENABLE02	0x3006
+-#define AP1302_REG_SYS_CTRL0		0x3008
+-#define AP1302_REG_CHIP_ID		0x300a
+-#define AP1302_REG_IO_MIPI_CTRL00	0x300e
+-#define AP1302_REG_PAD_OUTPUT_ENABLE01	0x3017
+-#define AP1302_REG_PAD_OUTPUT_ENABLE02	0x3018
+-#define AP1302_REG_PAD_OUTPUT00		0x3019
+-#define AP1302_REG_SYSTEM_CONTROL1	0x302e
+-#define AP1302_REG_SC_PLL_CTRL0		0x3034
+-#define AP1302_REG_SC_PLL_CTRL1		0x3035
+-#define AP1302_REG_SC_PLL_CTRL2		0x3036
+-#define AP1302_REG_SC_PLL_CTRL3		0x3037
+-#define AP1302_REG_SLAVE_ID		0x3100
+-#define AP1302_REG_SCCB_SYS_CTRL1	0x3103
+-#define AP1302_REG_SYS_ROOT_DIVIDER	0x3108
+-#define AP1302_REG_AWB_R_GAIN		0x3400
+-#define AP1302_REG_AWB_G_GAIN		0x3402
+-#define AP1302_REG_AWB_B_GAIN		0x3404
+-#define AP1302_REG_AWB_MANUAL_CTRL	0x3406
+-#define AP1302_REG_AEC_PK_EXPOSURE_HI	0x3500
+-#define AP1302_REG_AEC_PK_EXPOSURE_MED	0x3501
+-#define AP1302_REG_AEC_PK_EXPOSURE_LO	0x3502
+-#define AP1302_REG_AEC_PK_MANUAL	0x3503
+-#define AP1302_REG_AEC_PK_REAL_GAIN	0x350a
+-#define AP1302_REG_AEC_PK_VTS		0x350c
+-#define AP1302_REG_TIMING_DVPHO		0x3808
+-#define AP1302_REG_TIMING_DVPVO		0x380a
+-#define AP1302_REG_TIMING_HTS		0x380c
+-#define AP1302_REG_TIMING_VTS		0x380e
+-#define AP1302_REG_TIMING_TC_REG20	0x3820
+-#define AP1302_REG_TIMING_TC_REG21	0x3821
+-#define AP1302_REG_DVP_PCLK_DIVIDER	0x3824
+-#define AP1302_REG_AEC_CTRL00		0x3a00
+-#define AP1302_REG_AEC_B50_STEP		0x3a08
+-#define AP1302_REG_AEC_B60_STEP		0x3a0a
+-#define AP1302_REG_AEC_CTRL0D		0x3a0d
+-#define AP1302_REG_AEC_CTRL0E		0x3a0e
+-#define AP1302_REG_AEC_CTRL0F		0x3a0f
+-#define AP1302_REG_AEC_CTRL10		0x3a10
+-#define AP1302_REG_AEC_CTRL11		0x3a11
+-#define AP1302_REG_AEC_CTRL1B		0x3a1b
+-#define AP1302_REG_AEC_CTRL1E		0x3a1e
+-#define AP1302_REG_AEC_CTRL1F		0x3a1f
+-#define AP1302_REG_HZ5060_CTRL00	0x3c00
+-#define AP1302_REG_HZ5060_CTRL01	0x3c01
+-#define AP1302_REG_SIGMADELTA_CTRL0C	0x3c0c
+-#define AP1302_REG_FRAME_CTRL01		0x4202
+-#define AP1302_REG_FORMAT_CONTROL00	0x4300
+-#define AP1302_REG_VFIFO_HSIZE		0x4602
+-#define AP1302_REG_VFIFO_VSIZE		0x4604
+-#define AP1302_REG_JPG_MODE_SELECT	0x4713
+-#define AP1302_REG_POLARITY_CTRL00	0x4740
+-#define AP1302_REG_MIPI_CTRL00		0x4800
+-#define AP1302_REG_DEBUG_MODE		0x4814
+-#define AP1302_REG_ISP_FORMAT_MUX_CTRL	0x501f
+-#define AP1302_REG_PRE_ISP_TEST_SET1	0x503d
+-#define AP1302_REG_SDE_CTRL0		0x5580
+-#define AP1302_REG_SDE_CTRL1		0x5581
+-#define AP1302_REG_SDE_CTRL3		0x5583
+-#define AP1302_REG_SDE_CTRL4		0x5584
+-#define AP1302_REG_SDE_CTRL5		0x5585
+-#define AP1302_REG_AVG_READOUT		0x56a1
+-
+-#define FOCUS_NOT_INITIALIZED		0xFFFF
+-
+-#endif
+-
+ enum ap1302_mode_id {
+ 	AP1302_MODE_VGA_640_480 = 0,
+ 	AP1302_MODE_720P_1280_720,
+@@ -165,6 +99,7 @@
+ 
+ enum ap1302_frame_rate {
+ 	AP1302_15_FPS = 0,
++	AP1302_24_FPS,
+ 	AP1302_30_FPS,
+ 	AP1302_NUM_FRAMERATES,
+ };
+@@ -201,6 +136,7 @@
+ 
+ static const int ap1302_framerates[] = {
+ 	[AP1302_15_FPS] = 15,
++	[AP1302_24_FPS] = 24,
+ 	[AP1302_30_FPS] = 30,
+ };
+ 
+@@ -227,6 +163,11 @@
+ 	u32 delay_ms;
+ };
+ 
++struct ap1302_reg_value {
++	const int len;
++	const u8 data[ 6 ];
++};
++
+ struct ap1302_mode_info {
+ 	enum ap1302_mode_id id;
+ 	enum ap1302_downsize_mode dn_mode;
+@@ -234,6 +175,8 @@
+ 	u32 htot;
+ 	u32 vact;
+ 	u32 vtot;
++	struct ap1302_reg_value *p_mode;
++	int mode_len;
+ };
+ 
+ struct ap1302_ctrls {
+@@ -320,205 +263,29 @@
+ 			     ctrls.handler)->sd;
+ }
+ 
+-#if 0
+-/*
+- * FIXME: all of these register tables are likely filled with
+- * entries that set the register to their power-on default values,
+- * and which are otherwise not touched by this driver. Those entries
+- * should be identified and removed to speed register load time
+- * over i2c.
+- */
+-/* YUV422 UYVY VGA@30fps */
+-static const struct reg_value ap1302_init_setting_30fps_VGA[] = {
+-	{0x3103, 0x11, 0, 0}, {0x3008, 0x82, 0, 5}, {0x3008, 0x42, 0, 0},
+-	{0x3103, 0x03, 0, 0}, {0x3017, 0x00, 0, 0}, {0x3018, 0x00, 0, 0},
+-	{0x3630, 0x36, 0, 0},
+-	{0x3631, 0x0e, 0, 0}, {0x3632, 0xe2, 0, 0}, {0x3633, 0x12, 0, 0},
+-	{0x3621, 0xe0, 0, 0}, {0x3704, 0xa0, 0, 0}, {0x3703, 0x5a, 0, 0},
+-	{0x3715, 0x78, 0, 0}, {0x3717, 0x01, 0, 0}, {0x370b, 0x60, 0, 0},
+-	{0x3705, 0x1a, 0, 0}, {0x3905, 0x02, 0, 0}, {0x3906, 0x10, 0, 0},
+-	{0x3901, 0x0a, 0, 0}, {0x3731, 0x12, 0, 0}, {0x3600, 0x08, 0, 0},
+-	{0x3601, 0x33, 0, 0}, {0x302d, 0x60, 0, 0}, {0x3620, 0x52, 0, 0},
+-	{0x371b, 0x20, 0, 0}, {0x471c, 0x50, 0, 0}, {0x3a13, 0x43, 0, 0},
+-	{0x3a18, 0x00, 0, 0}, {0x3a19, 0xf8, 0, 0}, {0x3635, 0x13, 0, 0},
+-	{0x3636, 0x03, 0, 0}, {0x3634, 0x40, 0, 0}, {0x3622, 0x01, 0, 0},
+-	{0x3c01, 0xa4, 0, 0}, {0x3c04, 0x28, 0, 0}, {0x3c05, 0x98, 0, 0},
+-	{0x3c06, 0x00, 0, 0}, {0x3c07, 0x08, 0, 0}, {0x3c08, 0x00, 0, 0},
+-	{0x3c09, 0x1c, 0, 0}, {0x3c0a, 0x9c, 0, 0}, {0x3c0b, 0x40, 0, 0},
+-	{0x3820, 0x41, 0, 0}, {0x3821, 0x07, 0, 0}, {0x3814, 0x31, 0, 0},
+-	{0x3815, 0x31, 0, 0}, {0x3800, 0x00, 0, 0}, {0x3801, 0x00, 0, 0},
+-	{0x3802, 0x00, 0, 0}, {0x3803, 0x04, 0, 0}, {0x3804, 0x0a, 0, 0},
+-	{0x3805, 0x3f, 0, 0}, {0x3806, 0x07, 0, 0}, {0x3807, 0x9b, 0, 0},
+-	{0x3810, 0x00, 0, 0},
+-	{0x3811, 0x10, 0, 0}, {0x3812, 0x00, 0, 0}, {0x3813, 0x06, 0, 0},
+-	{0x3618, 0x00, 0, 0}, {0x3612, 0x29, 0, 0}, {0x3708, 0x64, 0, 0},
+-	{0x3709, 0x52, 0, 0}, {0x370c, 0x03, 0, 0}, {0x3a02, 0x03, 0, 0},
+-	{0x3a03, 0xd8, 0, 0}, {0x3a08, 0x01, 0, 0}, {0x3a09, 0x27, 0, 0},
+-	{0x3a0a, 0x00, 0, 0}, {0x3a0b, 0xf6, 0, 0}, {0x3a0e, 0x03, 0, 0},
+-	{0x3a0d, 0x04, 0, 0}, {0x3a14, 0x03, 0, 0}, {0x3a15, 0xd8, 0, 0},
+-	{0x4001, 0x02, 0, 0}, {0x4004, 0x02, 0, 0}, {0x3000, 0x00, 0, 0},
+-	{0x3002, 0x1c, 0, 0}, {0x3004, 0xff, 0, 0}, {0x3006, 0xc3, 0, 0},
+-	{0x302e, 0x08, 0, 0}, {0x4300, 0x3f, 0, 0},
+-	{0x501f, 0x00, 0, 0}, {0x4407, 0x04, 0, 0},
+-	{0x440e, 0x00, 0, 0}, {0x460b, 0x35, 0, 0}, {0x460c, 0x22, 0, 0},
+-	{0x4837, 0x0a, 0, 0}, {0x3824, 0x02, 0, 0},
+-	{0x5000, 0xa7, 0, 0}, {0x5001, 0xa3, 0, 0}, {0x5180, 0xff, 0, 0},
+-	{0x5181, 0xf2, 0, 0}, {0x5182, 0x00, 0, 0}, {0x5183, 0x14, 0, 0},
+-	{0x5184, 0x25, 0, 0}, {0x5185, 0x24, 0, 0}, {0x5186, 0x09, 0, 0},
+-	{0x5187, 0x09, 0, 0}, {0x5188, 0x09, 0, 0}, {0x5189, 0x88, 0, 0},
+-	{0x518a, 0x54, 0, 0}, {0x518b, 0xee, 0, 0}, {0x518c, 0xb2, 0, 0},
+-	{0x518d, 0x50, 0, 0}, {0x518e, 0x34, 0, 0}, {0x518f, 0x6b, 0, 0},
+-	{0x5190, 0x46, 0, 0}, {0x5191, 0xf8, 0, 0}, {0x5192, 0x04, 0, 0},
+-	{0x5193, 0x70, 0, 0}, {0x5194, 0xf0, 0, 0}, {0x5195, 0xf0, 0, 0},
+-	{0x5196, 0x03, 0, 0}, {0x5197, 0x01, 0, 0}, {0x5198, 0x04, 0, 0},
+-	{0x5199, 0x6c, 0, 0}, {0x519a, 0x04, 0, 0}, {0x519b, 0x00, 0, 0},
+-	{0x519c, 0x09, 0, 0}, {0x519d, 0x2b, 0, 0}, {0x519e, 0x38, 0, 0},
+-	{0x5381, 0x1e, 0, 0}, {0x5382, 0x5b, 0, 0}, {0x5383, 0x08, 0, 0},
+-	{0x5384, 0x0a, 0, 0}, {0x5385, 0x7e, 0, 0}, {0x5386, 0x88, 0, 0},
+-	{0x5387, 0x7c, 0, 0}, {0x5388, 0x6c, 0, 0}, {0x5389, 0x10, 0, 0},
+-	{0x538a, 0x01, 0, 0}, {0x538b, 0x98, 0, 0}, {0x5300, 0x08, 0, 0},
+-	{0x5301, 0x30, 0, 0}, {0x5302, 0x10, 0, 0}, {0x5303, 0x00, 0, 0},
+-	{0x5304, 0x08, 0, 0}, {0x5305, 0x30, 0, 0}, {0x5306, 0x08, 0, 0},
+-	{0x5307, 0x16, 0, 0}, {0x5309, 0x08, 0, 0}, {0x530a, 0x30, 0, 0},
+-	{0x530b, 0x04, 0, 0}, {0x530c, 0x06, 0, 0}, {0x5480, 0x01, 0, 0},
+-	{0x5481, 0x08, 0, 0}, {0x5482, 0x14, 0, 0}, {0x5483, 0x28, 0, 0},
+-	{0x5484, 0x51, 0, 0}, {0x5485, 0x65, 0, 0}, {0x5486, 0x71, 0, 0},
+-	{0x5487, 0x7d, 0, 0}, {0x5488, 0x87, 0, 0}, {0x5489, 0x91, 0, 0},
+-	{0x548a, 0x9a, 0, 0}, {0x548b, 0xaa, 0, 0}, {0x548c, 0xb8, 0, 0},
+-	{0x548d, 0xcd, 0, 0}, {0x548e, 0xdd, 0, 0}, {0x548f, 0xea, 0, 0},
+-	{0x5490, 0x1d, 0, 0}, {0x5580, 0x02, 0, 0}, {0x5583, 0x40, 0, 0},
+-	{0x5584, 0x10, 0, 0}, {0x5589, 0x10, 0, 0}, {0x558a, 0x00, 0, 0},
+-	{0x558b, 0xf8, 0, 0}, {0x5800, 0x23, 0, 0}, {0x5801, 0x14, 0, 0},
+-	{0x5802, 0x0f, 0, 0}, {0x5803, 0x0f, 0, 0}, {0x5804, 0x12, 0, 0},
+-	{0x5805, 0x26, 0, 0}, {0x5806, 0x0c, 0, 0}, {0x5807, 0x08, 0, 0},
+-	{0x5808, 0x05, 0, 0}, {0x5809, 0x05, 0, 0}, {0x580a, 0x08, 0, 0},
+-	{0x580b, 0x0d, 0, 0}, {0x580c, 0x08, 0, 0}, {0x580d, 0x03, 0, 0},
+-	{0x580e, 0x00, 0, 0}, {0x580f, 0x00, 0, 0}, {0x5810, 0x03, 0, 0},
+-	{0x5811, 0x09, 0, 0}, {0x5812, 0x07, 0, 0}, {0x5813, 0x03, 0, 0},
+-	{0x5814, 0x00, 0, 0}, {0x5815, 0x01, 0, 0}, {0x5816, 0x03, 0, 0},
+-	{0x5817, 0x08, 0, 0}, {0x5818, 0x0d, 0, 0}, {0x5819, 0x08, 0, 0},
+-	{0x581a, 0x05, 0, 0}, {0x581b, 0x06, 0, 0}, {0x581c, 0x08, 0, 0},
+-	{0x581d, 0x0e, 0, 0}, {0x581e, 0x29, 0, 0}, {0x581f, 0x17, 0, 0},
+-	{0x5820, 0x11, 0, 0}, {0x5821, 0x11, 0, 0}, {0x5822, 0x15, 0, 0},
+-	{0x5823, 0x28, 0, 0}, {0x5824, 0x46, 0, 0}, {0x5825, 0x26, 0, 0},
+-	{0x5826, 0x08, 0, 0}, {0x5827, 0x26, 0, 0}, {0x5828, 0x64, 0, 0},
+-	{0x5829, 0x26, 0, 0}, {0x582a, 0x24, 0, 0}, {0x582b, 0x22, 0, 0},
+-	{0x582c, 0x24, 0, 0}, {0x582d, 0x24, 0, 0}, {0x582e, 0x06, 0, 0},
+-	{0x582f, 0x22, 0, 0}, {0x5830, 0x40, 0, 0}, {0x5831, 0x42, 0, 0},
+-	{0x5832, 0x24, 0, 0}, {0x5833, 0x26, 0, 0}, {0x5834, 0x24, 0, 0},
+-	{0x5835, 0x22, 0, 0}, {0x5836, 0x22, 0, 0}, {0x5837, 0x26, 0, 0},
+-	{0x5838, 0x44, 0, 0}, {0x5839, 0x24, 0, 0}, {0x583a, 0x26, 0, 0},
+-	{0x583b, 0x28, 0, 0}, {0x583c, 0x42, 0, 0}, {0x583d, 0xce, 0, 0},
+-	{0x5025, 0x00, 0, 0}, {0x3a0f, 0x30, 0, 0}, {0x3a10, 0x28, 0, 0},
+-	{0x3a1b, 0x30, 0, 0}, {0x3a1e, 0x26, 0, 0}, {0x3a11, 0x60, 0, 0},
+-	{0x3a1f, 0x14, 0, 0}, {0x3008, 0x02, 0, 0}, {0x3c00, 0x04, 0, 300},
+-};
+-
+-static const struct reg_value ap1302_setting_VGA_640_480[] = {
+-	{0x3c07, 0x08, 0, 0},
+-	{0x3c09, 0x1c, 0, 0}, {0x3c0a, 0x9c, 0, 0}, {0x3c0b, 0x40, 0, 0},
+-	{0x3814, 0x31, 0, 0},
+-	{0x3815, 0x31, 0, 0}, {0x3800, 0x00, 0, 0}, {0x3801, 0x00, 0, 0},
+-	{0x3802, 0x00, 0, 0}, {0x3803, 0x04, 0, 0}, {0x3804, 0x0a, 0, 0},
+-	{0x3805, 0x3f, 0, 0}, {0x3806, 0x07, 0, 0}, {0x3807, 0x9b, 0, 0},
+-	{0x3810, 0x00, 0, 0},
+-	{0x3811, 0x10, 0, 0}, {0x3812, 0x00, 0, 0}, {0x3813, 0x06, 0, 0},
+-	{0x3618, 0x00, 0, 0}, {0x3612, 0x29, 0, 0}, {0x3708, 0x64, 0, 0},
+-	{0x3709, 0x52, 0, 0}, {0x370c, 0x03, 0, 0}, {0x3a02, 0x03, 0, 0},
+-	{0x3a03, 0xd8, 0, 0}, {0x3a08, 0x01, 0, 0}, {0x3a09, 0x27, 0, 0},
+-	{0x3a0a, 0x00, 0, 0}, {0x3a0b, 0xf6, 0, 0}, {0x3a0e, 0x03, 0, 0},
+-	{0x3a0d, 0x04, 0, 0}, {0x3a14, 0x03, 0, 0}, {0x3a15, 0xd8, 0, 0},
+-	{0x4001, 0x02, 0, 0}, {0x4004, 0x02, 0, 0},
+-	{0x4407, 0x04, 0, 0},
+-	{0x5001, 0xa3, 0, 0},
+-};
+-
+-static const struct reg_value ap1302_setting_QVGA_320_240[] = {
+-	{0x3c07, 0x08, 0, 0},
+-	{0x3c09, 0x1c, 0, 0}, {0x3c0a, 0x9c, 0, 0}, {0x3c0b, 0x40, 0, 0},
+-	{0x3814, 0x31, 0, 0},
+-	{0x3815, 0x31, 0, 0}, {0x3800, 0x00, 0, 0}, {0x3801, 0x00, 0, 0},
+-	{0x3802, 0x00, 0, 0}, {0x3803, 0x04, 0, 0}, {0x3804, 0x0a, 0, 0},
+-	{0x3805, 0x3f, 0, 0}, {0x3806, 0x07, 0, 0}, {0x3807, 0x9b, 0, 0},
+-	{0x3810, 0x00, 0, 0},
+-	{0x3811, 0x10, 0, 0}, {0x3812, 0x00, 0, 0}, {0x3813, 0x06, 0, 0},
+-	{0x3618, 0x00, 0, 0}, {0x3612, 0x29, 0, 0}, {0x3708, 0x64, 0, 0},
+-	{0x3709, 0x52, 0, 0}, {0x370c, 0x03, 0, 0}, {0x3a02, 0x03, 0, 0},
+-	{0x3a03, 0xd8, 0, 0}, {0x3a08, 0x01, 0, 0}, {0x3a09, 0x27, 0, 0},
+-	{0x3a0a, 0x00, 0, 0}, {0x3a0b, 0xf6, 0, 0}, {0x3a0e, 0x03, 0, 0},
+-	{0x3a0d, 0x04, 0, 0}, {0x3a14, 0x03, 0, 0}, {0x3a15, 0xd8, 0, 0},
+-	{0x4001, 0x02, 0, 0}, {0x4004, 0x02, 0, 0},
+-	{0x4407, 0x04, 0, 0}, {0x5001, 0xa3, 0, 0},
+-};
+-
+-static const struct reg_value ap1302_setting_720P_1280_720[] = {
+-	{0x3c07, 0x07, 0, 0},
+-	{0x3c09, 0x1c, 0, 0}, {0x3c0a, 0x9c, 0, 0}, {0x3c0b, 0x40, 0, 0},
+-	{0x3814, 0x31, 0, 0},
+-	{0x3815, 0x31, 0, 0}, {0x3800, 0x00, 0, 0}, {0x3801, 0x00, 0, 0},
+-	{0x3802, 0x00, 0, 0}, {0x3803, 0xfa, 0, 0}, {0x3804, 0x0a, 0, 0},
+-	{0x3805, 0x3f, 0, 0}, {0x3806, 0x06, 0, 0}, {0x3807, 0xa9, 0, 0},
+-	{0x3810, 0x00, 0, 0},
+-	{0x3811, 0x10, 0, 0}, {0x3812, 0x00, 0, 0}, {0x3813, 0x04, 0, 0},
+-	{0x3618, 0x00, 0, 0}, {0x3612, 0x29, 0, 0}, {0x3708, 0x64, 0, 0},
+-	{0x3709, 0x52, 0, 0}, {0x370c, 0x03, 0, 0}, {0x3a02, 0x02, 0, 0},
+-	{0x3a03, 0xe4, 0, 0}, {0x3a08, 0x01, 0, 0}, {0x3a09, 0xbc, 0, 0},
+-	{0x3a0a, 0x01, 0, 0}, {0x3a0b, 0x72, 0, 0}, {0x3a0e, 0x01, 0, 0},
+-	{0x3a0d, 0x02, 0, 0}, {0x3a14, 0x02, 0, 0}, {0x3a15, 0xe4, 0, 0},
+-	{0x4001, 0x02, 0, 0}, {0x4004, 0x02, 0, 0},
+-	{0x4407, 0x04, 0, 0}, {0x5001, 0xa3, 0, 0},
++static struct ap1302_reg_value ap1302_mode_640_480[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x02, 0x80 }, },
++	{ 4, { 0x20, 0x02,  0x01, 0xE0 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
+ };
+ 
+-#endif
++static struct ap1302_reg_value ap1302_mode_1280_720[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x05, 0x00 }, },
++	{ 4, { 0x20, 0x02,  0x02, 0xd0 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++};
+ 
+ static const struct ap1302_mode_info
+ ap1302_mode_data[AP1302_NUM_MODES] = {
+ 	{AP1302_MODE_VGA_640_480, SUBSAMPLING,
+-	 640, 1896, 480, 1080},
++	 640, 1896, 480, 1080, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480)},
+ 	{AP1302_MODE_720P_1280_720, SUBSAMPLING,
+-	 1280, 1892, 720, 740},
++	 1280, 1892, 720, 740, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
+ };
+ 
+ 
+-#if 0
+-
+-/* power-on sensor init reg table */
+-static const struct ap1302_mode_info ap1302_mode_init_data = {
+-	0, SUBSAMPLING, 640, 1896, 480, 984,
+-	ap1302_init_setting_30fps_VGA,
+-	ARRAY_SIZE(ap1302_init_setting_30fps_VGA),
+-};
+-
+-
+-static int ap1302_init_slave_id(struct ap1302_dev *sensor)
+-{
+-	struct i2c_client *client = sensor->i2c_client;
+-	struct i2c_msg msg;
+-	u8 buf[3];
+-	int ret;
+-
+-	if (client->addr == AP1302_DEFAULT_SLAVE_ID)
+-		return 0;
+-
+-	buf[0] = AP1302_REG_SLAVE_ID >> 8;
+-	buf[1] = AP1302_REG_SLAVE_ID & 0xff;
+-	buf[2] = client->addr << 1;
+-
+-	msg.addr = AP1302_DEFAULT_SLAVE_ID;
+-	msg.flags = 0;
+-	msg.buf = buf;
+-	msg.len = sizeof(buf);
+-
+-	ret = i2c_transfer(client->adapter, &msg, 1);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "%s: failed with %d\n", __func__, ret);
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-#endif
+-
+ static int ap1302_write_reg(struct ap1302_dev *sensor, u16 reg, u8 val)
+ {
+ 	struct i2c_client *client = sensor->i2c_client;
+@@ -823,826 +590,6 @@
+ #define AP1302_PCLK_ROOT_DIV			1
+ #define AP1302_PLL_SYS_ROOT_DIVIDER_BYPASS	0x00
+ 
+-#if 0
+-
+-static unsigned long ap1302_compute_sys_clk(struct ap1302_dev *sensor,
+-					    u8 pll_prediv, u8 pll_mult,
+-					    u8 sysdiv)
+-{
+-	unsigned long sysclk = sensor->xclk_freq / pll_prediv * pll_mult;
+-
+-	/* PLL1 output cannot exceed 1GHz. */
+-	if (sysclk / 1000000 > 1000)
+-		return 0;
+-
+-	return sysclk / sysdiv;
+-}
+-
+-static unsigned long ap1302_calc_sys_clk(struct ap1302_dev *sensor,
+-					 unsigned long rate,
+-					 u8 *pll_prediv, u8 *pll_mult,
+-					 u8 *sysdiv)
+-{
+-	unsigned long best = ~0;
+-	u8 best_sysdiv = 1, best_mult = 1;
+-	u8 _sysdiv, _pll_mult;
+-
+-	for (_sysdiv = AP1302_SYSDIV_MIN;
+-	     _sysdiv <= AP1302_SYSDIV_MAX;
+-	     _sysdiv++) {
+-		for (_pll_mult = AP1302_PLL_MULT_MIN;
+-		     _pll_mult <= AP1302_PLL_MULT_MAX;
+-		     _pll_mult++) {
+-			unsigned long _rate;
+-
+-			/*
+-			 * The PLL multiplier cannot be odd if above
+-			 * 127.
+-			 */
+-			if (_pll_mult > 127 && (_pll_mult % 2))
+-				continue;
+-
+-			_rate = ap1302_compute_sys_clk(sensor,
+-						       AP1302_PLL_PREDIV,
+-						       _pll_mult, _sysdiv);
+-
+-			/*
+-			 * We have reached the maximum allowed PLL1 output,
+-			 * increase sysdiv.
+-			 */
+-			if (!rate)
+-				break;
+-
+-			/*
+-			 * Prefer rates above the expected clock rate than
+-			 * below, even if that means being less precise.
+-			 */
+-			if (_rate < rate)
+-				continue;
+-
+-			if (abs(rate - _rate) < abs(rate - best)) {
+-				best = _rate;
+-				best_sysdiv = _sysdiv;
+-				best_mult = _pll_mult;
+-			}
+-
+-			if (_rate == rate)
+-				goto out;
+-		}
+-	}
+-
+-out:
+-	*sysdiv = best_sysdiv;
+-	*pll_prediv = AP1302_PLL_PREDIV;
+-	*pll_mult = best_mult;
+-
+-	return best;
+-}
+-
+-/*
+- * ap1302_set_mipi_pclk() - Calculate the clock tree configuration values
+- *			    for the MIPI CSI-2 output.
+- *
+- * @rate: The requested bandwidth per lane in bytes per second.
+- *	  'Bandwidth Per Lane' is calculated as:
+- *	  bpl = HTOT * VTOT * FPS * bpp / num_lanes;
+- *
+- * This function use the requested bandwidth to calculate:
+- * - sample_rate = bpl / (bpp / num_lanes);
+- *	         = bpl / (PLL_RDIV * BIT_DIV * PCLK_DIV * MIPI_DIV / num_lanes);
+- *
+- * - mipi_sclk   = bpl / MIPI_DIV / 2; ( / 2 is for CSI-2 DDR)
+- *
+- * with these fixed parameters:
+- *	PLL_RDIV	= 2;
+- *	BIT_DIVIDER	= 2; (MIPI_BIT_MODE == 8 ? 2 : 2,5);
+- *	PCLK_DIV	= 1;
+- *
+- * The MIPI clock generation differs for modes that use the scaler and modes
+- * that do not. In case the scaler is in use, the MIPI_SCLK generates the MIPI
+- * BIT CLk, and thus:
+- *
+- * - mipi_sclk = bpl / MIPI_DIV / 2;
+- *   MIPI_DIV = 1;
+- *
+- * For modes that do not go through the scaler, the MIPI BIT CLOCK is generated
+- * from the pixel clock, and thus:
+- *
+- * - sample_rate = bpl / (bpp / num_lanes);
+- *	         = bpl / (2 * 2 * 1 * MIPI_DIV / num_lanes);
+- *		 = bpl / (4 * MIPI_DIV / num_lanes);
+- * - MIPI_DIV	 = bpp / (4 * num_lanes);
+- *
+- * FIXME: this have been tested with 16bpp and 2 lanes setup only.
+- * MIPI_DIV is fixed to value 2, but it -might- be changed according to the
+- * above formula for setups with 1 lane or image formats with different bpp.
+- *
+- * FIXME: this deviates from the sensor manual documentation which is quite
+- * thin on the MIPI clock tree generation part.
+- */
+-static int ap1302_set_mipi_pclk(struct ap1302_dev *sensor,
+-				unsigned long rate)
+-{
+-	struct i2c_client *client = sensor->i2c_client;
+-	const struct ap1302_mode_info *mode = sensor->current_mode;
+-	u8 prediv, mult, sysdiv;
+-	unsigned long pclk_freq, max_pclk_freq;
+-	u8 mipi_div;
+-	int ret;
+-
+-	/*
+-	 * 1280x720 is reported to use 'SUBSAMPLING' only,
+-	 * but according to the sensor manual it goes through the
+-	 * scaler before subsampling.
+-	 */
+-	if (mode->dn_mode == SCALING ||
+-	   (mode->id == AP1302_MODE_720P_1280_720))
+-		mipi_div = AP1302_MIPI_DIV_SCLK;
+-	else
+-		mipi_div = AP1302_MIPI_DIV_PCLK;
+-
+-	pclk_freq = rate / 16 / mipi_div;
+-	pclk_freq = pclk_freq * 2 * /* 2 clocks per pixel */
+-		    sensor->ep.bus.mipi_csi2.num_data_lanes;
+-	max_pclk_freq = sensor->ep.bus.mipi_csi2.pclk_max_frequency;
+-	/* clip rate according to optional maximum pixel clock limit */
+-	if (max_pclk_freq && (pclk_freq > max_pclk_freq)) {
+-		rate = max_pclk_freq / sensor->ep.bus.mipi_csi2.num_data_lanes
+-		       / 2;
+-		rate = rate * mipi_div * 16;
+-		dev_dbg(&client->dev, "MIPI pixel clock too high (%lu > %lu Hz), reducing rate...\n",
+-			pclk_freq, max_pclk_freq);
+-	}
+-
+-	ap1302_calc_sys_clk(sensor, rate, &prediv, &mult, &sysdiv);
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL0,
+-			     0x0f, AP1302_PLL_CTRL0_MIPI_MODE_8BIT);
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL1,
+-			     0xff, sysdiv << 4 | mipi_div);
+-	if (ret)
+-		return ret;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL2, 0xff, mult);
+-	if (ret)
+-		return ret;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL3,
+-			     0x1f, AP1302_PLL_CTRL3_PLL_ROOT_DIV_2 | prediv);
+-	if (ret)
+-		return ret;
+-
+-	return ap1302_mod_reg(sensor, AP1302_REG_SYS_ROOT_DIVIDER,
+-			      0x30, AP1302_PLL_SYS_ROOT_DIVIDER_BYPASS);
+-}
+-
+-static unsigned long ap1302_calc_pclk(struct ap1302_dev *sensor,
+-				      unsigned long rate,
+-				      u8 *pll_prediv, u8 *pll_mult, u8 *sysdiv,
+-				      u8 *pll_rdiv, u8 *bit_div, u8 *pclk_div)
+-{
+-	unsigned long _rate = rate * AP1302_PLL_ROOT_DIV * AP1302_BIT_DIV *
+-				AP1302_PCLK_ROOT_DIV;
+-
+-	_rate = ap1302_calc_sys_clk(sensor, _rate, pll_prediv, pll_mult,
+-				    sysdiv);
+-	*pll_rdiv = AP1302_PLL_ROOT_DIV;
+-	*bit_div = AP1302_BIT_DIV;
+-	*pclk_div = AP1302_PCLK_ROOT_DIV;
+-
+-	return _rate / *pll_rdiv / *bit_div / *pclk_div;
+-}
+-
+-static int ap1302_set_dvp_pclk(struct ap1302_dev *sensor, unsigned long rate)
+-{
+-	const struct ap1302_mode_info *mode = sensor->current_mode;
+-	u8 prediv, mult, sysdiv, pll_rdiv, bit_div, pclk_div;
+-	struct i2c_client *client = sensor->i2c_client;
+-	unsigned int pclk_freq, max_pclk_freq;
+-	u8 dvp_pclk_divider;
+-	int ret;
+-
+-	/*
+-	 * 1280x720 and 1024x768 are reported to use 'SUBSAMPLING' only,
+-	 * but they seems to go through the scaler before subsampling.
+-	 */
+-	if (mode->dn_mode == SCALING ||
+-	   (mode->id == AP1302_MODE_720P_1280_720) ||
+-	   (mode->id == AP1302_MODE_XGA_1024_768))
+-		dvp_pclk_divider = 1;
+-	else
+-		dvp_pclk_divider = 2;
+-
+-	ret = ap1302_write_reg(sensor, AP1302_REG_DVP_PCLK_DIVIDER,
+-			       dvp_pclk_divider);
+-	if (ret)
+-		return ret;
+-	pclk_freq = rate / dvp_pclk_divider;
+-	max_pclk_freq = sensor->ep.bus.parallel.pclk_max_frequency;
+-
+-	/* clip rate according to optional maximum pixel clock limit */
+-	if (max_pclk_freq && (pclk_freq > max_pclk_freq)) {
+-		rate = max_pclk_freq * dvp_pclk_divider;
+-		dev_dbg(&client->dev, "DVP pixel clock too high (%d > %d Hz), reducing rate...\n",
+-			pclk_freq, max_pclk_freq);
+-	}
+-
+-	ap1302_calc_pclk(sensor, rate, &prediv, &mult, &sysdiv, &pll_rdiv,
+-			 &bit_div, &pclk_div);
+-
+-	if (bit_div == 2)
+-		bit_div = 8;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL0,
+-			     0x0f, bit_div);
+-	if (ret)
+-		return ret;
+-
+-	/*
+-	 * We need to set sysdiv according to the clock, and to clear
+-	 * the MIPI divider.
+-	 */
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL1,
+-			     0xff, sysdiv << 4);
+-	if (ret)
+-		return ret;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL2,
+-			     0xff, mult);
+-	if (ret)
+-		return ret;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SC_PLL_CTRL3,
+-			     0x1f, prediv | ((pll_rdiv - 1) << 4));
+-	if (ret)
+-		return ret;
+-
+-	return ap1302_mod_reg(sensor, AP1302_REG_SYS_ROOT_DIVIDER, 0x30,
+-			      (ilog2(pclk_div) << 4));
+-}
+-
+-/* set JPEG framing sizes */
+-static int ap1302_set_jpeg_timings(struct ap1302_dev *sensor,
+-				   const struct ap1302_mode_info *mode)
+-{
+-	int ret;
+-
+-	/*
+-	 * compression mode 3 timing
+-	 *
+-	 * Data is transmitted with programmable width (VFIFO_HSIZE).
+-	 * No padding done. Last line may have less data. Varying
+-	 * number of lines per frame, depending on amount of data.
+-	 */
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_JPG_MODE_SELECT, 0x7, 0x3);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_VFIFO_HSIZE, mode->hact);
+-	if (ret < 0)
+-		return ret;
+-
+-	return ap1302_write_reg16(sensor, AP1302_REG_VFIFO_VSIZE, mode->vact);
+-}
+-
+-#endif
+-
+-#if 0
+-
+-/* download ap1302 settings to sensor through i2c */
+-static int ap1302_load_regs(struct ap1302_dev *sensor,
+-			    const struct ap1302_mode_info *mode)
+-{
+-	const struct reg_value *regs = mode->reg_data;
+-	unsigned int i;
+-	u32 delay_ms;
+-	u16 reg_addr;
+-	u8 mask, val;
+-	int ret = 0;
+-
+-	for (i = 0; i < mode->reg_data_size; ++i, ++regs) {
+-		delay_ms = regs->delay_ms;
+-		reg_addr = regs->reg_addr;
+-		val = regs->val;
+-		mask = regs->mask;
+-
+-		if (mask)
+-			ret = ap1302_mod_reg(sensor, reg_addr, mask, val);
+-		else
+-			ret = ap1302_write_reg(sensor, reg_addr, val);
+-		if (ret)
+-			break;
+-
+-		if (delay_ms)
+-			usleep_range(1000 * delay_ms, 1000 * delay_ms + 100);
+-	}
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_autoexposure(struct ap1302_dev *sensor, bool on)
+-{
+-	return ap1302_mod_reg(sensor, AP1302_REG_AEC_PK_MANUAL,
+-			      BIT(0), on ? 0 : BIT(0));
+-}
+-
+-/* read exposure, in number of line periods */
+-static int ap1302_get_exposure(struct ap1302_dev *sensor)
+-{
+-	int exp, ret;
+-	u8 temp;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_AEC_PK_EXPOSURE_HI, &temp);
+-	if (ret)
+-		return ret;
+-	exp = ((int)temp & 0x0f) << 16;
+-	ret = ap1302_read_reg(sensor, AP1302_REG_AEC_PK_EXPOSURE_MED, &temp);
+-	if (ret)
+-		return ret;
+-	exp |= ((int)temp << 8);
+-	ret = ap1302_read_reg(sensor, AP1302_REG_AEC_PK_EXPOSURE_LO, &temp);
+-	if (ret)
+-		return ret;
+-	exp |= (int)temp;
+-
+-	return exp >> 4;
+-}
+-
+-/* write exposure, given number of line periods */
+-static int ap1302_set_exposure(struct ap1302_dev *sensor, u32 exposure)
+-{
+-	int ret;
+-
+-	exposure <<= 4;
+-
+-	ret = ap1302_write_reg(sensor,
+-			       AP1302_REG_AEC_PK_EXPOSURE_LO,
+-			       exposure & 0xff);
+-	if (ret)
+-		return ret;
+-	ret = ap1302_write_reg(sensor,
+-			       AP1302_REG_AEC_PK_EXPOSURE_MED,
+-			       (exposure >> 8) & 0xff);
+-	if (ret)
+-		return ret;
+-	return ap1302_write_reg(sensor,
+-				AP1302_REG_AEC_PK_EXPOSURE_HI,
+-				(exposure >> 16) & 0x0f);
+-}
+-
+-static int ap1302_get_gain(struct ap1302_dev *sensor)
+-{
+-	u16 gain;
+-	int ret;
+-
+-	ret = ap1302_read_reg16(sensor, AP1302_REG_AEC_PK_REAL_GAIN, &gain);
+-	if (ret)
+-		return ret;
+-
+-	return gain & 0x3ff;
+-}
+-
+-static int ap1302_set_gain(struct ap1302_dev *sensor, int gain)
+-{
+-	return ap1302_write_reg16(sensor, AP1302_REG_AEC_PK_REAL_GAIN,
+-				  (u16)gain & 0x3ff);
+-}
+-
+-static int ap1302_set_autogain(struct ap1302_dev *sensor, bool on)
+-{
+-	return ap1302_mod_reg(sensor, AP1302_REG_AEC_PK_MANUAL,
+-			      BIT(1), on ? 0 : BIT(1));
+-}
+-
+-static int ap1302_set_stream_dvp(struct ap1302_dev *sensor, bool on)
+-{
+-	int ret;
+-	unsigned int flags = sensor->ep.bus.parallel.flags;
+-	u8 pclk_pol = 0;
+-	u8 hsync_pol = 0;
+-	u8 vsync_pol = 0;
+-
+-	/*
+-	 * Note about parallel port configuration.
+-	 *
+-	 * When configured in parallel mode, the AP1302 will
+-	 * output 10 bits data on DVP data lines [9:0].
+-	 * If only 8 bits data are wanted, the 8 bits data lines
+-	 * of the camera interface must be physically connected
+-	 * on the DVP data lines [9:2].
+-	 *
+-	 * Control lines polarity can be configured through
+-	 * devicetree endpoint control lines properties.
+-	 * If no endpoint control lines properties are set,
+-	 * polarity will be as below:
+-	 * - VSYNC:	active high
+-	 * - HREF:	active low
+-	 * - PCLK:	active low
+-	 */
+-
+-	if (on) {
+-		/*
+-		 * configure parallel port control lines polarity
+-		 *
+-		 * POLARITY CTRL0
+-		 * - [5]:	PCLK polarity (0: active low, 1: active high)
+-		 * - [1]:	HREF polarity (0: active low, 1: active high)
+-		 * - [0]:	VSYNC polarity (mismatch here between
+-		 *		datasheet and hardware, 0 is active high
+-		 *		and 1 is active low...)
+-		 */
+-		if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
+-			pclk_pol = 1;
+-		if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
+-			hsync_pol = 1;
+-		if (flags & V4L2_MBUS_VSYNC_ACTIVE_LOW)
+-			vsync_pol = 1;
+-
+-		ret = ap1302_write_reg(sensor,
+-				       AP1302_REG_POLARITY_CTRL00,
+-				       (pclk_pol << 5) |
+-				       (hsync_pol << 1) |
+-				       vsync_pol);
+-
+-		if (ret)
+-			return ret;
+-	}
+-
+-	/*
+-	 * powerdown MIPI TX/RX PHY & disable MIPI
+-	 *
+-	 * MIPI CONTROL 00
+-	 * 4:	 PWDN PHY TX
+-	 * 3:	 PWDN PHY RX
+-	 * 2:	 MIPI enable
+-	 */
+-	ret = ap1302_write_reg(sensor,
+-			       AP1302_REG_IO_MIPI_CTRL00, on ? 0x18 : 0);
+-	if (ret)
+-		return ret;
+-
+-	/*
+-	 * enable VSYNC/HREF/PCLK DVP control lines
+-	 * & D[9:6] DVP data lines
+-	 *
+-	 * PAD OUTPUT ENABLE 01
+-	 * - 6:		VSYNC output enable
+-	 * - 5:		HREF output enable
+-	 * - 4:		PCLK output enable
+-	 * - [3:0]:	D[9:6] output enable
+-	 */
+-	ret = ap1302_write_reg(sensor,
+-			       AP1302_REG_PAD_OUTPUT_ENABLE01,
+-			       on ? 0x7f : 0);
+-	if (ret)
+-		return ret;
+-
+-	/*
+-	 * enable D[5:0] DVP data lines
+-	 *
+-	 * PAD OUTPUT ENABLE 02
+-	 * - [7:2]:	D[5:0] output enable
+-	 */
+-	return ap1302_write_reg(sensor,
+-				AP1302_REG_PAD_OUTPUT_ENABLE02,
+-				on ? 0xfc : 0);
+-}
+-
+-static int ap1302_set_stream_mipi(struct ap1302_dev *sensor, bool on)
+-{
+-	int ret;
+-
+-	/*
+-	 * Enable/disable the MIPI interface
+-	 *
+-	 * 0x300e = on ? 0x45 : 0x40
+-	 *
+-	 * FIXME: the sensor manual (version 2.03) reports
+-	 * [7:5] = 000  : 1 data lane mode
+-	 * [7:5] = 001  : 2 data lanes mode
+-	 * But this settings do not work, while the following ones
+-	 * have been validated for 2 data lanes mode.
+-	 *
+-	 * [7:5] = 010	: 2 data lanes mode
+-	 * [4] = 0	: Power up MIPI HS Tx
+-	 * [3] = 0	: Power up MIPI LS Rx
+-	 * [2] = 1/0	: MIPI interface enable/disable
+-	 * [1:0] = 01/00: FIXME: 'debug'
+-	 */
+-	ret = ap1302_write_reg(sensor, AP1302_REG_IO_MIPI_CTRL00,
+-			       on ? 0x45 : 0x40);
+-	if (ret)
+-		return ret;
+-
+-	return ap1302_write_reg(sensor, AP1302_REG_FRAME_CTRL01,
+-				on ? 0x00 : 0x0f);
+-}
+-
+-static int ap1302_get_sysclk(struct ap1302_dev *sensor)
+-{
+-	 /* calculate sysclk */
+-	u32 xvclk = sensor->xclk_freq / 10000;
+-	u32 multiplier, prediv, VCO, sysdiv, pll_rdiv;
+-	u32 sclk_rdiv_map[] = {1, 2, 4, 8};
+-	u32 bit_div2x = 1, sclk_rdiv, sysclk;
+-	u8 temp1, temp2;
+-	int ret;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_SC_PLL_CTRL0, &temp1);
+-	if (ret)
+-		return ret;
+-	temp2 = temp1 & 0x0f;
+-	if (temp2 == 8 || temp2 == 10)
+-		bit_div2x = temp2 / 2;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_SC_PLL_CTRL1, &temp1);
+-	if (ret)
+-		return ret;
+-	sysdiv = temp1 >> 4;
+-	if (sysdiv == 0)
+-		sysdiv = 16;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_SC_PLL_CTRL2, &temp1);
+-	if (ret)
+-		return ret;
+-	multiplier = temp1;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_SC_PLL_CTRL3, &temp1);
+-	if (ret)
+-		return ret;
+-	prediv = temp1 & 0x0f;
+-	pll_rdiv = ((temp1 >> 4) & 0x01) + 1;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_SYS_ROOT_DIVIDER, &temp1);
+-	if (ret)
+-		return ret;
+-	temp2 = temp1 & 0x03;
+-	sclk_rdiv = sclk_rdiv_map[temp2];
+-
+-	if (!prediv || !sysdiv || !pll_rdiv || !bit_div2x)
+-		return -EINVAL;
+-
+-	VCO = xvclk * multiplier / prediv;
+-
+-	sysclk = VCO / sysdiv / pll_rdiv * 2 / bit_div2x / sclk_rdiv;
+-
+-	return sysclk;
+-}
+-
+-static int ap1302_set_night_mode(struct ap1302_dev *sensor)
+-{
+-	 /* read HTS from register settings */
+-	u8 mode;
+-	int ret;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_AEC_CTRL00, &mode);
+-	if (ret)
+-		return ret;
+-	mode &= 0xfb;
+-	return ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL00, mode);
+-}
+-
+-static int ap1302_get_hts(struct ap1302_dev *sensor)
+-{
+-	/* read HTS from register settings */
+-	u16 hts;
+-	int ret;
+-
+-	ret = ap1302_read_reg16(sensor, AP1302_REG_TIMING_HTS, &hts);
+-	if (ret)
+-		return ret;
+-	return hts;
+-}
+-
+-static int ap1302_get_vts(struct ap1302_dev *sensor)
+-{
+-	u16 vts;
+-	int ret;
+-
+-	ret = ap1302_read_reg16(sensor, AP1302_REG_TIMING_VTS, &vts);
+-	if (ret)
+-		return ret;
+-	return vts;
+-}
+-
+-static int ap1302_set_vts(struct ap1302_dev *sensor, int vts)
+-{
+-	return ap1302_write_reg16(sensor, AP1302_REG_TIMING_VTS, vts);
+-}
+-
+-static int ap1302_get_light_freq(struct ap1302_dev *sensor)
+-{
+-	/* get banding filter value */
+-	int ret, light_freq = 0;
+-	u8 temp, temp1;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_HZ5060_CTRL01, &temp);
+-	if (ret)
+-		return ret;
+-
+-	if (temp & 0x80) {
+-		/* manual */
+-		ret = ap1302_read_reg(sensor, AP1302_REG_HZ5060_CTRL00,
+-				      &temp1);
+-		if (ret)
+-			return ret;
+-		if (temp1 & 0x04) {
+-			/* 50Hz */
+-			light_freq = 50;
+-		} else {
+-			/* 60Hz */
+-			light_freq = 60;
+-		}
+-	} else {
+-		/* auto */
+-		ret = ap1302_read_reg(sensor, AP1302_REG_SIGMADELTA_CTRL0C,
+-				      &temp1);
+-		if (ret)
+-			return ret;
+-
+-		if (temp1 & 0x01) {
+-			/* 50Hz */
+-			light_freq = 50;
+-		} else {
+-			/* 60Hz */
+-		}
+-	}
+-
+-	return light_freq;
+-}
+-
+-static int ap1302_set_bandingfilter(struct ap1302_dev *sensor)
+-{
+-	u32 band_step60, max_band60, band_step50, max_band50, prev_vts;
+-	int ret;
+-
+-	/* read preview PCLK */
+-	ret = ap1302_get_sysclk(sensor);
+-	if (ret < 0)
+-		return ret;
+-	if (ret == 0)
+-		return -EINVAL;
+-	sensor->prev_sysclk = ret;
+-	/* read preview HTS */
+-	ret = ap1302_get_hts(sensor);
+-	if (ret < 0)
+-		return ret;
+-	if (ret == 0)
+-		return -EINVAL;
+-	sensor->prev_hts = ret;
+-
+-	/* read preview VTS */
+-	ret = ap1302_get_vts(sensor);
+-	if (ret < 0)
+-		return ret;
+-	prev_vts = ret;
+-
+-	/* calculate banding filter */
+-	/* 60Hz */
+-	band_step60 = sensor->prev_sysclk * 100 / sensor->prev_hts * 100 / 120;
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_AEC_B60_STEP, band_step60);
+-	if (ret)
+-		return ret;
+-	if (!band_step60)
+-		return -EINVAL;
+-	max_band60 = (int)((prev_vts - 4) / band_step60);
+-	ret = ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL0D, max_band60);
+-	if (ret)
+-		return ret;
+-
+-	/* 50Hz */
+-	band_step50 = sensor->prev_sysclk * 100 / sensor->prev_hts;
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_AEC_B50_STEP, band_step50);
+-	if (ret)
+-		return ret;
+-	if (!band_step50)
+-		return -EINVAL;
+-	max_band50 = (int)((prev_vts - 4) / band_step50);
+-	return ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL0E, max_band50);
+-}
+-
+-static int ap1302_set_ae_target(struct ap1302_dev *sensor, int target)
+-{
+-	/* stable in high */
+-	u32 fast_high, fast_low;
+-	int ret;
+-
+-	sensor->ae_low = target * 23 / 25;	/* 0.92 */
+-	sensor->ae_high = target * 27 / 25;	/* 1.08 */
+-
+-	fast_high = sensor->ae_high << 1;
+-	if (fast_high > 255)
+-		fast_high = 255;
+-
+-	fast_low = sensor->ae_low >> 1;
+-
+-	ret = ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL0F, sensor->ae_high);
+-	if (ret)
+-		return ret;
+-	ret = ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL10, sensor->ae_low);
+-	if (ret)
+-		return ret;
+-	ret = ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL1B, sensor->ae_high);
+-	if (ret)
+-		return ret;
+-	ret = ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL1E, sensor->ae_low);
+-	if (ret)
+-		return ret;
+-	ret = ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL11, fast_high);
+-	if (ret)
+-		return ret;
+-	return ap1302_write_reg(sensor, AP1302_REG_AEC_CTRL1F, fast_low);
+-}
+-
+-static int ap1302_get_binning(struct ap1302_dev *sensor)
+-{
+-	u8 temp;
+-	int ret;
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_TIMING_TC_REG21, &temp);
+-	if (ret)
+-		return ret;
+-
+-	return temp & BIT(0);
+-}
+-
+-static int ap1302_set_binning(struct ap1302_dev *sensor, bool enable)
+-{
+-	int ret;
+-
+-	/*
+-	 * TIMING TC REG21:
+-	 * - [0]:	Horizontal binning enable
+-	 */
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG21,
+-			     BIT(0), enable ? BIT(0) : 0);
+-	if (ret)
+-		return ret;
+-	/*
+-	 * TIMING TC REG20:
+-	 * - [0]:	Undocumented, but hardcoded init sequences
+-	 *		are always setting REG21/REG20 bit 0 to same value...
+-	 */
+-	return ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG20,
+-			      BIT(0), enable ? BIT(0) : 0);
+-}
+-
+-static int ap1302_set_virtual_channel(struct ap1302_dev *sensor)
+-{
+-	struct i2c_client *client = sensor->i2c_client;
+-	u8 temp, channel = virtual_channel;
+-	int ret;
+-
+-	if (channel > 3) {
+-		dev_err(&client->dev,
+-			"%s: wrong virtual_channel parameter, expected (0..3), got %d\n",
+-			__func__, channel);
+-		return -EINVAL;
+-	}
+-
+-	ret = ap1302_read_reg(sensor, AP1302_REG_DEBUG_MODE, &temp);
+-	if (ret)
+-		return ret;
+-	temp &= ~(3 << 6);
+-	temp |= (channel << 6);
+-	return ap1302_write_reg(sensor, AP1302_REG_DEBUG_MODE, temp);
+-}
+-
+-static int ap1302_set_timings(struct ap1302_dev *sensor,
+-			      const struct ap1302_mode_info *mode)
+-{
+-	int ret;
+-
+-#if 0
+-	if (sensor->fmt.code == MEDIA_BUS_FMT_JPEG_1X8) {
+-		ret = ap1302_set_jpeg_timings(sensor, mode);
+-		if (ret < 0)
+-			return ret;
+-	}
+-#endif
+-
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_TIMING_DVPHO, mode->hact);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_TIMING_DVPVO, mode->vact);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_TIMING_HTS, mode->htot);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = ap1302_write_reg16(sensor, AP1302_REG_TIMING_VTS, mode->vtot);
+-	if (ret < 0)
+-		return ret;
+-
+-	return 0;
+-}
+-
+-#endif
+-
+ 
+ static const struct ap1302_mode_info *
+ ap1302_find_mode(struct ap1302_dev *sensor, enum ap1302_frame_rate fr,
+@@ -1659,324 +606,10 @@
+ 	    (!nearest && (mode->hact != width || mode->vact != height)))
+ 		return NULL;
+ 
++	printk( KERN_ALERT "**** %s %i   h: %i   v: %i\n", __func__, (int )__LINE__, mode->hact, mode->vact );
+ 	return mode;
+ }
+ 
+-#if 0
+-
+-/*
+- * sensor changes between scaling and subsampling, go through
+- * exposure calculation
+- */
+-static int ap1302_set_mode_exposure_calc(struct ap1302_dev *sensor,
+-					 const struct ap1302_mode_info *mode)
+-{
+-	u32 prev_shutter, prev_gain16;
+-	u32 cap_shutter, cap_gain16;
+-	u32 cap_sysclk, cap_hts, cap_vts;
+-	u32 light_freq, cap_bandfilt, cap_maxband;
+-	u32 cap_gain16_shutter;
+-	u8 average;
+-	int ret;
+-
+-	if (!mode->reg_data)
+-		return -EINVAL;
+-
+-	/* read preview shutter */
+-	ret = ap1302_get_exposure(sensor);
+-	if (ret < 0)
+-		return ret;
+-	prev_shutter = ret;
+-	ret = ap1302_get_binning(sensor);
+-	if (ret < 0)
+-		return ret;
+-	if (ret && mode->id != AP1302_MODE_720P_1280_720 &&
+-	    mode->id != AP1302_MODE_1080P_1920_1080)
+-		prev_shutter *= 2;
+-
+-	/* read preview gain */
+-	ret = ap1302_get_gain(sensor);
+-	if (ret < 0)
+-		return ret;
+-	prev_gain16 = ret;
+-
+-	/* get average */
+-	ret = ap1302_read_reg(sensor, AP1302_REG_AVG_READOUT, &average);
+-	if (ret)
+-		return ret;
+-
+-	/* turn off night mode for capture */
+-	ret = ap1302_set_night_mode(sensor);
+-	if (ret < 0)
+-		return ret;
+-
+-	/* Write capture setting */
+-	ret = ap1302_load_regs(sensor, mode);
+-	if (ret < 0)
+-		return ret;
+-
+-	/* read capture VTS */
+-	ret = ap1302_get_vts(sensor);
+-	if (ret < 0)
+-		return ret;
+-	cap_vts = ret;
+-	ret = ap1302_get_hts(sensor);
+-	if (ret < 0)
+-		return ret;
+-	if (ret == 0)
+-		return -EINVAL;
+-	cap_hts = ret;
+-
+-	ret = ap1302_get_sysclk(sensor);
+-	if (ret < 0)
+-		return ret;
+-	if (ret == 0)
+-		return -EINVAL;
+-	cap_sysclk = ret;
+-
+-	/* calculate capture banding filter */
+-	ret = ap1302_get_light_freq(sensor);
+-	if (ret < 0)
+-		return ret;
+-	light_freq = ret;
+-
+-	if (light_freq == 60) {
+-		/* 60Hz */
+-		cap_bandfilt = cap_sysclk * 100 / cap_hts * 100 / 120;
+-	} else {
+-		/* 50Hz */
+-		cap_bandfilt = cap_sysclk * 100 / cap_hts;
+-	}
+-
+-	if (!sensor->prev_sysclk) {
+-		ret = ap1302_get_sysclk(sensor);
+-		if (ret < 0)
+-			return ret;
+-		if (ret == 0)
+-			return -EINVAL;
+-		sensor->prev_sysclk = ret;
+-	}
+-
+-	if (!cap_bandfilt)
+-		return -EINVAL;
+-
+-	cap_maxband = (int)((cap_vts - 4) / cap_bandfilt);
+-
+-	/* calculate capture shutter/gain16 */
+-	if (average > sensor->ae_low && average < sensor->ae_high) {
+-		/* in stable range */
+-		cap_gain16_shutter =
+-			prev_gain16 * prev_shutter *
+-			cap_sysclk / sensor->prev_sysclk *
+-			sensor->prev_hts / cap_hts *
+-			sensor->ae_target / average;
+-	} else {
+-		cap_gain16_shutter =
+-			prev_gain16 * prev_shutter *
+-			cap_sysclk / sensor->prev_sysclk *
+-			sensor->prev_hts / cap_hts;
+-	}
+-
+-	/* gain to shutter */
+-	if (cap_gain16_shutter < (cap_bandfilt * 16)) {
+-		/* shutter < 1/100 */
+-		cap_shutter = cap_gain16_shutter / 16;
+-		if (cap_shutter < 1)
+-			cap_shutter = 1;
+-
+-		cap_gain16 = cap_gain16_shutter / cap_shutter;
+-		if (cap_gain16 < 16)
+-			cap_gain16 = 16;
+-	} else {
+-		if (cap_gain16_shutter > (cap_bandfilt * cap_maxband * 16)) {
+-			/* exposure reach max */
+-			cap_shutter = cap_bandfilt * cap_maxband;
+-			if (!cap_shutter)
+-				return -EINVAL;
+-
+-			cap_gain16 = cap_gain16_shutter / cap_shutter;
+-		} else {
+-			/* 1/100 < (cap_shutter = n/100) =< max */
+-			cap_shutter =
+-				((int)(cap_gain16_shutter / 16 / cap_bandfilt))
+-				* cap_bandfilt;
+-			if (!cap_shutter)
+-				return -EINVAL;
+-
+-			cap_gain16 = cap_gain16_shutter / cap_shutter;
+-		}
+-	}
+-
+-	/* set capture gain */
+-	ret = ap1302_set_gain(sensor, cap_gain16);
+-	if (ret)
+-		return ret;
+-
+-	/* write capture shutter */
+-	if (cap_shutter > (cap_vts - 4)) {
+-		cap_vts = cap_shutter + 4;
+-		ret = ap1302_set_vts(sensor, cap_vts);
+-		if (ret < 0)
+-			return ret;
+-	}
+-
+-	/* set exposure */
+-	return ap1302_set_exposure(sensor, cap_shutter);
+-}
+-
+-#endif
+-
+-
+-#if 0
+-
+-/*
+- * if sensor changes inside scaling or subsampling
+- * change mode directly
+- */
+-static int ap1302_set_mode_direct(struct ap1302_dev *sensor,
+-				  const struct ap1302_mode_info *mode)
+-{
+-	if (!mode->reg_data)
+-		return -EINVAL;
+-
+-	/* Write capture setting */
+-	return ap1302_load_regs(sensor, mode);
+-}
+-
+-static int ap1302_set_mode(struct ap1302_dev *sensor)
+-{
+-	const struct ap1302_mode_info *mode = sensor->current_mode;
+-	const struct ap1302_mode_info *orig_mode = sensor->last_mode;
+-	enum ap1302_downsize_mode dn_mode, orig_dn_mode;
+-	bool auto_gain = sensor->ctrls.auto_gain->val == 1;
+-	bool auto_exp =  sensor->ctrls.auto_exp->val == V4L2_EXPOSURE_AUTO;
+-	unsigned long rate;
+-	int ret;
+-
+-	if (!orig_mode)
+-		orig_mode = mode;
+-
+-	dn_mode = mode->dn_mode;
+-	orig_dn_mode = orig_mode->dn_mode;
+-
+-	/* auto gain and exposure must be turned off when changing modes */
+-	if (auto_gain) {
+-		ret = ap1302_set_autogain(sensor, false);
+-		if (ret)
+-			return ret;
+-	}
+-
+-	if (auto_exp) {
+-		ret = ap1302_set_autoexposure(sensor, false);
+-		if (ret)
+-			goto restore_auto_gain;
+-	}
+-
+-	/*
+-	 * All the formats we support have 16 bits per pixel, seems to require
+-	 * the same rate than YUV, so we can just use 16 bpp all the time.
+-	 */
+-	rate = mode->vtot * mode->htot * 16;
+-	rate *= ap1302_framerates[sensor->current_fr];
+-	if (sensor->ep.bus_type == V4L2_MBUS_CSI2) {
+-		rate = rate / sensor->ep.bus.mipi_csi2.num_data_lanes;
+-		ret = ap1302_set_mipi_pclk(sensor, rate);
+-	} else {
+-		rate = rate / sensor->ep.bus.parallel.bus_width;
+-		ret = ap1302_set_dvp_pclk(sensor, rate);
+-	}
+-
+-	if (ret < 0)
+-		return 0;
+-
+-	if ((dn_mode == SUBSAMPLING && orig_dn_mode == SCALING) ||
+-	    (dn_mode == SCALING && orig_dn_mode == SUBSAMPLING)) {
+-		/*
+-		 * change between subsampling and scaling
+-		 * go through exposure calculation
+-		 */
+-		ret = ap1302_set_mode_exposure_calc(sensor, mode);
+-	} else {
+-		/*
+-		 * change inside subsampling or scaling
+-		 * download firmware directly
+-		 */
+-		ret = ap1302_set_mode_direct(sensor, mode);
+-	}
+-	if (ret < 0)
+-		goto restore_auto_exp_gain;
+-
+-	/* restore auto gain and exposure */
+-	if (auto_gain)
+-		ap1302_set_autogain(sensor, true);
+-	if (auto_exp)
+-		ap1302_set_autoexposure(sensor, true);
+-
+-	ret = ap1302_set_timings(sensor, mode);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = ap1302_set_binning(sensor, dn_mode != SCALING);
+-	if (ret < 0)
+-		return ret;
+-	ret = ap1302_set_ae_target(sensor, sensor->ae_target);
+-	if (ret < 0)
+-		return ret;
+-	ret = ap1302_get_light_freq(sensor);
+-	if (ret < 0)
+-		return ret;
+-	ret = ap1302_set_bandingfilter(sensor);
+-	if (ret < 0)
+-		return ret;
+-	ret = ap1302_set_virtual_channel(sensor);
+-	if (ret < 0)
+-		return ret;
+-
+-	sensor->pending_mode_change = false;
+-	sensor->last_mode = mode;
+-
+-	return 0;
+-
+-restore_auto_exp_gain:
+-	if (auto_exp)
+-		ap1302_set_autoexposure(sensor, true);
+-restore_auto_gain:
+-	if (auto_gain)
+-		ap1302_set_autogain(sensor, true);
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_framefmt(struct ap1302_dev *sensor,
+-			       struct v4l2_mbus_framefmt *format);
+-
+-/* restore the last set video mode after chip power-on */
+-static int ap1302_restore_mode(struct ap1302_dev *sensor)
+-{
+-	int ret;
+-
+-	/* first load the initial register values */
+-	ret = ap1302_load_regs(sensor, &ap1302_mode_init_data);
+-	if (ret < 0)
+-		return ret;
+-	sensor->last_mode = &ap1302_mode_init_data;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SYS_ROOT_DIVIDER, 0x3f,
+-			     (ilog2(AP1302_SCLK2X_ROOT_DIV) << 2) |
+-			     ilog2(AP1302_SCLK_ROOT_DIV));
+-	if (ret)
+-		return ret;
+-
+-	/* now restore the last capture mode */
+-	ret = ap1302_set_mode(sensor);
+-	if (ret < 0)
+-		return ret;
+-
+-	return ap1302_set_framefmt(sensor, &sensor->fmt);
+-}
+-
+-#endif
+-
+ 
+ static void ap1302_power(struct ap1302_dev *sensor, bool enable)
+ {
+@@ -2061,120 +694,54 @@
+ };
+ 
+ 
+-#if 0
+-
+-static int ap1302_set_power(struct ap1302_dev *sensor, bool on)
++static int ap1302_set_ctrl_test_pattern(struct ap1302_dev *sensor, int value)
+ {
+-	int ret = 0;
+-
+-	if (on) {
+-		ret = ap1302_set_power_on(sensor);
+-		if (ret)
+-			return ret;
+-
+-		ret = ap1302_restore_mode(sensor);
+-		if (ret)
+-			goto power_off;
+-
+-		/* We're done here for DVP bus, while CSI-2 needs setup. */
+-		if (sensor->ep.bus_type != V4L2_MBUS_CSI2)
+-			return 0;
+-
+-		/*
+-		 * Power up MIPI HS Tx and LS Rx; 2 data lanes mode
+-		 *
+-		 * 0x300e = 0x40
+-		 * [7:5] = 010	: 2 data lanes mode (see FIXME note in
+-		 *		  "ap1302_set_stream_mipi()")
+-		 * [4] = 0	: Power up MIPI HS Tx
+-		 * [3] = 0	: Power up MIPI LS Rx
+-		 * [2] = 0	: MIPI interface disabled
+-		 */
+-		ret = ap1302_write_reg(sensor,
+-				       AP1302_REG_IO_MIPI_CTRL00, 0x40);
+-		if (ret)
+-			goto power_off;
+-
+-		/*
+-		 * Gate clock and set LP11 in 'no packets mode' (idle)
+-		 *
+-		 * 0x4800 = 0x24
+-		 * [5] = 1	: Gate clock when 'no packets'
+-		 * [2] = 1	: MIPI bus in LP11 when 'no packets'
+-		 */
+-		ret = ap1302_write_reg(sensor,
+-				       AP1302_REG_MIPI_CTRL00, 0x24);
+-		if (ret)
+-			goto power_off;
++	u16 val;
+ 
+-		/*
+-		 * Set data lanes and clock in LP11 when 'sleeping'
+-		 *
+-		 * 0x3019 = 0x70
+-		 * [6] = 1	: MIPI data lane 2 in LP11 when 'sleeping'
+-		 * [5] = 1	: MIPI data lane 1 in LP11 when 'sleeping'
+-		 * [4] = 1	: MIPI clock lane in LP11 when 'sleeping'
+-		 */
+-		ret = ap1302_write_reg(sensor,
+-				       AP1302_REG_PAD_OUTPUT00, 0x70);
+-		if (ret)
+-			goto power_off;
++	switch ( value ) {
++		case 0:
++			val = 0x0211;
++			break;
+ 
+-		/* Give lanes some time to coax into LP11 state. */
+-		usleep_range(500, 1000);
++		case 1:
++			val = 0x0310;
++			break;
+ 
+-	} else {
+-		if (sensor->ep.bus_type == V4L2_MBUS_CSI2) {
+-			/* Reset MIPI bus settings to their default values. */
+-			ap1302_write_reg(sensor,
+-					 AP1302_REG_IO_MIPI_CTRL00, 0x58);
+-			ap1302_write_reg(sensor,
+-					 AP1302_REG_MIPI_CTRL00, 0x04);
+-			ap1302_write_reg(sensor,
+-					 AP1302_REG_PAD_OUTPUT00, 0x00);
++		default:
++			val = 0x0410;
++			break;
+ 		}
+ 
+-		ap1302_set_power_off(sensor);
++	return ap1302_write_reg16( sensor, AP1302_REG_SENSOR_SELECT, val );
+ 	}
+ 
+-	return 0;
+-
+-power_off:
+-	ap1302_set_power_off(sensor);
+-	return ret;
++static int ap1302_set_ctrl_hflip(struct ap1302_dev *sensor, int value)
++{
++	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 0, !!value );
+ }
+ 
+-/* --------------- Subdev Operations --------------- */
+-
+-static int ap1302_s_power(struct v4l2_subdev *sd, int on)
++static int ap1302_set_ctrl_vflip(struct ap1302_dev *sensor, int value)
+ {
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	int ret = 0;
+-
+-	mutex_lock(&sensor->lock);
+-
+-	/*
+-	 * If the power count is modified from 0 to != 0 or from != 0 to 0,
+-	 * update the power state.
+-	 */
+-	if (sensor->power_count == !on) {
+-		ret = ap1302_set_power(sensor, !!on);
+-		if (ret)
+-			goto out;
++	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 1, !!value << 1 );
+ 	}
+ 
+-	/* Update the power count. */
+-	sensor->power_count += on ? 1 : -1;
+-	WARN_ON(sensor->power_count < 0);
+-out:
+-	mutex_unlock(&sensor->lock);
++static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
++				  struct v4l2_subdev_pad_config *cfg,
++				  struct v4l2_subdev_frame_size_enum *fse)
++{
++	if (fse->pad != 0)
++		return -EINVAL;
++	if (fse->index >= AP1302_NUM_MODES)
++		return -EINVAL;
+ 
+-	if (on && !ret && sensor->power_count == 1) {
+-		/* restore controls */
+-		ret = v4l2_ctrl_handler_setup(&sensor->ctrls.handler);
+-	}
++	fse->min_width =
++		ap1302_mode_data[fse->index].hact;
++	fse->max_width = fse->min_width;
++	fse->min_height =
++		ap1302_mode_data[fse->index].vact;
++	fse->max_height = fse->min_height;
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static int ap1302_try_frame_interval(struct ap1302_dev *sensor,
+@@ -2186,8 +753,11 @@
+ 	int minfps, maxfps, best_fps, fps;
+ 	int i;
+ 
+-	minfps = ap1302_framerates[AP1302_15_FPS];
+-	maxfps = ap1302_framerates[AP1302_30_FPS];
++	printk( KERN_ALERT "**** %s %i   w: %i   h: %i   num: %i   denom: %i\n",
++			__func__, (int )__LINE__, width, height, fi->numerator, fi->denominator );
++
++	minfps = ap1302_framerates[0];
++	maxfps = ap1302_framerates[ARRAY_SIZE(ap1302_framerates) - 1];
+ 
+ 	if (fi->numerator == 0) {
+ 		fi->denominator = maxfps;
+@@ -2217,648 +787,6 @@
+ 	return mode ? rate : -EINVAL;
+ }
+ 
+-static int ap1302_get_fmt(struct v4l2_subdev *sd,
+-			  struct v4l2_subdev_pad_config *cfg,
+-			  struct v4l2_subdev_format *format)
+-{
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	struct v4l2_mbus_framefmt *fmt;
+-
+-	if (format->pad != 0)
+-		return -EINVAL;
+-
+-	mutex_lock(&sensor->lock);
+-
+-	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
+-		fmt = v4l2_subdev_get_try_format(&sensor->sd, cfg,
+-						 format->pad);
+-	else
+-		fmt = &sensor->fmt;
+-
+-	format->format = *fmt;
+-
+-	mutex_unlock(&sensor->lock);
+-
+-	return 0;
+-}
+-
+-static int ap1302_try_fmt_internal(struct v4l2_subdev *sd,
+-				   struct v4l2_mbus_framefmt *fmt,
+-				   enum ap1302_frame_rate fr,
+-				   const struct ap1302_mode_info **new_mode)
+-{
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	const struct ap1302_mode_info *mode;
+-	int i;
+-
+-	mode = ap1302_find_mode(sensor, fr, fmt->width, fmt->height, true);
+-	if (!mode)
+-		return -EINVAL;
+-	fmt->width = mode->hact;
+-	fmt->height = mode->vact;
+-
+-	if (new_mode)
+-		*new_mode = mode;
+-
+-	for (i = 0; i < ARRAY_SIZE(ap1302_formats); i++)
+-		if (ap1302_formats[i].code == fmt->code)
+-			break;
+-	if (i >= ARRAY_SIZE(ap1302_formats))
+-		i = 0;
+-
+-	fmt->code = ap1302_formats[i].code;
+-	fmt->colorspace = ap1302_formats[i].colorspace;
+-	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
+-	fmt->quantization = V4L2_QUANTIZATION_FULL_RANGE;
+-	fmt->xfer_func = V4L2_MAP_XFER_FUNC_DEFAULT(fmt->colorspace);
+-
+-	return 0;
+-}
+-
+-static const s64 link_freq_menu_items[] = {
+-	320000000,
+-};
+-
+-static int ap1302_set_fmt(struct v4l2_subdev *sd,
+-			  struct v4l2_subdev_pad_config *cfg,
+-			  struct v4l2_subdev_format *format)
+-{
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	const struct ap1302_mode_info *new_mode;
+-	struct v4l2_mbus_framefmt *mbus_fmt = &format->format;
+-	struct v4l2_mbus_framefmt *fmt;
+-	int ret;
+-
+-	if (format->pad != 0)
+-		return -EINVAL;
+-
+-	mutex_lock(&sensor->lock);
+-
+-	if (sensor->streaming) {
+-		ret = -EBUSY;
+-		goto out;
+-	}
+-
+-	ret = ap1302_try_fmt_internal(sd, mbus_fmt,
+-				      sensor->current_fr, &new_mode);
+-	if (ret)
+-		goto out;
+-
+-	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
+-		fmt = v4l2_subdev_get_try_format(sd, cfg, 0);
+-	else
+-		fmt = &sensor->fmt;
+-
+-	*fmt = *mbus_fmt;
+-
+-	if (new_mode != sensor->current_mode) {
+-		sensor->current_mode = new_mode;
+-		sensor->pending_mode_change = true;
+-	}
+-	if (mbus_fmt->code != sensor->fmt.code)
+-		sensor->pending_fmt_change = true;
+-
+-out:
+-	mutex_unlock(&sensor->lock);
+-	return ret;
+-}
+-
+-static int ap1302_set_framefmt(struct ap1302_dev *sensor,
+-			       struct v4l2_mbus_framefmt *format)
+-{
+-	int ret = 0;
+-	bool is_jpeg = false;
+-	u8 fmt, mux;
+-
+-	switch (format->code) {
+-	case MEDIA_BUS_FMT_UYVY8_2X8:
+-		/* YUV422, UYVY */
+-		fmt = 0x3f;
+-		mux = AP1302_FMT_MUX_YUV422;
+-		break;
+-	case MEDIA_BUS_FMT_YUYV8_2X8:
+-		/* YUV422, YUYV */
+-		fmt = 0x30;
+-		mux = AP1302_FMT_MUX_YUV422;
+-		break;
+-	case MEDIA_BUS_FMT_RGB565_2X8_LE:
+-		/* RGB565 {g[2:0],b[4:0]},{r[4:0],g[5:3]} */
+-		fmt = 0x6F;
+-		mux = AP1302_FMT_MUX_RGB;
+-		break;
+-	case MEDIA_BUS_FMT_RGB565_2X8_BE:
+-		/* RGB565 {r[4:0],g[5:3]},{g[2:0],b[4:0]} */
+-		fmt = 0x61;
+-		mux = AP1302_FMT_MUX_RGB;
+-		break;
+-	case MEDIA_BUS_FMT_JPEG_1X8:
+-		/* YUV422, YUYV */
+-		fmt = 0x30;
+-		mux = AP1302_FMT_MUX_YUV422;
+-		is_jpeg = true;
+-		break;
+-	case MEDIA_BUS_FMT_SBGGR8_1X8:
+-		/* Raw, BGBG... / GRGR... */
+-		fmt = 0x00;
+-		mux = AP1302_FMT_MUX_RAW_DPC;
+-		break;
+-	case MEDIA_BUS_FMT_SGBRG8_1X8:
+-		/* Raw bayer, GBGB... / RGRG... */
+-		fmt = 0x01;
+-		mux = AP1302_FMT_MUX_RAW_DPC;
+-		break;
+-	case MEDIA_BUS_FMT_SGRBG8_1X8:
+-		/* Raw bayer, GRGR... / BGBG... */
+-		fmt = 0x02;
+-		mux = AP1302_FMT_MUX_RAW_DPC;
+-		break;
+-	case MEDIA_BUS_FMT_SRGGB8_1X8:
+-		/* Raw bayer, RGRG... / GBGB... */
+-		fmt = 0x03;
+-		mux = AP1302_FMT_MUX_RAW_DPC;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	/* FORMAT CONTROL00: YUV and RGB formatting */
+-	ret = ap1302_write_reg(sensor, AP1302_REG_FORMAT_CONTROL00, fmt);
+-	if (ret)
+-		return ret;
+-
+-	/* FORMAT MUX CONTROL: ISP YUV or RGB */
+-	ret = ap1302_write_reg(sensor, AP1302_REG_ISP_FORMAT_MUX_CTRL, mux);
+-	if (ret)
+-		return ret;
+-
+-	/*
+-	 * TIMING TC REG21:
+-	 * - [5]:	JPEG enable
+-	 */
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG21,
+-			     BIT(5), is_jpeg ? BIT(5) : 0);
+-	if (ret)
+-		return ret;
+-
+-	/*
+-	 * SYSTEM RESET02:
+-	 * - [4]:	Reset JFIFO
+-	 * - [3]:	Reset SFIFO
+-	 * - [2]:	Reset JPEG
+-	 */
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_SYS_RESET02,
+-			     BIT(4) | BIT(3) | BIT(2),
+-			     is_jpeg ? 0 : (BIT(4) | BIT(3) | BIT(2)));
+-	if (ret)
+-		return ret;
+-
+-	/*
+-	 * CLOCK ENABLE02:
+-	 * - [5]:	Enable JPEG 2x clock
+-	 * - [3]:	Enable JPEG clock
+-	 */
+-	return ap1302_mod_reg(sensor, AP1302_REG_SYS_CLOCK_ENABLE02,
+-			      BIT(5) | BIT(3),
+-			      is_jpeg ? (BIT(5) | BIT(3)) : 0);
+-}
+-
+-/*
+- * Sensor Controls.
+- */
+-
+-static int ap1302_set_ctrl_hue(struct ap1302_dev *sensor, int value)
+-{
+-	int ret;
+-
+-	if (value) {
+-		ret = ap1302_mod_reg(sensor, AP1302_REG_SDE_CTRL0,
+-				     BIT(0), BIT(0));
+-		if (ret)
+-			return ret;
+-		ret = ap1302_write_reg16(sensor, AP1302_REG_SDE_CTRL1, value);
+-	} else {
+-		ret = ap1302_mod_reg(sensor, AP1302_REG_SDE_CTRL0, BIT(0), 0);
+-	}
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_ctrl_contrast(struct ap1302_dev *sensor, int value)
+-{
+-	int ret;
+-
+-	if (value) {
+-		ret = ap1302_mod_reg(sensor, AP1302_REG_SDE_CTRL0,
+-				     BIT(2), BIT(2));
+-		if (ret)
+-			return ret;
+-		ret = ap1302_write_reg(sensor, AP1302_REG_SDE_CTRL5,
+-				       value & 0xff);
+-	} else {
+-		ret = ap1302_mod_reg(sensor, AP1302_REG_SDE_CTRL0, BIT(2), 0);
+-	}
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_ctrl_saturation(struct ap1302_dev *sensor, int value)
+-{
+-	int ret;
+-
+-	if (value) {
+-		ret = ap1302_mod_reg(sensor, AP1302_REG_SDE_CTRL0,
+-				     BIT(1), BIT(1));
+-		if (ret)
+-			return ret;
+-		ret = ap1302_write_reg(sensor, AP1302_REG_SDE_CTRL3,
+-				       value & 0xff);
+-		if (ret)
+-			return ret;
+-		ret = ap1302_write_reg(sensor, AP1302_REG_SDE_CTRL4,
+-				       value & 0xff);
+-	} else {
+-		ret = ap1302_mod_reg(sensor, AP1302_REG_SDE_CTRL0, BIT(1), 0);
+-	}
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_ctrl_white_balance(struct ap1302_dev *sensor, int awb)
+-{
+-	int ret;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_AWB_MANUAL_CTRL,
+-			     BIT(0), awb ? 0 : 1);
+-	if (ret)
+-		return ret;
+-
+-	if (!awb) {
+-		u16 red = (u16)sensor->ctrls.red_balance->val;
+-		u16 blue = (u16)sensor->ctrls.blue_balance->val;
+-
+-		ret = ap1302_write_reg16(sensor, AP1302_REG_AWB_R_GAIN, red);
+-		if (ret)
+-			return ret;
+-		ret = ap1302_write_reg16(sensor, AP1302_REG_AWB_B_GAIN, blue);
+-	}
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_ctrl_exposure(struct ap1302_dev *sensor,
+-				    enum v4l2_exposure_auto_type auto_exposure)
+-{
+-	struct ap1302_ctrls *ctrls = &sensor->ctrls;
+-	bool auto_exp = (auto_exposure == V4L2_EXPOSURE_AUTO);
+-	int ret = 0;
+-
+-	if (ctrls->auto_exp->is_new) {
+-		ret = ap1302_set_autoexposure(sensor, auto_exp);
+-		if (ret)
+-			return ret;
+-	}
+-
+-	if (!auto_exp && ctrls->exposure->is_new) {
+-		u16 max_exp;
+-
+-		ret = ap1302_read_reg16(sensor, AP1302_REG_AEC_PK_VTS,
+-					&max_exp);
+-		if (ret)
+-			return ret;
+-		ret = ap1302_get_vts(sensor);
+-		if (ret < 0)
+-			return ret;
+-		max_exp += ret;
+-		ret = 0;
+-
+-		if (ctrls->exposure->val < max_exp)
+-			ret = ap1302_set_exposure(sensor, ctrls->exposure->val);
+-	}
+-
+-	return ret;
+-}
+-
+-static int ap1302_set_ctrl_gain(struct ap1302_dev *sensor, bool auto_gain)
+-{
+-	struct ap1302_ctrls *ctrls = &sensor->ctrls;
+-	int ret = 0;
+-
+-	if (ctrls->auto_gain->is_new) {
+-		ret = ap1302_set_autogain(sensor, auto_gain);
+-		if (ret)
+-			return ret;
+-	}
+-
+-	if (!auto_gain && ctrls->gain->is_new)
+-		ret = ap1302_set_gain(sensor, ctrls->gain->val);
+-
+-	return ret;
+-}
+-
+-static const char * const test_pattern_menu[] = {
+-	"Disabled",
+-	"Color bars",
+-	"Color bars w/ rolling bar",
+-	"Color squares",
+-	"Color squares w/ rolling bar",
+-};
+-
+-#define AP1302_TEST_ENABLE		BIT(7)
+-#define AP1302_TEST_ROLLING		BIT(6)	/* rolling horizontal bar */
+-#define AP1302_TEST_TRANSPARENT		BIT(5)
+-#define AP1302_TEST_SQUARE_BW		BIT(4)	/* black & white squares */
+-#define AP1302_TEST_BAR_STANDARD	(0 << 2)
+-#define AP1302_TEST_BAR_VERT_CHANGE_1	(1 << 2)
+-#define AP1302_TEST_BAR_HOR_CHANGE	(2 << 2)
+-#define AP1302_TEST_BAR_VERT_CHANGE_2	(3 << 2)
+-#define AP1302_TEST_BAR			(0 << 0)
+-#define AP1302_TEST_RANDOM		(1 << 0)
+-#define AP1302_TEST_SQUARE		(2 << 0)
+-#define AP1302_TEST_BLACK		(3 << 0)
+-
+-static const u8 test_pattern_val[] = {
+-	0,
+-	AP1302_TEST_ENABLE | AP1302_TEST_BAR_VERT_CHANGE_1 |
+-		AP1302_TEST_BAR,
+-	AP1302_TEST_ENABLE | AP1302_TEST_ROLLING |
+-		AP1302_TEST_BAR_VERT_CHANGE_1 | AP1302_TEST_BAR,
+-	AP1302_TEST_ENABLE | AP1302_TEST_SQUARE,
+-	AP1302_TEST_ENABLE | AP1302_TEST_ROLLING | AP1302_TEST_SQUARE,
+-};
+-
+-static int ap1302_set_ctrl_test_pattern(struct ap1302_dev *sensor, int value)
+-{
+-	return ap1302_write_reg(sensor, AP1302_REG_PRE_ISP_TEST_SET1,
+-				test_pattern_val[value]);
+-}
+-
+-static int ap1302_set_ctrl_light_freq(struct ap1302_dev *sensor, int value)
+-{
+-	int ret;
+-
+-	ret = ap1302_mod_reg(sensor, AP1302_REG_HZ5060_CTRL01, BIT(7),
+-			     (value == V4L2_CID_POWER_LINE_FREQUENCY_AUTO) ?
+-			     0 : BIT(7));
+-	if (ret)
+-		return ret;
+-
+-	return ap1302_mod_reg(sensor, AP1302_REG_HZ5060_CTRL00, BIT(2),
+-			      (value == V4L2_CID_POWER_LINE_FREQUENCY_50HZ) ?
+-			      BIT(2) : 0);
+-}
+-
+-static int ap1302_set_ctrl_hflip(struct ap1302_dev *sensor, int value)
+-{
+-	/*
+-	 * If sensor is mounted upside down, mirror logic is inversed.
+-	 *
+-	 * Sensor is a BSI (Back Side Illuminated) one,
+-	 * so image captured is physically mirrored.
+-	 * This is why mirror logic is inversed in
+-	 * order to cancel this mirror effect.
+-	 */
+-
+-	/*
+-	 * TIMING TC REG21:
+-	 * - [2]:	ISP mirror
+-	 * - [1]:	Sensor mirror
+-	 */
+-	return ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG21,
+-			      BIT(2) | BIT(1),
+-			      (!(value ^ sensor->upside_down)) ?
+-			      (BIT(2) | BIT(1)) : 0);
+-}
+-
+-static int ap1302_set_ctrl_vflip(struct ap1302_dev *sensor, int value)
+-{
+-	/* If sensor is mounted upside down, flip logic is inversed */
+-
+-	/*
+-	 * TIMING TC REG20:
+-	 * - [2]:	ISP vflip
+-	 * - [1]:	Sensor vflip
+-	 */
+-	return ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG20,
+-			      BIT(2) | BIT(1),
+-			      (value ^ sensor->upside_down) ?
+-			      (BIT(2) | BIT(1)) : 0);
+-}
+-
+-static int ap1302_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
+-{
+-	struct v4l2_subdev *sd = ctrl_to_sd(ctrl);
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	int val;
+-
+-	/* v4l2_ctrl_lock() locks our own mutex */
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_AUTOGAIN:
+-		val = ap1302_get_gain(sensor);
+-		if (val < 0)
+-			return val;
+-		sensor->ctrls.gain->val = val;
+-		break;
+-	case V4L2_CID_EXPOSURE_AUTO:
+-		val = ap1302_get_exposure(sensor);
+-		if (val < 0)
+-			return val;
+-		sensor->ctrls.exposure->val = val;
+-		break;
+-	}
+-
+-	return 0;
+-}
+-
+-static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+-{
+-	struct v4l2_subdev *sd = ctrl_to_sd(ctrl);
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	int ret;
+-
+-	/* v4l2_ctrl_lock() locks our own mutex */
+-
+-	/*
+-	 * If the device is not powered up by the host driver do
+-	 * not apply any controls to H/W at this time. Instead
+-	 * the controls will be restored right after power-up.
+-	 */
+-	if (sensor->power_count == 0)
+-		return 0;
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_AUTOGAIN:
+-		ret = ap1302_set_ctrl_gain(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_EXPOSURE_AUTO:
+-		ret = ap1302_set_ctrl_exposure(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_AUTO_WHITE_BALANCE:
+-		ret = ap1302_set_ctrl_white_balance(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_HUE:
+-		ret = ap1302_set_ctrl_hue(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_CONTRAST:
+-		ret = ap1302_set_ctrl_contrast(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_SATURATION:
+-		ret = ap1302_set_ctrl_saturation(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_TEST_PATTERN:
+-		ret = ap1302_set_ctrl_test_pattern(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_POWER_LINE_FREQUENCY:
+-		ret = ap1302_set_ctrl_light_freq(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_HFLIP:
+-		ret = ap1302_set_ctrl_hflip(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_VFLIP:
+-		ret = ap1302_set_ctrl_vflip(sensor, ctrl->val);
+-		break;
+-	default:
+-		ret = -EINVAL;
+-		break;
+-	}
+-
+-	return ret;
+-}
+-
+-static const struct v4l2_ctrl_ops ap1302_ctrl_ops = {
+-	.g_volatile_ctrl = ap1302_g_volatile_ctrl,
+-	.s_ctrl = ap1302_s_ctrl,
+-};
+-
+-static int ap1302_init_controls(struct ap1302_dev *sensor)
+-{
+-	const struct v4l2_ctrl_ops *ops = &ap1302_ctrl_ops;
+-	struct ap1302_ctrls *ctrls = &sensor->ctrls;
+-	struct v4l2_ctrl_handler *hdl = &ctrls->handler;
+-	int ret;
+-
+-	v4l2_ctrl_handler_init(hdl, 32);
+-
+-	/* we can use our own mutex for the ctrl lock */
+-	hdl->lock = &sensor->lock;
+-
+-	/* Auto/manual white balance */
+-	ctrls->auto_wb = v4l2_ctrl_new_std(hdl, ops,
+-					   V4L2_CID_AUTO_WHITE_BALANCE,
+-					   0, 1, 1, 1);
+-	ctrls->blue_balance = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_BLUE_BALANCE,
+-						0, 4095, 1, 0);
+-	ctrls->red_balance = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_RED_BALANCE,
+-					       0, 4095, 1, 0);
+-	/* Auto/manual exposure */
+-	ctrls->auto_exp = v4l2_ctrl_new_std_menu(hdl, ops,
+-						 V4L2_CID_EXPOSURE_AUTO,
+-						 V4L2_EXPOSURE_MANUAL, 0,
+-						 V4L2_EXPOSURE_AUTO);
+-	ctrls->exposure = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_EXPOSURE,
+-					    0, 65535, 1, 0);
+-	/* Auto/manual gain */
+-	ctrls->auto_gain = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_AUTOGAIN,
+-					     0, 1, 1, 1);
+-	ctrls->gain = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_GAIN,
+-					0, 1023, 1, 0);
+-
+-	ctrls->saturation = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_SATURATION,
+-					      0, 255, 1, 64);
+-	ctrls->hue = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_HUE,
+-				       0, 359, 1, 0);
+-	ctrls->contrast = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_CONTRAST,
+-					    0, 255, 1, 0);
+-	ctrls->test_pattern =
+-		v4l2_ctrl_new_std_menu_items(hdl, ops, V4L2_CID_TEST_PATTERN,
+-					     ARRAY_SIZE(test_pattern_menu) - 1,
+-					     0, 0, test_pattern_menu);
+-	ctrls->hflip = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_HFLIP,
+-					 0, 1, 1, 0);
+-	ctrls->vflip = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_VFLIP,
+-					 0, 1, 1, 0);
+-
+-	ctrls->light_freq =
+-		v4l2_ctrl_new_std_menu(hdl, ops,
+-				       V4L2_CID_POWER_LINE_FREQUENCY,
+-				       V4L2_CID_POWER_LINE_FREQUENCY_AUTO, 0,
+-				       V4L2_CID_POWER_LINE_FREQUENCY_50HZ);
+-
+-	ctrls->link_freq = v4l2_ctrl_new_int_menu(hdl, ops, V4L2_CID_LINK_FREQ,
+-						  0, 0, link_freq_menu_items);
+-	if (ctrls->link_freq)
+-		ctrls->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+-
+-	if (hdl->error) {
+-		ret = hdl->error;
+-		goto free_ctrls;
+-	}
+-
+-	ctrls->gain->flags |= V4L2_CTRL_FLAG_VOLATILE;
+-	ctrls->exposure->flags |= V4L2_CTRL_FLAG_VOLATILE;
+-
+-	v4l2_ctrl_auto_cluster(3, &ctrls->auto_wb, 0, false);
+-	v4l2_ctrl_auto_cluster(2, &ctrls->auto_gain, 0, true);
+-	v4l2_ctrl_auto_cluster(2, &ctrls->auto_exp, 1, true);
+-
+-	sensor->sd.ctrl_handler = hdl;
+-	return 0;
+-
+-free_ctrls:
+-	v4l2_ctrl_handler_free(hdl);
+-	return ret;
+-}
+-
+-#endif
+-
+-static int ap1302_set_ctrl_test_pattern(struct ap1302_dev *sensor, int value)
+-{
+-	u16 val;
+-
+-	switch ( value ) {
+-		case 0:
+-			val = 0x0211;
+-			break;
+-
+-		case 1:
+-			val = 0x0310;
+-			break;
+-
+-		default:
+-			val = 0x0410;
+-			break;
+-	}
+-
+-	return ap1302_write_reg16( sensor, AP1302_REG_SENSOR_SELECT, val );
+-}
+-
+-static int ap1302_set_ctrl_hflip(struct ap1302_dev *sensor, int value)
+-{
+-	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 0, !!value );
+-}
+-
+-static int ap1302_set_ctrl_vflip(struct ap1302_dev *sensor, int value)
+-{
+-	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 1, !!value << 1 );
+-}
+-
+-static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
+-				  struct v4l2_subdev_pad_config *cfg,
+-				  struct v4l2_subdev_frame_size_enum *fse)
+-{
+-	if (fse->pad != 0)
+-		return -EINVAL;
+-	if (fse->index >= AP1302_NUM_MODES)
+-		return -EINVAL;
+-
+-	fse->min_width = 640;
+-	fse->max_width = fse->min_width;
+-	fse->min_height = 480;
+-	fse->max_height = fse->min_height;
+-
+-	return 0;
+-}
+-
+ static int ap1302_enum_frame_interval(
+ 	struct v4l2_subdev *sd,
+ 	struct v4l2_subdev_pad_config *cfg,
+@@ -2868,6 +796,8 @@
+ 	struct v4l2_fract tpf;
+ 	int ret;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (fie->pad != 0)
+ 		return -EINVAL;
+ 	if (fie->index >= AP1302_NUM_FRAMERATES)
+@@ -2876,12 +806,11 @@
+ 	tpf.numerator = 1;
+ 	tpf.denominator = ap1302_framerates[fie->index];
+ 
+-#if 0
+ 	ret = ap1302_try_frame_interval(sensor, &tpf,
+ 					fie->width, fie->height);
++	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
+ 	if (ret < 0)
+ 		return -EINVAL;
+-#endif
+ 
+ 	fie->interval = tpf;
+ 	return 0;
+@@ -3055,13 +984,49 @@
+ 	return ret;
+ }
+ 
+-#if 0
++static int ap1302_enum_mbus_code(struct v4l2_subdev *sd,
++				 struct v4l2_subdev_pad_config *cfg,
++				 struct v4l2_subdev_mbus_code_enum *code)
++{
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
++	if (code->pad != 0)
++		return -EINVAL;
++	if (code->index >= ARRAY_SIZE(ap1302_formats))
++		return -EINVAL;
++
++	code->code = ap1302_formats[code->index].code;
++	return 0;
++}
++
++static int ap1302_s_power(struct v4l2_subdev *sd, int on)
++{
++	struct ap1302_dev *sensor = to_ap1302_dev(sd);
++	int ret = 0;
++
++    printk( KERN_ALERT "**** %s %i   on: %i\n", __func__, (int )__LINE__, on );
++
++	mutex_lock(&sensor->lock);
++
++	if ( on )
++		ret = ap1302_set_power_on( sensor );
++	else {
++		sensor->streaming = false;
++		sensor->fw_down = false;
++		ap1302_set_power_off( sensor );
++	}
++
++	mutex_unlock(&sensor->lock);
++	return ret;
++}
+ 
+ static int ap1302_g_frame_interval(struct v4l2_subdev *sd,
+ 				   struct v4l2_subdev_frame_interval *fi)
+ {
+ 	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+ 
++    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	mutex_lock(&sensor->lock);
+ 	fi->interval = sensor->frame_interval;
+ 	mutex_unlock(&sensor->lock);
+@@ -3076,6 +1041,8 @@
+ 	const struct ap1302_mode_info *mode;
+ 	int frame_rate, ret = 0;
+ 
++    printk( KERN_ALERT "**** %s %i   num: %i   denum: %i\n", __func__, (int )__LINE__, fi->interval.numerator, fi->interval.denominator );
++
+ 	if (fi->pad != 0)
+ 		return -EINVAL;
+ 
+@@ -3090,6 +1057,8 @@
+ 
+ 	frame_rate = ap1302_try_frame_interval(sensor, &fi->interval,
+ 					       mode->hact, mode->vact);
++    printk( KERN_ALERT "**** %s %i   frame_rate: %i\n", __func__, (int )__LINE__, frame_rate );
++
+ 	if (frame_rate < 0) {
+ 		/* Always return a valid frame interval value */
+ 		fi->interval = sensor->frame_interval;
+@@ -3098,6 +1067,8 @@
+ 
+ 	mode = ap1302_find_mode(sensor, frame_rate, mode->hact,
+ 				mode->vact, true);
++    printk( KERN_ALERT "**** %s %i   mode: 0x%08x\n", __func__, (int )__LINE__, (int )mode );
++
+ 	if (!mode) {
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -3115,105 +1086,6 @@
+ 	return ret;
+ }
+ 
+-#endif
+-
+-static int ap1302_enum_mbus_code(struct v4l2_subdev *sd,
+-				 struct v4l2_subdev_pad_config *cfg,
+-				 struct v4l2_subdev_mbus_code_enum *code)
+-{
+-	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+-
+-	if (code->pad != 0)
+-		return -EINVAL;
+-	if (code->index >= ARRAY_SIZE(ap1302_formats))
+-		return -EINVAL;
+-
+-	code->code = ap1302_formats[code->index].code;
+-	return 0;
+-}
+-
+-#if 0
+-
+-static int ap1302_s_stream(struct v4l2_subdev *sd, int enable)
+-{
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	int ret = 0;
+-
+-	mutex_lock(&sensor->lock);
+-
+-	if (sensor->streaming == !enable) {
+-		if (enable && sensor->pending_mode_change) {
+-			ret = ap1302_set_mode(sensor);
+-			if (ret)
+-				goto out;
+-		}
+-
+-		if (enable && sensor->pending_fmt_change) {
+-			ret = ap1302_set_framefmt(sensor, &sensor->fmt);
+-			if (ret)
+-				goto out;
+-			sensor->pending_fmt_change = false;
+-		}
+-
+-		if (sensor->ep.bus_type == V4L2_MBUS_CSI2)
+-			ret = ap1302_set_stream_mipi(sensor, enable);
+-		else
+-			ret = ap1302_set_stream_dvp(sensor, enable);
+-
+-		if (!ret)
+-			sensor->streaming = enable;
+-	}
+-
+-out:
+-	mutex_unlock(&sensor->lock);
+-	return ret;
+-}
+-
+-#endif
+-
+-
+-static int ap1302_s_power(struct v4l2_subdev *sd, int on)
+-{
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	int ret = 0;
+-
+-    printk( KERN_ALERT "**** %s %i   on: %i\n", __func__, (int )__LINE__, on );
+-
+-	mutex_lock(&sensor->lock);
+-
+-	if ( on )
+-		ret = ap1302_set_power_on( sensor );
+-	else {
+-		sensor->streaming = false;
+-		sensor->fw_down = false;
+-		ap1302_set_power_off( sensor );
+-	}
+-
+-	mutex_unlock(&sensor->lock);
+-	return ret;
+-}
+-
+-static int ap1302_g_frame_interval(struct v4l2_subdev *sd,
+-				   struct v4l2_subdev_frame_interval *fi)
+-{
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-
+-    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+-
+-	mutex_lock(&sensor->lock);
+-	fi->interval = sensor->frame_interval;
+-	mutex_unlock(&sensor->lock);
+-
+-	return 0;
+-}
+-
+-static int ap1302_s_frame_interval(struct v4l2_subdev *sd,
+-				   struct v4l2_subdev_frame_interval *fi)
+-{
+-    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+-
+-	return 0;
+-}
+ 
+ /* format of binary firmware files */
+ struct ap1302_fw_data {
+@@ -3224,6 +1096,8 @@
+ };
+ 
+ static int ap1302_fw_loop(struct ap1302_dev *sensor, struct ap1302_fw_data *p_fw_data );
++static int ap1302_set_mode( struct ap1302_dev *sensor );
++static int ap1302_set_fps( struct ap1302_dev *sensor );
+ 
+ static int ap1302_s_stream(struct v4l2_subdev *sd, int enable)
+ {
+@@ -3248,6 +1122,12 @@
+ 		sensor->streaming = false;
+ 	}
+ 
++	if ( !ret && enable )
++		ret = ap1302_set_mode( sensor );
++
++	if ( !ret && enable )
++		ret = ap1302_set_fps( sensor );
++
+ 	mutex_unlock(&sensor->lock);
+ 	return ret;
+ }
+@@ -3456,12 +1336,6 @@
+ 	const int len;
+ };
+ 
+-struct ap1302_reg_value {
+-	const int len;
+-	const u8 data[ 6 ];
+-};
+-
+-
+ static struct ap1302_reg_value ap1302_fw_stage[ ] = {
+ 	{ 4, { 0x60, 0x02,  0x00, 0x01 } },
+ 	{ 4, { 0x60, 0x02,  0x00, 0x02 } },
+@@ -3487,10 +1361,17 @@
+ 	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
+ 	{ 4, { 0x20, 0x30,  0x00, 0x12 }, },
+ 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++#if 0
+ 	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
+ 	{ 4, { 0x20, 0x00,  0x02, 0x80 }, },
+ 	{ 4, { 0x20, 0x02,  0x01, 0xE0 }, },
+ 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++#else
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x05, 0x00 }, },
++	{ 4, { 0x20, 0x02,  0x02, 0xd0 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++#endif
+ 	{ 4, { 0x20, 0x20,  0x0F, 0x00 }, },
+ 	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
+ #if 0
+@@ -3498,13 +1379,20 @@
+ 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
+ 	{ 4, { 0x20, 0x16,  0x1E, 0x22 }, },
+ #else
+-	{ 4, { 0x20, 0x12,  0x00, 0x30 }, },
+ 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
+ 	{ 4, { 0x20, 0x16,  0x1E, 0x1E }, },
+ #endif
+ 	{ 4, { 0x20, 0x18,  0x00, 0x1E }, },
+ };
+ 
++#if 0
++#else
++static struct ap1302_reg_value ap1302_fix_mipi_order[ ] = {
++	{ 6, { 0xf0, 0x38,  0x00, 0x73, 0x00, 0x00 } },
++	{ 6, { 0xe0, 0x00,  0x00, 0xb1, 0x40, 0x0e } },
++};
++#endif
++
+ static const struct read_reg ap1302_read_regs[] = {
+ 	{ AP1302_REG_OUT0_WIDTH, 2 },
+ 	{ AP1302_REG_OUT0_WIDTH, 2 }, { AP1302_REG_OUT0_HEIGHT, 2 }, { AP1302_REG_OUT0_FMT, 2 },
+@@ -3841,6 +1729,149 @@
+ 	return ret;
+ } /* fw_loop */
+ 
++static int ap1302_set_mode(struct ap1302_dev *sensor)
++{
++	int ret;
++
++	ret = ap1302_write_regs( sensor, sensor->current_mode->p_mode, sensor->current_mode->mode_len );
++	printk( KERN_ALERT "**** %s %i   w: %i   h: %i   ret: %i\n",
++			__func__, (int )__LINE__, sensor->current_mode->hact, sensor->current_mode->vact, ret );
++
++	return ret;
++}
++
++#if 0
++static int ap1302_set_framefmt(struct ap1302_dev *sensor,
++			       struct v4l2_mbus_framefmt *format)
++{
++	int ret = 0;
++	bool is_jpeg = false;
++	u8 fmt, mux;
++
++	switch (format->code) {
++		case MEDIA_BUS_FMT_YUYV8_2X8:
++			/* YUV422, UYVY */
++			fmt = 0x3f;
++			mux = AP1302_FMT_MUX_YUV422;
++			break;
++
++		case MEDIA_BUS_FMT_RGB565_2X8_LE:
++			/* RGB565 {g[2:0],b[4:0]},{r[4:0],g[5:3]} */
++			fmt = 0x6F;
++			mux = AP1302_FMT_MUX_RGB;
++			break;
++
++#if 0
++		case MEDIA_BUS_FMT_JPEG_1X8:
++			/* YUV422, YUYV */
++			fmt = 0x30;
++			mux = AP1302_FMT_MUX_YUV422;
++			is_jpeg = true;
++			break;
++		case MEDIA_BUS_FMT_SBGGR8_1X8:
++			/* Raw, BGBG... / GRGR... */
++			fmt = 0x00;
++			mux = AP1302_FMT_MUX_RAW_DPC;
++			break;
++		case MEDIA_BUS_FMT_SGBRG8_1X8:
++			/* Raw bayer, GBGB... / RGRG... */
++			fmt = 0x01;
++			mux = AP1302_FMT_MUX_RAW_DPC;
++			break;
++		case MEDIA_BUS_FMT_SGRBG8_1X8:
++			/* Raw bayer, GRGR... / BGBG... */
++			fmt = 0x02;
++			mux = AP1302_FMT_MUX_RAW_DPC;
++			break;
++		case MEDIA_BUS_FMT_SRGGB8_1X8:
++			/* Raw bayer, RGRG... / GBGB... */
++			fmt = 0x03;
++			mux = AP1302_FMT_MUX_RAW_DPC;
++			break;
++#endif
++
++		default:
++			return -EINVAL;
++	}
++
++	/* FORMAT CONTROL00: YUV and RGB formatting */
++	ret = ap1302_write_reg(sensor, AP1302_REG_FORMAT_CONTROL00, fmt);
++	if (ret)
++		return ret;
++
++	/* FORMAT MUX CONTROL: ISP YUV or RGB */
++	ret = ap1302_write_reg(sensor, AP1302_REG_ISP_FORMAT_MUX_CTRL, mux);
++	if (ret)
++		return ret;
++
++	/*
++	 * TIMING TC REG21:
++	 * - [5]:	JPEG enable
++	 */
++	ret = ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG21,
++			     BIT(5), is_jpeg ? BIT(5) : 0);
++	if (ret)
++		return ret;
++
++	/*
++	 * SYSTEM RESET02:
++	 * - [4]:	Reset JFIFO
++	 * - [3]:	Reset SFIFO
++	 * - [2]:	Reset JPEG
++	 */
++	ret = ap1302_mod_reg(sensor, AP1302_REG_SYS_RESET02,
++			     BIT(4) | BIT(3) | BIT(2),
++			     is_jpeg ? 0 : (BIT(4) | BIT(3) | BIT(2)));
++	if (ret)
++		return ret;
++
++	/*
++	 * CLOCK ENABLE02:
++	 * - [5]:	Enable JPEG 2x clock
++	 * - [3]:	Enable JPEG clock
++	 */
++	return ap1302_mod_reg(sensor, AP1302_REG_SYS_CLOCK_ENABLE02,
++			      BIT(5) | BIT(3),
++			      is_jpeg ? (BIT(5) | BIT(3)) : 0);
++}
++#endif
++
++static int ap1302_set_fps( struct ap1302_dev *sensor )
++{
++	int ret, cnt;
++	u16 frame1, frame2;
++	u16 val;
++
++	cnt = 0;
++	val = ap1302_framerates[ sensor->current_fr ] << 8;
++    printk( KERN_ALERT "**** %s %i   val: 0x%04x\n", __func__, (int )__LINE__, (int )val );
++	ret = ap1302_write_reg16( sensor, AP1302_REG_PREVIEW_MAX_FPS, val );
++
++	if ( !ret )
++		ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
++
++	if ( !ret ) {
++		frame1 = val >> 8;
++
++		/* wait some frames 1st */
++		for ( cnt = 0 ; cnt < 5 ; cnt++ ) {
++			ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
++			if ( ret )
++				break;
++			frame2 = val >> 8;
++			if ( ( ( frame2 - frame1 ) & 0xff ) > 2 ) {
++				/* fix MIPI color order */
++				ret = ap1302_write_regs( sensor, ap1302_fix_mipi_order, ARRAY_SIZE( ap1302_fix_mipi_order ) );
++				break;
++			}
++			msleep( 100 );
++		}
++	}
++
++	printk( KERN_ALERT "**** %s %i   ret: %i   cnt: %i\n", __func__, (int )__LINE__, ret, cnt );
++	return ret;
++}
++
+ static int ap1302_download_fw(struct ap1302_dev *sensor)
+ {
+ 	int ret;
+@@ -4082,8 +2113,7 @@
+ 	sensor->frame_interval.denominator = ap1302_framerates[AP1302_15_FPS];
+ 	sensor->current_fr = AP1302_15_FPS;
+ 
+-	/* sensor->current_mode = &ap1302_mode_data[AP1302_MODE_VGA_640_480]; */
+-	sensor->current_mode = NULL;
++	sensor->current_mode = &ap1302_mode_data[AP1302_MODE_VGA_640_480];
+ 	sensor->last_mode = sensor->current_mode;
+ 
+ 	sensor->ae_target = 52;

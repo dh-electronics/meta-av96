@@ -34,7 +34,8 @@ SRC_URI += "file://0001-linux-av96-devicetree.patch \
         file://0101-media-ap1302.patch \
         file://0102-media-ap1302-stream.patch \
         file://0103-media-ap1302-swap-colors.patch \
-        file://0104-media-ap1302-write-reg32.patch"
+        file://0104-media-ap1302-write-reg32.patch \
+        file://0105-media-ap1302-set_mode.patch"
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-07-hdmi.config"
