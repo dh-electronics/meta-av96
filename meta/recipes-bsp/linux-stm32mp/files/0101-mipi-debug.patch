@@ -1,0 +1,818 @@
+diff -Naurw ./drivers/media/i2c/ov5640.c ../kernel-source/drivers/media/i2c/ov5640.c
+--- ./drivers/media/i2c/ov5640.c	2020-04-22 20:25:19.126127285 +0200
++++ ../kernel-source/drivers/media/i2c/ov5640.c	2020-04-22 20:25:53.556412907 +0200
+@@ -30,6 +30,8 @@
+ #include <media/v4l2-fwnode.h>
+ #include <media/v4l2-subdev.h>
+ 
++#define OV5640_MINIMAL_MODE 1
++
+ /* min/typical/max system clock (xclk) frequencies */
+ #define OV5640_XCLK_MIN  6000000
+ #define OV5640_XCLK_MAX 54000000
+@@ -102,6 +104,7 @@
+ 
+ #define FOCUS_NOT_INITIALIZED		0xFFFF
+ 
++#if !OV5640_MINIMAL_MODE
+ enum ov5640_mode_id {
+ 	OV5640_MODE_QCIF_176_144 = 0,
+ 	OV5640_MODE_QVGA_320_240,
+@@ -122,6 +125,22 @@
+ 	OV5640_NUM_FRAMERATES,
+ };
+ 
++#else
++
++enum ov5640_mode_id {
++	OV5640_MODE_VGA_640_480 = 0,
++	OV5640_MODE_720P_1280_720,
++	OV5640_NUM_MODES,
++};
++
++enum ov5640_frame_rate {
++	OV5640_15_FPS = 0,
++	OV5640_30_FPS,
++	OV5640_NUM_FRAMERATES,
++};
++
++#endif
++
+ enum ov5640_format_mux {
+ 	OV5640_FMT_MUX_YUV422 = 0,
+ 	OV5640_FMT_MUX_RGB,
+@@ -136,6 +155,7 @@
+ 	u32 colorspace;
+ };
+ 
++#if !OV5640_MINIMAL_MODE
+ static const struct ov5640_pixfmt ov5640_formats[] = {
+ 	{ MEDIA_BUS_FMT_JPEG_1X8, V4L2_COLORSPACE_JPEG, },
+ 	{ MEDIA_BUS_FMT_UYVY8_2X8, V4L2_COLORSPACE_SRGB, },
+@@ -147,6 +167,18 @@
+ 	{ MEDIA_BUS_FMT_SGRBG8_1X8, V4L2_COLORSPACE_SRGB, },
+ 	{ MEDIA_BUS_FMT_SRGGB8_1X8, V4L2_COLORSPACE_SRGB, },
+ };
++#else
++ #if 1
++static const struct ov5640_pixfmt ov5640_formats[] = {
++	{ MEDIA_BUS_FMT_RGB565_2X8_LE, V4L2_COLORSPACE_SRGB, },
++	{ MEDIA_BUS_FMT_RGB565_2X8_BE, V4L2_COLORSPACE_SRGB, },
++};
++ #else
++static const struct ov5640_pixfmt ov5640_formats[] = {
++	{ MEDIA_BUS_FMT_YUYV8_2X8, V4L2_COLORSPACE_SRGB, },
++};
++ #endif
++#endif
+ 
+ /*
+  * FIXME: remove this when a subdev API becomes available
+@@ -157,11 +189,18 @@
+ MODULE_PARM_DESC(virtual_channel,
+ 		 "MIPI CSI-2 virtual channel (0..3), default 0");
+ 
++#if !OV5640_MINIMAL_MODE
+ static const int ov5640_framerates[] = {
+ 	[OV5640_15_FPS] = 15,
+ 	[OV5640_30_FPS] = 30,
+ 	[OV5640_60_FPS] = 60,
+ };
++#else
++static const int ov5640_framerates[] = {
++	[OV5640_15_FPS] = 15,
++	[OV5640_30_FPS] = 30,
++};
++#endif
+ 
+ /* regulator supplies */
+ static const char * const ov5640_supply_name[] = {
+@@ -809,6 +848,7 @@
+ 	ARRAY_SIZE(ov5640_init_setting_30fps_VGA),
+ };
+ 
++#if !OV5640_MINIMAL_MODE
+ static const struct ov5640_mode_info
+ ov5640_mode_data[OV5640_NUM_MODES] = {
+ 	{OV5640_MODE_QCIF_176_144, SUBSAMPLING,
+@@ -848,6 +888,19 @@
+ 	 ov5640_setting_QSXGA_2592_1944,
+ 	 ARRAY_SIZE(ov5640_setting_QSXGA_2592_1944)},
+ };
++#else
++static const struct ov5640_mode_info
++ov5640_mode_data[OV5640_NUM_MODES] = {
++	{OV5640_MODE_VGA_640_480, SUBSAMPLING,
++	 640, 1896, 480, 1080,
++	 ov5640_setting_VGA_640_480,
++	 ARRAY_SIZE(ov5640_setting_VGA_640_480)},
++	{OV5640_MODE_720P_1280_720, SUBSAMPLING,
++	 1280, 1892, 720, 740,
++	 ov5640_setting_720P_1280_720,
++	 ARRAY_SIZE(ov5640_setting_720P_1280_720)},
++};
++#endif
+ 
+ static int ov5640_init_slave_id(struct ov5640_dev *sensor)
+ {
+@@ -1294,12 +1347,20 @@
+ 	 * 1280x720 and 1024x768 are reported to use 'SUBSAMPLING' only,
+ 	 * but they seems to go through the scaler before subsampling.
+ 	 */
++#if !OV5640_MINIMAL_MODE
+ 	if (mode->dn_mode == SCALING ||
+ 	   (mode->id == OV5640_MODE_720P_1280_720) ||
+ 	   (mode->id == OV5640_MODE_XGA_1024_768))
+ 		dvp_pclk_divider = 1;
+ 	else
+ 		dvp_pclk_divider = 2;
++#else
++	if (mode->dn_mode == SCALING ||
++	   (mode->id == OV5640_MODE_720P_1280_720))
++		dvp_pclk_divider = 1;
++	else
++		dvp_pclk_divider = 2;
++#endif
+ 
+ 	ret = ov5640_write_reg(sensor, OV5640_REG_DVP_PCLK_DIVIDER,
+ 			       dvp_pclk_divider);
+@@ -1877,7 +1938,7 @@
+ {
+ 	int ret;
+ 
+-#if 0
++#if !OV5640_MINIMAL_MODE
+ 	if (sensor->fmt.code == MEDIA_BUS_FMT_JPEG_1X8) {
+ 		ret = ov5640_set_jpeg_timings(sensor, mode);
+ 		if (ret < 0)
+@@ -1919,10 +1980,12 @@
+ 	    (!nearest && (mode->hact != width || mode->vact != height)))
+ 		return NULL;
+ 
++#if !OV5640_MINIMAL_MODE
+ 	/* Only 640x480 can operate at 60fps (for now) */
+ 	if (fr == OV5640_60_FPS &&
+ 	    !(mode->hact == 640 && mode->vact == 480))
+ 		return NULL;
++#endif
+ 
+ 	return mode;
+ }
+@@ -1953,9 +2016,14 @@
+ 	ret = ov5640_get_binning(sensor);
+ 	if (ret < 0)
+ 		return ret;
++#if !OV5640_MINIMAL_MODE
+ 	if (ret && mode->id != OV5640_MODE_720P_1280_720 &&
+ 	    mode->id != OV5640_MODE_1080P_1920_1080)
+ 		prev_shutter *= 2;
++#else
++	if (ret && mode->id != OV5640_MODE_720P_1280_720)
++		prev_shutter *= 2;
++#endif
+ 
+ 	/* read preview gain */
+ 	ret = ov5640_get_gain(sensor);
+@@ -2492,6 +2560,8 @@
+ 	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+ 	int ret = 0;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	mutex_lock(&sensor->lock);
+ 
+ 	/*
+@@ -2528,12 +2598,12 @@
+ 	int i;
+ 
+ 	minfps = ov5640_framerates[OV5640_15_FPS];
+-	maxfps = ov5640_framerates[OV5640_60_FPS];
++	maxfps = ov5640_framerates[OV5640_30_FPS];
+ 
+ 	if (fi->numerator == 0) {
+ 		fi->denominator = maxfps;
+ 		fi->numerator = 1;
+-		rate = OV5640_60_FPS;
++		rate = OV5640_30_FPS;
+ 		goto find_mode;
+ 	}
+ 
+@@ -2565,6 +2635,8 @@
+ 	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+ 	struct v4l2_mbus_framefmt *fmt;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (format->pad != 0)
+ 		return -EINVAL;
+ 
+@@ -2617,7 +2689,8 @@
+ }
+ 
+ static const s64 link_freq_menu_items[] = {
+-	384000000,
++	/* 384000000, */
++	248000000,
+ };
+ 
+ static int ov5640_set_fmt(struct v4l2_subdev *sd,
+@@ -2630,6 +2703,8 @@
+ 	struct v4l2_mbus_framefmt *fmt;
+ 	int ret;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (format->pad != 0)
+ 		return -EINVAL;
+ 
+@@ -2991,6 +3066,8 @@
+ 	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+ 	int val;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	/* v4l2_ctrl_lock() locks our own mutex */
+ 
+ 	switch (ctrl->id) {
+@@ -3017,6 +3094,8 @@
+ 	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+ 	int ret;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	/* v4l2_ctrl_lock() locks our own mutex */
+ 
+ 	/*
+@@ -3154,6 +3233,8 @@
+ 				  struct v4l2_subdev_pad_config *cfg,
+ 				  struct v4l2_subdev_frame_size_enum *fse)
+ {
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (fse->pad != 0)
+ 		return -EINVAL;
+ 	if (fse->index >= OV5640_NUM_MODES)
+@@ -3178,6 +3259,8 @@
+ 	struct v4l2_fract tpf;
+ 	int ret;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (fie->pad != 0)
+ 		return -EINVAL;
+ 	if (fie->index >= OV5640_NUM_FRAMERATES)
+@@ -3200,6 +3283,8 @@
+ {
+ 	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	mutex_lock(&sensor->lock);
+ 	fi->interval = sensor->frame_interval;
+ 	mutex_unlock(&sensor->lock);
+@@ -3214,6 +3299,8 @@
+ 	const struct ov5640_mode_info *mode;
+ 	int frame_rate, ret = 0;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (fi->pad != 0)
+ 		return -EINVAL;
+ 
+@@ -3257,6 +3344,8 @@
+ 				 struct v4l2_subdev_pad_config *cfg,
+ 				 struct v4l2_subdev_mbus_code_enum *code)
+ {
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	if (code->pad != 0)
+ 		return -EINVAL;
+ 	if (code->index >= ARRAY_SIZE(ov5640_formats))
+@@ -3271,6 +3360,8 @@
+ 	struct ov5640_dev *sensor = to_ov5640_dev(sd);
+ 	int ret = 0;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	mutex_lock(&sensor->lock);
+ 
+ 	if (sensor->streaming == !enable) {
+@@ -3394,7 +3485,15 @@
+ 	 * YUV422 UYVY VGA@30fps
+ 	 */
+ 	fmt = &sensor->fmt;
+-	fmt->code = MEDIA_BUS_FMT_UYVY8_2X8;
++#if OV5640_MINIMAL_MODE
++#if 1
++	fmt->code = MEDIA_BUS_FMT_RGB565_2X8_LE;
++#else
++	fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
++#endif
++#else
++	fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
++#endif
+ 	fmt->colorspace = V4L2_COLORSPACE_SRGB;
+ 	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
+ 	fmt->quantization = V4L2_QUANTIZATION_FULL_RANGE;
+diff -Naurw ./drivers/media/i2c/st-mipid02.c ../kernel-source/drivers/media/i2c/st-mipid02.c
+--- ./drivers/media/i2c/st-mipid02.c	2020-04-22 20:25:18.142176261 +0200
++++ ../kernel-source/drivers/media/i2c/st-mipid02.c	2020-04-22 20:25:53.556412907 +0200
+@@ -22,6 +22,8 @@
+ #include <media/v4l2-fwnode.h>
+ #include <media/v4l2-subdev.h>
+ 
++#define SWAP_PINS   1
++
+ #define V4L2_MBUS_CSI2_DPHY V4L2_MBUS_CSI2
+ 
+ #define MIPID02_CLK_LANE_WR_REG1			0x01
+@@ -29,10 +31,23 @@
+ #define MIPID02_CLK_LANE_REG3				0x04
+ #define MIPID02_DATA_LANE0_REG1				0x05
+ #define MIPID02_DATA_LANE0_REG2				0x06
++#define MIPID02_DATA_LANE0_REG3				0x07
++#define MIPID02_DATA_LANE0_REG4				0x0c
+ #define MIPID02_DATA_LANE1_REG1				0x09
+ #define MIPID02_DATA_LANE1_REG2				0x0a
++#define MIPID02_DATA_LANE1_REG3				0x0b
++#define MIPID02_DATA_LANE1_REG4				0x08
++#define MIPID02_ERROR_REGS      			0x10
++#define MIPID02_DATA_ID_WREG    			0x11
++
++#define MIPID02_FRAME_NO_LSB    			0x12
++#define MIPID02_FRAME_NO_MSB    			0x13
++#define MIPID02_ACTIVE_LINE_NO_LSB 			0x1b
++#define MIPID02_ACTIVE_LINE_NO_MSB 			0x1a
++
+ #define MIPID02_MODE_REG1				0x14
+ #define MIPID02_MODE_REG2				0x15
++#define MIPID02_DATA_ID_WREG    			0x11
+ #define MIPID02_DATA_ID_RREG				0x17
+ #define MIPID02_DATA_SELECTION_CTRL			0x19
+ #define MIPID02_PIX_WIDTH_CTRL				0x1e
+@@ -40,6 +55,7 @@
+ 
+ /* Bits definition for MIPID02_CLK_LANE_REG1 */
+ #define CLK_ENABLE					BIT(0)
++#define CLK_SWAP  					BIT(1)
+ /* Bits definition for MIPID02_CLK_LANE_REG3 */
+ #define CLK_MIPI_CSI					BIT(1)
+ /* Bits definition for MIPID02_DATA_LANE0_REG1 */
+@@ -247,6 +263,36 @@
+ 	return 0;
+ }
+ 
++static int mipid02_read_buf(struct mipid02_dev *bridge, u16 reg, u8 *val, int len)
++{
++	struct i2c_client *client = bridge->i2c_client;
++	struct i2c_msg msg[2];
++	u8 buf[2];
++	int ret;
++
++	buf[0] = reg >> 8;
++	buf[1] = reg & 0xff;
++
++	msg[0].addr = client->addr;
++	msg[0].flags = client->flags;
++	msg[0].buf = buf;
++	msg[0].len = sizeof(buf);
++
++	msg[1].addr = client->addr;
++	msg[1].flags = client->flags | I2C_M_RD;
++	msg[1].buf = val;
++	msg[1].len = len;
++
++	ret = i2c_transfer(client->adapter, msg, 2);
++	if (ret < 0) {
++		dev_dbg(&client->dev, "%s: %x i2c_transfer, reg: %x => %d\n",
++			    __func__, client->addr, reg, ret);
++		return ret;
++	}
++
++	return 0;
++}
++
+ static int mipid02_write_reg(struct mipid02_dev *bridge, u16 reg, u8 val)
+ {
+ 	struct i2c_client *client = bridge->i2c_client;
+@@ -254,6 +300,10 @@
+ 	u8 buf[3];
+ 	int ret;
+ 
++	printk( KERN_ALERT "**** %s %i   reg: 0x%04x   val: 0x%02x\n",
++			__func__, (int )__LINE__, (int )reg, (int )val );
++
++
+ 	buf[0] = reg >> 8;
+ 	buf[1] = reg & 0xff;
+ 	buf[2] = val;
+@@ -419,7 +469,11 @@
+ 		dev_err(&client->dev, "clk lane must be map to lane 0\n");
+ 		return -EINVAL;
+ 	}
++#if SWAP_PINS
++	bridge->r.clk_lane_reg1 |= (polarities[0] << 1) | CLK_ENABLE | CLK_SWAP;
++#else
+ 	bridge->r.clk_lane_reg1 |= (polarities[0] << 1) | CLK_ENABLE;
++#endif
+ 
+ 	return 0;
+ }
+@@ -436,7 +490,11 @@
+ 	 * data lane 0 as pin swap polarity reversed compared to clock and
+ 	 * data lane 1
+ 	 */
++#if SWAP_PINS
++	if (are_pin_swap)
++#else
+ 	if (!are_pin_swap)
++#endif
+ 		bridge->r.data_lane0_reg1 = 1 << 1;
+ 	bridge->r.data_lane0_reg1 |= DATA_ENABLE;
+ 
+@@ -451,7 +509,11 @@
+ 	if (nb == 1 && !are_lanes_swap)
+ 		return 0;
+ 
++#if SWAP_PINS
++	if (!are_pin_swap)
++#else
+ 	if (are_pin_swap)
++#endif
+ 		bridge->r.data_lane1_reg1 = 1 << 1;
+ 	bridge->r.data_lane1_reg1 |= DATA_ENABLE;
+ 
+@@ -541,10 +603,48 @@
+ 	return ret;
+ }
+ 
++
++static void hex_dump( u8 *p_buf, int len, int start )
++{
++	char line[ 128 ];
++	char word[ 8 ];
++	int cnt;
++
++	while( len > 0 ) {
++		sprintf( line, KERN_ALERT "**** %04x: ", start );
++		for( cnt = 0 ; cnt < 16 ; cnt++ ) {
++			if ( !len )
++				break;
++			len--;
++			start++;
++			sprintf( word, " %02x", *p_buf++ );
++			strcat( line, word );
++		}
++		strcat( line, "\n" );
++		printk( line );
++	}
++} /* hex_dump */
++
++static int dump_regs(struct mipid02_dev *bridge)
++{
++	int ret;
++	u8 buf[ 0x24 ];
++
++	ret = mipid02_read_buf( bridge, 0, buf, sizeof( buf ) );
++	printk( KERN_ALERT "**** %s %i  ret: %i\n", __func__, (int )__LINE__, ret );
++
++	if ( !ret )
++		hex_dump( buf, sizeof( buf ), 0 );
++		
++	return ret;
++}
++
+ static int mipid02_stream_enable(struct mipid02_dev *bridge)
+ {
+ 	struct i2c_client *client = bridge->i2c_client;
+ 	int ret = -EINVAL;
++	int cnt;
++	u8 reg;
+ 
+ 	if (!bridge->s_subdev)
+ 		goto error;
+@@ -593,6 +693,7 @@
+ 		bridge->r.mode_reg2);
+ 	if (ret)
+ 		goto error;
++#if 1
+ 	ret = mipid02_write_reg(bridge, MIPID02_DATA_ID_RREG,
+ 		bridge->r.data_id_rreg);
+ 	if (ret)
+@@ -601,6 +702,7 @@
+ 		bridge->r.data_selection_ctrl);
+ 	if (ret)
+ 		goto error;
++#endif
+ 	ret = mipid02_write_reg(bridge, MIPID02_PIX_WIDTH_CTRL,
+ 		bridge->r.pix_width_ctrl);
+ 	if (ret)
+@@ -625,6 +727,8 @@
+ 	struct i2c_client *client = bridge->i2c_client;
+ 	int ret = 0;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	dev_dbg(&client->dev, "%s : requested %d / current = %d", __func__,
+ 		    enable, bridge->streaming);
+ 	mutex_lock(&bridge->lock);
+@@ -652,6 +756,8 @@
+ 	struct mipid02_dev *bridge = to_mipid02_dev(sd);
+ 	int ret = 0;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	switch (code->pad) {
+ 	case MIPID02_SINK_0:
+ 		if (code->index >= ARRAY_SIZE(mipid02_supported_fmt_codes))
+@@ -681,6 +787,8 @@
+ 	struct i2c_client *client = bridge->i2c_client;
+ 	struct v4l2_mbus_framefmt *fmt;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	dev_dbg(&client->dev, "%s probe %d", __func__, format->pad);
+ 
+ 	if (format->pad >= MIPID02_PAD_NB)
+@@ -712,6 +820,8 @@
+ {
+ 	struct mipid02_dev *bridge = to_mipid02_dev(sd);
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	/* source pad mirror active sink pad */
+ 	format->format = bridge->fmt;
+ 	/* but code may need to be converted */
+@@ -731,6 +841,8 @@
+ 	struct mipid02_dev *bridge = to_mipid02_dev(sd);
+ 	struct v4l2_mbus_framefmt *fmt;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	format->format.code = get_fmt_code(format->format.code);
+ 
+ 	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
+@@ -749,6 +861,8 @@
+ 	struct i2c_client *client = bridge->i2c_client;
+ 	int ret = 0;
+ 
++	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++
+ 	dev_dbg(&client->dev, "%s for %d", __func__, format->pad);
+ 
+ 	if (format->pad >= MIPID02_PAD_NB)
+@@ -939,10 +1053,51 @@
+ 	return -EINVAL;
+ }
+ 
++
++static volatile struct mipid02_dev *my_bridge = NULL;
++
++static ssize_t mipid02_sysfs_dump(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
++{
++	if ( my_bridge != NULL ) {
++		mutex_lock( &my_bridge->lock );
++
++		dump_regs( my_bridge );
++
++		mutex_unlock( &my_bridge->lock );
++	}
++
++    return NULL;
++}
++
++static ssize_t mipid02_sysfs_write8(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int addr, val, ret;
++
++	if ( ( my_bridge != NULL ) && ( sscanf( buf, "%x %x", &addr, &val ) == 2 )
++		 && ( (u32 )addr <= 0xff ) && ( ( u32 )val <= 0xff ) ) {
++		mutex_lock( &my_bridge->lock );
++		ret = mipid02_write_reg( my_bridge, (u16 )addr, (u8 )val );
++		printk( KERN_ALERT "**** %s %i   addr: 0x%04x   val: 0x%02x   ret: %i\n", __func__, (int )__LINE__, addr, val, ret );
++
++		mutex_unlock( &my_bridge->lock );
++	}
++
++	return count;
++}
++
++
++struct kobj_attribute mipid02_sysfs_attr = {
++	.attr = { .name = "write_reg8", .mode = VERIFY_OCTAL_PERMISSIONS(0660) },
++	.show = mipid02_sysfs_dump,
++	.store = mipid02_sysfs_write8,
++};
++
++
+ static int mipid02_probe(struct i2c_client *client)
+ {
+ 	struct device *dev = &client->dev;
+ 	struct mipid02_dev *bridge;
++	const char *path;
+ 	u32 clk_freq;
+ 	int ret;
+ 
+@@ -1022,6 +1177,15 @@
+ 		goto unregister_notifier;
+ 	}
+ 
++	my_bridge = bridge;
++	path = kobject_get_path(&dev->kobj, GFP_KERNEL);
++	if ( path != NULL ) {
++		ret = sysfs_create_file(&dev->kobj, &mipid02_sysfs_attr.attr);
++		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, mipid02_sysfs_attr.attr.name );
++	}
++	else
++		printk( KERN_ALERT "**** %s %i   path: NULL\n", __func__, (int )__LINE__ );
++
+ 	dev_info(&client->dev, "mipid02 device probe successfully");
+ 
+ 	return 0;
+diff -Naurw ./drivers/media/platform/stm32/stm32-dcmi.c ../kernel-source/drivers/media/platform/stm32/stm32-dcmi.c
+--- ./drivers/media/platform/stm32/stm32-dcmi.c	2020-04-22 20:25:17.598203336 +0200
++++ ../kernel-source/drivers/media/platform/stm32/stm32-dcmi.c	2020-04-22 20:25:53.576411912 +0200
+@@ -38,6 +38,9 @@
+ #include <media/v4l2-rect.h>
+ #include <media/videobuf2-dma-contig.h>
+ 
++#define SWAP_RB 0
++#define SWAP_UY 0
++
+ #define DRV_NAME "stm32-dcmi"
+ 
+ /* Registers offset for DCMI */
+@@ -177,8 +180,11 @@
+ 	struct media_device		mdev;
+ 	struct media_pad		vid_cap_pad;
+ 	struct media_pipeline		pipeline;
++	int dump_len;
+ };
+ 
++static struct stm32_dcmi *my_dcmi = NULL;
++
+ static inline struct stm32_dcmi *notifier_to_dcmi(struct v4l2_async_notifier *n)
+ {
+ 	return container_of(n, struct stm32_dcmi, notifier);
+@@ -259,12 +265,72 @@
+ 	return dcmi_start_capture(dcmi, buf);
+ }
+ 
++static void hex_dump( u8 *p_buf, int len, int start )
++{
++	char line[ 128 ];
++	char word[ 8 ];
++	int cnt;
++
++	while( len > 0 ) {
++		sprintf( line, KERN_ALERT "**** %04x: ", start );
++		for( cnt = 0 ; cnt < 16 ; cnt++ ) {
++			if ( !len )
++				break;
++			len--;
++			start++;
++			sprintf( word, " %02x", *p_buf++ );
++			strcat( line, word );
++		}
++		strcat( line, "\n" );
++		printk( line );
++	}
++} /* hex_dump */
++
++static void swap_rb( u16 *buf, int len )
++{
++	int cnt;
++	u16 orig, r, b;
++
++	for ( cnt = 0 ; cnt < len ; cnt++ ) {
++		orig = buf[ cnt ];
++		r = orig >> 11;
++		b = orig << 11;
++		buf[ cnt ] = ( orig & 0x07e0 ) | r | b;
++	}
++}
++
++static void swap_uy( u16 *buf, int len )
++{
++	int cnt;
++	register u32 *p_buf;
++	register u32 orig;
++
++	p_buf = (u32 *)buf;
++	len /= 2;
++	for ( cnt = 0 ; cnt < len ; cnt++ ) {
++		orig = *p_buf;
++		*p_buf++ = ( ( orig & 0x00ff00ff ) << 8 ) | ( ( orig & 0xff00ff00 ) >> 8 );
++	}
++}
++
++static void dump_regs( struct stm32_dcmi *dcmi )
++{
++	printk( KERN_ALERT "**** %s %i   0: 0x%08x   4: 0x%08x   0x0c: 0x%08x\n", __func__, (int )__LINE__,
++			reg_read(dcmi->regs, DCMI_CR), reg_read(dcmi->regs, DCMI_SR), reg_read(dcmi->regs, DCMI_IER) );
++	printk( KERN_ALERT "**** %s %i   0x18: 0x%08x   0x1c: 0x%08x\n", __func__, (int )__LINE__,
++			reg_read(dcmi->regs, DCMI_ESCR), reg_read(dcmi->regs, DCMI_ESUR) );
++	printk( KERN_ALERT "**** %s %i   0x20: 0x%08x   0x24: 0x%08x\n", __func__, (int )__LINE__,
++			reg_read(dcmi->regs, DCMI_CWSTRT), reg_read(dcmi->regs, DCMI_CWSIZE) );
++}
++
+ static void dcmi_dma_callback(void *param)
+ {
+ 	struct stm32_dcmi *dcmi = (struct stm32_dcmi *)param;
+ 	struct dma_tx_state state;
+ 	enum dma_status status;
+ 	struct dcmi_buf *buf = dcmi->active;
++	int ret;
++	u8 *ptr;
+ 
+ 	spin_lock_irq(&dcmi->irqlock);
+ 
+@@ -285,6 +351,26 @@
+ 		dcmi_buffer_done(dcmi, buf, 0, -EIO);
+ 		break;
+ 	case DMA_COMPLETE:
++		ptr = vb2_plane_vaddr( &buf->vb.vb2_buf, 0 );
++
++#if SWAP_RB
++		if ( ptr != NULL )
++			swap_rb( (u16 *)ptr, buf->size / 2 );
++#endif
++
++#if SWAP_UY
++		if ( ptr != NULL )
++			swap_uy( (u16 *)ptr, buf->size / 2 );
++#endif
++
++		if ( dcmi->dump_len > 0 ) {
++			dump_regs( dcmi );
++
++			if ( ptr != NULL )
++				hex_dump( ptr, dcmi->dump_len, 0 );
++
++			dcmi->dump_len = 0;
++		}
+ 		dev_dbg(dcmi->dev, "%s: Received DMA_COMPLETE\n", __func__);
+ 
+ 		/* Return buffer to V4L2 */
+@@ -651,6 +737,9 @@
+ 		if (sink_pad)
+ 			pad = sink_pad;
+ 
++		printk( KERN_ALERT "**** %s %i   %s[%d] pad format set to 0x%x %ux%u\n",
++				__func__, (int )__LINE__, subdev->name, pad->index,
++				format->format.code, format->format.width, format->format.height );
+ 		dev_dbg(dcmi->dev, "%s[%d] pad format set to 0x%x %ux%u\n",
+ 			subdev->name, pad->index, format->format.code,
+ 			format->format.width, format->format.height);
+@@ -1847,6 +1936,29 @@
+ 	v4l2_async_notifier_cleanup(&dcmi->notifier);
+ }
+ 
++
++/**
++ * sysfs interface function handling ".../dump_image"
++ */
++static ssize_t dcmi_sysfs_dump(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
++{
++	int len;
++
++	if ( ( my_dcmi != NULL ) && ( sscanf( buf, "%x", &len ) == 1 ) ) {
++		my_dcmi->dump_len = len;
++		printk( KERN_ALERT "**** %s %i   len: %i\n", __func__, (int )__LINE__, len );
++	}
++
++	return count;
++}
++
++static struct kobj_attribute dcmi_sysfs_attr = {
++	.attr = { .name = "dump_image", .mode = VERIFY_OCTAL_PERMISSIONS(0220) },
++	.show = NULL,
++	.store = dcmi_sysfs_dump,
++};
++
++
+ static int dcmi_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+@@ -1858,6 +1970,7 @@
+ 	struct clk *mclk;
+ 	int irq;
+ 	int ret = 0;
++	char *path;
+ 
+ 	match = of_match_device(of_match_ptr(stm32_dcmi_of_match), &pdev->dev);
+ 	if (!match) {
+@@ -2053,6 +2166,13 @@
+ 
+ 	pm_runtime_enable(&pdev->dev);
+ 
++	path = kobject_get_path(&pdev->dev.kobj, GFP_KERNEL);
++	if ( path != NULL ) {
++		my_dcmi = dcmi;
++		ret = sysfs_create_file(&pdev->dev.kobj, &dcmi_sysfs_attr.attr);
++		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, dcmi_sysfs_attr.attr.name );
++	}
++
+ 	return 0;
+ 
+ err_graph_deinit:

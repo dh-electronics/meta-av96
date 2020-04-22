@@ -1,0 +1,70 @@
+diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dts ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts
+--- ./arch/arm/boot/dts/stm32mp157a-av96.dts	2020-04-22 20:25:18.678149583 +0200
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dts	2020-04-22 20:25:53.080436612 +0200
+@@ -477,7 +477,9 @@
+ 	status = "okay";
+ 	/delete-property/dmas;
+ 	/delete-property/dma-names;
++	clock-frequency = <1000000>;
+ 
++#if 0
+ 	ov5640: camera@3c {
+ 		compatible = "ovti,ov5640";
+ 		reg = <0x3c>;
+@@ -505,6 +507,38 @@
+ 		};
+ 	};
+ 
++#else
++
++	ap1302: camera@3d {
++		compatible = "on,ap1302";
++		reg = <0x3d>;
++		pinctrl-names = "default", "sleep";
++		pinctrl-0 = <&rcc_pins_a>;
++		pinctrl-1 = <&rcc_sleep_pins_a>;
++		clocks = <&rcc CK_MCO1>;
++		clock-names = "xclk";
++		assigned-clocks = <&rcc CK_MCO1>;
++		assigned-clock-parents = <&rcc CK_HSE>;
++		assigned-clock-rates = <24000000>;
++		DOVDD-supply = <&v1v8>;
++		reset-gpios = <&gpioc 3 GPIO_ACTIVE_LOW>;
++		powerdown-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
++		i2csel-gpios = <&gpiof 12 GPIO_ACTIVE_HIGH>;
++		pwrcam-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
++		rotation = <180>;
++		status = "okay";
++
++		port {
++			ap1302_0: endpoint {
++				remote-endpoint = <&mipid02_0>;
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
++				pclk-max-frequency = <77000000>;
++			};
++		};
++	};
++#endif
++
+ #if 0
+ 	wm8994: wm8994@1b {
+ 		compatible = "wlf,wm8994";
+@@ -618,10 +652,17 @@
+ 			port@0 {
+ 				reg = <0>;
+ 
++#if 0
+ 				mipid02_0: endpoint {
+ 					data-lanes = <1 2>;
+ 					remote-endpoint = <&ov5640_0>;
+ 				};
++#else
++				mipid02_0: endpoint {
++					data-lanes = <1 2>;
++					remote-endpoint = <&ap1302_0>;
++				};
++#endif
+ 			};
+ 			port@2 {
+ 				reg = <2>;

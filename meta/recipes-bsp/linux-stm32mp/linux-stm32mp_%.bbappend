@@ -31,12 +31,9 @@ SRC_URI += "file://0001-linux-av96-devicetree.patch \
         file://0030-ARM-dts-stm32-fix-the-reset-gpio-information-of-the-.patch \
         file://0031-media-ov5640-add-the-support-of-the-auto-focus.patch \
         file://0032-media-ov5640-fix-overflow-while-calculating-the-mipi.patch \
-        file://0101-media-ap1302.patch \
-        file://0102-media-ap1302-stream.patch \
-        file://0103-media-ap1302-swap-colors.patch \
-        file://0104-media-ap1302-write-reg32.patch \
-        file://0105-media-ap1302-mode-format-fps.patch \
-        file://0106-media-ap1302-preserve-state.patch"
+        file://0101-mipi-debug.patch \
+        file://0102-ap1302-dts.patch \
+        file://0103-ap1302-no-focus.patch"
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-07-hdmi.config"
