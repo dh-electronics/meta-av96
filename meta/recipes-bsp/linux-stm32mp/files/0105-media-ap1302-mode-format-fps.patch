@@ -1,6 +1,6 @@
 diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
---- ./drivers/media/i2c/ap1302.c	2020-04-17 20:18:50.854736246 +0200
-+++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-04-17 20:19:18.353396135 +0200
+--- ./drivers/media/i2c/ap1302.c	2020-04-22 11:29:58.122796201 +0200
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-04-22 11:34:17.646050612 +0200
 @@ -65,6 +65,9 @@
  #define AP1302_REG_UPTIME_SEC_FRAC      0x0E38
  
@@ -95,7 +95,24 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	AP1302_30_FPS,
  	AP1302_NUM_FRAMERATES,
  };
-@@ -201,6 +136,7 @@
+@@ -179,16 +114,10 @@
+ 	u32 colorspace;
+ };
+ 
+-#if 0
+ static const struct ap1302_pixfmt ap1302_formats[] = {
+ 	{ MEDIA_BUS_FMT_RGB565_2X8_LE, V4L2_COLORSPACE_SRGB, },
+-	{ MEDIA_BUS_FMT_RGB565_2X8_BE, V4L2_COLORSPACE_SRGB, },
+-};
+-#else
+-static const struct ap1302_pixfmt ap1302_formats[] = {
+ 	{ MEDIA_BUS_FMT_YUYV8_2X8, V4L2_COLORSPACE_SRGB, },
+ };
+-#endif
+ 
+ /*
+  * FIXME: remove this when a subdev API becomes available
+@@ -201,6 +130,7 @@
  
  static const int ap1302_framerates[] = {
  	[AP1302_15_FPS] = 15,
@@ -103,7 +120,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	[AP1302_30_FPS] = 30,
  };
  
-@@ -227,6 +163,11 @@
+@@ -227,6 +157,11 @@
  	u32 delay_ms;
  };
  
@@ -115,7 +132,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  struct ap1302_mode_info {
  	enum ap1302_mode_id id;
  	enum ap1302_downsize_mode dn_mode;
-@@ -234,6 +175,8 @@
+@@ -234,6 +169,8 @@
  	u32 htot;
  	u32 vact;
  	u32 vtot;
@@ -124,7 +141,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  };
  
  struct ap1302_ctrls {
-@@ -320,205 +263,29 @@
+@@ -320,205 +257,43 @@
  			     ctrls.handler)->sd;
  }
  
@@ -275,14 +292,28 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 -	{0x3a0d, 0x02, 0, 0}, {0x3a14, 0x02, 0, 0}, {0x3a15, 0xe4, 0, 0},
 -	{0x4001, 0x02, 0, 0}, {0x4004, 0x02, 0, 0},
 -	{0x4407, 0x04, 0, 0}, {0x5001, 0xa3, 0, 0},
++static struct ap1302_reg_value ap1302_fmt_RGB565[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x12,  0x00, 0x41 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++	{ 4, { 0x20, 0x16,  0x1E, 0x22 }, },
+ };
+ 
+-#endif
++static struct ap1302_reg_value ap1302_fmt_YUV422[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x12,  0x00, 0x50 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++	{ 4, { 0x20, 0x16,  0x1E, 0x1E }, },
++};
++
 +static struct ap1302_reg_value ap1302_mode_640_480[ ] = {
 +	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
 +	{ 4, { 0x20, 0x00,  0x02, 0x80 }, },
 +	{ 4, { 0x20, 0x02,  0x01, 0xE0 }, },
 +	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
- };
- 
--#endif
++};
++
 +static struct ap1302_reg_value ap1302_mode_1280_720[ ] = {
 +	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
 +	{ 4, { 0x20, 0x00,  0x05, 0x00 }, },
@@ -297,10 +328,9 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	 640, 1896, 480, 1080, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480)},
  	{AP1302_MODE_720P_1280_720, SUBSAMPLING,
 -	 1280, 1892, 720, 740},
-+	 1280, 1892, 720, 740, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
- };
- 
- 
+-};
+-
+-
 -#if 0
 -
 -/* power-on sensor init reg table */
@@ -308,9 +338,10 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 -	0, SUBSAMPLING, 640, 1896, 480, 984,
 -	ap1302_init_setting_30fps_VGA,
 -	ARRAY_SIZE(ap1302_init_setting_30fps_VGA),
--};
--
--
++	 1280, 1892, 720, 740, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
+ };
+ 
+ 
 -static int ap1302_init_slave_id(struct ap1302_dev *sensor)
 -{
 -	struct i2c_client *client = sensor->i2c_client;
@@ -343,7 +374,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  static int ap1302_write_reg(struct ap1302_dev *sensor, u16 reg, u8 val)
  {
  	struct i2c_client *client = sensor->i2c_client;
-@@ -823,826 +590,6 @@
+@@ -823,826 +598,6 @@
  #define AP1302_PCLK_ROOT_DIV			1
  #define AP1302_PLL_SYS_ROOT_DIVIDER_BYPASS	0x00
  
@@ -1170,7 +1201,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  
  static const struct ap1302_mode_info *
  ap1302_find_mode(struct ap1302_dev *sensor, enum ap1302_frame_rate fr,
-@@ -1659,324 +606,10 @@
+@@ -1659,324 +614,10 @@
  	    (!nearest && (mode->hact != width || mode->vact != height)))
  		return NULL;
  
@@ -1496,7 +1527,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  
  static void ap1302_power(struct ap1302_dev *sensor, bool enable)
  {
-@@ -2061,120 +694,54 @@
+@@ -2061,120 +702,57 @@
  };
  
  
@@ -1534,7 +1565,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 -				       AP1302_REG_IO_MIPI_CTRL00, 0x40);
 -		if (ret)
 -			goto power_off;
--
++	u16 val;
+ 
 -		/*
 -		 * Gate clock and set LP11 in 'no packets mode' (idle)
 -		 *
@@ -1546,7 +1578,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 -				       AP1302_REG_MIPI_CTRL00, 0x24);
 -		if (ret)
 -			goto power_off;
-+	u16 val;
++#error "remember test pattern value after power_off"
++#error "maybe also resolution"
  
 -		/*
 -		 * Set data lanes and clock in LP11 when 'sleeping'
@@ -1650,7 +1683,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  }
  
  static int ap1302_try_frame_interval(struct ap1302_dev *sensor,
-@@ -2186,8 +753,11 @@
+@@ -2186,8 +764,11 @@
  	int minfps, maxfps, best_fps, fps;
  	int i;
  
@@ -1664,7 +1697,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  
  	if (fi->numerator == 0) {
  		fi->denominator = maxfps;
-@@ -2217,648 +787,6 @@
+@@ -2217,648 +798,6 @@
  	return mode ? rate : -EINVAL;
  }
  
@@ -2313,7 +2346,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  static int ap1302_enum_frame_interval(
  	struct v4l2_subdev *sd,
  	struct v4l2_subdev_pad_config *cfg,
-@@ -2868,6 +796,8 @@
+@@ -2868,6 +807,8 @@
  	struct v4l2_fract tpf;
  	int ret;
  
@@ -2322,7 +2355,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	if (fie->pad != 0)
  		return -EINVAL;
  	if (fie->index >= AP1302_NUM_FRAMERATES)
-@@ -2876,12 +806,11 @@
+@@ -2876,12 +817,11 @@
  	tpf.numerator = 1;
  	tpf.denominator = ap1302_framerates[fie->index];
  
@@ -2336,7 +2369,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  
  	fie->interval = tpf;
  	return 0;
-@@ -3055,13 +984,49 @@
+@@ -3055,13 +995,49 @@
  	return ret;
  }
  
@@ -2387,7 +2420,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	mutex_lock(&sensor->lock);
  	fi->interval = sensor->frame_interval;
  	mutex_unlock(&sensor->lock);
-@@ -3076,6 +1041,8 @@
+@@ -3076,6 +1052,8 @@
  	const struct ap1302_mode_info *mode;
  	int frame_rate, ret = 0;
  
@@ -2396,7 +2429,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	if (fi->pad != 0)
  		return -EINVAL;
  
-@@ -3090,6 +1057,8 @@
+@@ -3090,6 +1068,8 @@
  
  	frame_rate = ap1302_try_frame_interval(sensor, &fi->interval,
  					       mode->hact, mode->vact);
@@ -2405,7 +2438,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	if (frame_rate < 0) {
  		/* Always return a valid frame interval value */
  		fi->interval = sensor->frame_interval;
-@@ -3098,6 +1067,8 @@
+@@ -3098,6 +1078,8 @@
  
  	mode = ap1302_find_mode(sensor, frame_rate, mode->hact,
  				mode->vact, true);
@@ -2414,7 +2447,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  	if (!mode) {
  		ret = -EINVAL;
  		goto out;
-@@ -3115,105 +1086,6 @@
+@@ -3115,105 +1097,6 @@
  	return ret;
  }
  
@@ -2520,29 +2553,36 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  
  /* format of binary firmware files */
  struct ap1302_fw_data {
-@@ -3224,6 +1096,8 @@
+@@ -3224,6 +1107,9 @@
  };
  
  static int ap1302_fw_loop(struct ap1302_dev *sensor, struct ap1302_fw_data *p_fw_data );
++static int ap1302_set_format( struct ap1302_dev *sensor );
 +static int ap1302_set_mode( struct ap1302_dev *sensor );
 +static int ap1302_set_fps( struct ap1302_dev *sensor );
  
  static int ap1302_s_stream(struct v4l2_subdev *sd, int enable)
  {
-@@ -3248,6 +1122,12 @@
- 		sensor->streaming = false;
+@@ -3244,8 +1130,17 @@
+ 			sensor->streaming = true;
  	}
  
-+	if ( !ret && enable )
-+		ret = ap1302_set_mode( sensor );
+-	if ( !enable ) {
++	if ( !enable )
+ 		sensor->streaming = false;
++	else {
++		if ( !ret )
++			ret = ap1302_set_format( sensor );
 +
-+	if ( !ret && enable )
-+		ret = ap1302_set_fps( sensor );
++		if ( !ret )
++			ret = ap1302_set_mode( sensor );
 +
++		if ( !ret )
++			ret = ap1302_set_fps( sensor );
+ 	}
+ 
  	mutex_unlock(&sensor->lock);
- 	return ret;
- }
-@@ -3456,12 +1336,6 @@
+@@ -3456,12 +1351,6 @@
  	const int len;
  };
  
@@ -2555,50 +2595,65 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  static struct ap1302_reg_value ap1302_fw_stage[ ] = {
  	{ 4, { 0x60, 0x02,  0x00, 0x01 } },
  	{ 4, { 0x60, 0x02,  0x00, 0x02 } },
-@@ -3487,10 +1361,17 @@
- 	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
- 	{ 4, { 0x20, 0x30,  0x00, 0x12 }, },
+@@ -3493,18 +1382,21 @@
  	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
-+#if 0
- 	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
- 	{ 4, { 0x20, 0x00,  0x02, 0x80 }, },
- 	{ 4, { 0x20, 0x02,  0x01, 0xE0 }, },
- 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
-+#else
-+	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
-+	{ 4, { 0x20, 0x00,  0x05, 0x00 }, },
-+	{ 4, { 0x20, 0x02,  0x02, 0xd0 }, },
-+	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
-+#endif
  	{ 4, { 0x20, 0x20,  0x0F, 0x00 }, },
  	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
- #if 0
-@@ -3498,13 +1379,20 @@
- 	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
- 	{ 4, { 0x20, 0x16,  0x1E, 0x22 }, },
- #else
+-#if 0
+-	{ 4, { 0x20, 0x12,  0x00, 0x41 }, },
+-	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
+-	{ 4, { 0x20, 0x16,  0x1E, 0x22 }, },
+-#else
 -	{ 4, { 0x20, 0x12,  0x00, 0x30 }, },
  	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
  	{ 4, { 0x20, 0x16,  0x1E, 0x1E }, },
- #endif
+-#endif
  	{ 4, { 0x20, 0x18,  0x00, 0x1E }, },
  };
  
-+#if 0
-+#else
-+static struct ap1302_reg_value ap1302_fix_mipi_order[ ] = {
++static struct ap1302_reg_value ap1302_fix_mipi_rgb[ ] = {
++	{ 6, { 0xf0, 0x38,  0x00, 0x73, 0x00, 0x00 } },
++	{ 6, { 0xe0, 0x00,  0x00, 0x00, 0x00, 0x04 } },
++};
++
++static struct ap1302_reg_value ap1302_fix_mipi_yuv[ ] = {
 +	{ 6, { 0xf0, 0x38,  0x00, 0x73, 0x00, 0x00 } },
 +	{ 6, { 0xe0, 0x00,  0x00, 0xb1, 0x40, 0x0e } },
 +};
-+#endif
 +
  static const struct read_reg ap1302_read_regs[] = {
  	{ AP1302_REG_OUT0_WIDTH, 2 },
  	{ AP1302_REG_OUT0_WIDTH, 2 }, { AP1302_REG_OUT0_HEIGHT, 2 }, { AP1302_REG_OUT0_FMT, 2 },
-@@ -3841,6 +1729,149 @@
+@@ -3841,6 +1733,98 @@
  	return ret;
  } /* fw_loop */
  
++static int ap1302_set_format(struct ap1302_dev *sensor)
++{
++	int len, ret;
++	struct ap1302_reg_value *p_regs;
++
++	switch ( sensor->fmt.code )
++	{
++		case MEDIA_BUS_FMT_RGB565_2X8_LE:
++			p_regs = ap1302_fmt_RGB565;
++			len = ARRAY_SIZE( ap1302_fmt_RGB565 );
++			break;
++
++		case MEDIA_BUS_FMT_YUYV8_2X8:
++		default:
++			p_regs = ap1302_fmt_YUV422;
++			len = ARRAY_SIZE( ap1302_fmt_YUV422 );
++			break;
++	}
++
++	ret = ap1302_write_regs( sensor, p_regs, len );
++	printk( KERN_ALERT "**** %s %i   code: 0x%04x   ret: %i\n",
++			__func__, (int )__LINE__, sensor->fmt.code, ret );
++
++	return ret;
++}
++
 +static int ap1302_set_mode(struct ap1302_dev *sensor)
 +{
 +	int ret;
@@ -2610,105 +2665,10 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	return ret;
 +}
 +
-+#if 0
-+static int ap1302_set_framefmt(struct ap1302_dev *sensor,
-+			       struct v4l2_mbus_framefmt *format)
-+{
-+	int ret = 0;
-+	bool is_jpeg = false;
-+	u8 fmt, mux;
-+
-+	switch (format->code) {
-+		case MEDIA_BUS_FMT_YUYV8_2X8:
-+			/* YUV422, UYVY */
-+			fmt = 0x3f;
-+			mux = AP1302_FMT_MUX_YUV422;
-+			break;
-+
-+		case MEDIA_BUS_FMT_RGB565_2X8_LE:
-+			/* RGB565 {g[2:0],b[4:0]},{r[4:0],g[5:3]} */
-+			fmt = 0x6F;
-+			mux = AP1302_FMT_MUX_RGB;
-+			break;
-+
-+#if 0
-+		case MEDIA_BUS_FMT_JPEG_1X8:
-+			/* YUV422, YUYV */
-+			fmt = 0x30;
-+			mux = AP1302_FMT_MUX_YUV422;
-+			is_jpeg = true;
-+			break;
-+		case MEDIA_BUS_FMT_SBGGR8_1X8:
-+			/* Raw, BGBG... / GRGR... */
-+			fmt = 0x00;
-+			mux = AP1302_FMT_MUX_RAW_DPC;
-+			break;
-+		case MEDIA_BUS_FMT_SGBRG8_1X8:
-+			/* Raw bayer, GBGB... / RGRG... */
-+			fmt = 0x01;
-+			mux = AP1302_FMT_MUX_RAW_DPC;
-+			break;
-+		case MEDIA_BUS_FMT_SGRBG8_1X8:
-+			/* Raw bayer, GRGR... / BGBG... */
-+			fmt = 0x02;
-+			mux = AP1302_FMT_MUX_RAW_DPC;
-+			break;
-+		case MEDIA_BUS_FMT_SRGGB8_1X8:
-+			/* Raw bayer, RGRG... / GBGB... */
-+			fmt = 0x03;
-+			mux = AP1302_FMT_MUX_RAW_DPC;
-+			break;
-+#endif
-+
-+		default:
-+			return -EINVAL;
-+	}
-+
-+	/* FORMAT CONTROL00: YUV and RGB formatting */
-+	ret = ap1302_write_reg(sensor, AP1302_REG_FORMAT_CONTROL00, fmt);
-+	if (ret)
-+		return ret;
-+
-+	/* FORMAT MUX CONTROL: ISP YUV or RGB */
-+	ret = ap1302_write_reg(sensor, AP1302_REG_ISP_FORMAT_MUX_CTRL, mux);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * TIMING TC REG21:
-+	 * - [5]:	JPEG enable
-+	 */
-+	ret = ap1302_mod_reg(sensor, AP1302_REG_TIMING_TC_REG21,
-+			     BIT(5), is_jpeg ? BIT(5) : 0);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * SYSTEM RESET02:
-+	 * - [4]:	Reset JFIFO
-+	 * - [3]:	Reset SFIFO
-+	 * - [2]:	Reset JPEG
-+	 */
-+	ret = ap1302_mod_reg(sensor, AP1302_REG_SYS_RESET02,
-+			     BIT(4) | BIT(3) | BIT(2),
-+			     is_jpeg ? 0 : (BIT(4) | BIT(3) | BIT(2)));
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * CLOCK ENABLE02:
-+	 * - [5]:	Enable JPEG 2x clock
-+	 * - [3]:	Enable JPEG clock
-+	 */
-+	return ap1302_mod_reg(sensor, AP1302_REG_SYS_CLOCK_ENABLE02,
-+			      BIT(5) | BIT(3),
-+			      is_jpeg ? (BIT(5) | BIT(3)) : 0);
-+}
-+#endif
-+
 +static int ap1302_set_fps( struct ap1302_dev *sensor )
 +{
-+	int ret, cnt;
++	int ret, cnt, len;
++	struct ap1302_reg_value *p_regs;
 +	u16 frame1, frame2;
 +	u16 val;
 +
@@ -2728,12 +2688,30 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +			ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
 +			if ( ret )
 +				break;
++
 +			frame2 = val >> 8;
 +			if ( ( ( frame2 - frame1 ) & 0xff ) > 2 ) {
 +				/* fix MIPI color order */
-+				ret = ap1302_write_regs( sensor, ap1302_fix_mipi_order, ARRAY_SIZE( ap1302_fix_mipi_order ) );
-+				break;
++
++				switch ( sensor->fmt.code )
++				{
++					case MEDIA_BUS_FMT_RGB565_2X8_LE:
++						p_regs = ap1302_fix_mipi_rgb;
++						len = ARRAY_SIZE( ap1302_fix_mipi_rgb );
++						break;
++
++					case MEDIA_BUS_FMT_YUYV8_2X8:
++					default:
++						p_regs = ap1302_fix_mipi_yuv;
++						len = ARRAY_SIZE( ap1302_fix_mipi_yuv );
++						break;
++				}
++
++
++				ret = ap1302_write_regs( sensor, p_regs, len );
++				break;      /* get out of the for() loop */
 +			}
++
 +			msleep( 100 );
 +		}
 +	}
@@ -2745,7 +2723,19 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
  static int ap1302_download_fw(struct ap1302_dev *sensor)
  {
  	int ret;
-@@ -4082,8 +2113,7 @@
+@@ -4066,11 +2050,7 @@
+ 	 * YUV422 VGA@15fps
+ 	 */
+ 	fmt = &sensor->fmt;
+-#if 0
+-	fmt->code = MEDIA_BUS_FMT_RGB565_2X8_LE;
+-#else
+ 	fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
+-#endif
+ 	fmt->colorspace = V4L2_COLORSPACE_SRGB;
+ 	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
+ 	fmt->quantization = V4L2_QUANTIZATION_FULL_RANGE;
+@@ -4082,8 +2062,7 @@
  	sensor->frame_interval.denominator = ap1302_framerates[AP1302_15_FPS];
  	sensor->current_fr = AP1302_15_FPS;
  
