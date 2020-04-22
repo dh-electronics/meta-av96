@@ -1,0 +1,412 @@
+diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
+--- ./drivers/media/i2c/ap1302.c	2020-04-22 19:39:44.397719210 +0200
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-04-22 19:41:03.825639212 +0200
+@@ -1,6 +1,6 @@
+ /*
+- * Copyright (C) 2011-2013 Freescale Semiconductor, Inc. All Rights Reserved.
+- * Copyright (C) 2014-2017 Mentor Graphics Inc.
++ * Copyright (C) 2020 Arrow Electronics
++ * Author: Botond Kardos
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -104,11 +104,6 @@
+ 	AP1302_NUM_FRAMERATES,
+ };
+ 
+-enum ap1302_format_mux {
+-	AP1302_FMT_MUX_YUV422 = 0,
+-	AP1302_FMT_MUX_RGB,
+-};
+-
+ struct ap1302_pixfmt {
+ 	u32 code;
+ 	u32 colorspace;
+@@ -164,38 +159,20 @@
+ 
+ struct ap1302_mode_info {
+ 	enum ap1302_mode_id id;
+-	enum ap1302_downsize_mode dn_mode;
+ 	u32 hact;
+-	u32 htot;
+ 	u32 vact;
+-	u32 vtot;
+ 	struct ap1302_reg_value *p_mode;
+ 	int mode_len;
+ };
+ 
+ struct ap1302_ctrls {
+ 	struct v4l2_ctrl_handler handler;
+-	struct {
+-		struct v4l2_ctrl *auto_exp;
+-		struct v4l2_ctrl *exposure;
+-	};
+-	struct {
+-		struct v4l2_ctrl *auto_wb;
+-		struct v4l2_ctrl *blue_balance;
+-		struct v4l2_ctrl *red_balance;
+-	};
+-	struct {
+-		struct v4l2_ctrl *auto_gain;
+-		struct v4l2_ctrl *gain;
+-	};
+-	struct v4l2_ctrl *brightness;
+-	struct v4l2_ctrl *light_freq;
+-	struct v4l2_ctrl *saturation;
+-	struct v4l2_ctrl *contrast;
+-	struct v4l2_ctrl *hue;
+ 	struct v4l2_ctrl *test_pattern;
++	int test_value;
+ 	struct v4l2_ctrl *hflip;
++	int hflip_value;
+ 	struct v4l2_ctrl *vflip;
++	int vflip_value;
+ 	struct v4l2_ctrl *link_freq;
+ };
+ 
+@@ -287,10 +264,8 @@
+ 
+ static const struct ap1302_mode_info
+ ap1302_mode_data[AP1302_NUM_MODES] = {
+-	{AP1302_MODE_VGA_640_480, SUBSAMPLING,
+-	 640, 1896, 480, 1080, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480)},
+-	{AP1302_MODE_720P_1280_720, SUBSAMPLING,
+-	 1280, 1892, 720, 740, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
++	{AP1302_MODE_VGA_640_480, 640, 480, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480)},
++	{AP1302_MODE_720P_1280_720, 1280, 720, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
+ };
+ 
+ 
+@@ -484,120 +459,6 @@
+ 	return ret;
+ }
+ 
+-/*
+- * After trying the various combinations, reading various
+- * documentations spreaded around the net, and from the various
+- * feedback, the clock tree is probably as follows:
+- *
+- *   +--------------+
+- *   |  Ext. Clock  |
+- *   +-+------------+
+- *     |  +----------+
+- *     +->|   PLL1   | - reg 0x3036, for the multiplier
+- *        +-+--------+ - reg 0x3037, bits 0-3 for the pre-divider
+- *          |  +--------------+
+- *          +->| System Clock |  - reg 0x3035, bits 4-7
+- *             +-+------------+
+- *               |  +--------------+
+- *               +->| MIPI Divider | - reg 0x3035, bits 0-3
+- *               |  +-+------------+
+- *               |    +----------------> MIPI SCLK
+- *               |    +  +-----+
+- *               |    +->| / 2 |-------> MIPI BIT CLK
+- *               |       +-----+
+- *               |  +--------------+
+- *               +->| PLL Root Div | - reg 0x3037, bit 4
+- *                  +-+------------+
+- *                    |  +---------+
+- *                    +->| Bit Div | - reg 0x3035, bits 0-3
+- *                       +-+-------+
+- *                         |  +-------------+
+- *                         +->| SCLK Div    | - reg 0x3108, bits 0-1
+- *                         |  +-+-----------+
+- *                         |    +---------------> SCLK
+- *                         |  +-------------+
+- *                         +->| SCLK 2X Div | - reg 0x3108, bits 2-3
+- *                         |  +-+-----------+
+- *                         |    +---------------> SCLK 2X
+- *                         |  +-------------+
+- *                         +->| PCLK Div    | - reg 0x3108, bits 4-5
+- *                            ++------------+
+- *                             +  +-----------+
+- *                             +->|   P_DIV   | - reg 0x3035, bits 0-3
+- *                                +-----+-----+
+- *                                       +------------> PCLK
+- *
+- * This is deviating from the datasheet at least for the register
+- * 0x3108, since it's said here that the PCLK would be clocked from
+- * the PLL.
+- *
+- * There seems to be also (unverified) constraints:
+- *  - the PLL pre-divider output rate should be in the 4-27MHz range
+- *  - the PLL multiplier output rate should be in the 500-1000MHz range
+- *  - PCLK >= SCLK * 2 in YUV, >= SCLK in Raw or JPEG
+- *
+- * In the two latter cases, these constraints are met since our
+- * factors are hardcoded. If we were to change that, we would need to
+- * take this into account. The only varying parts are the PLL
+- * multiplier and the system clock divider, which are shared between
+- * all these clocks so won't cause any issue.
+- */
+-
+-/*
+- * This is supposed to be ranging from 1 to 8, but the value is always
+- * set to 3 in the vendor kernels.
+- */
+-#define AP1302_PLL_PREDIV	3
+-
+-#define AP1302_PLL_MULT_MIN	4
+-#define AP1302_PLL_MULT_MAX	252
+-
+-/*
+- * This is supposed to be ranging from 1 to 16, but the value is
+- * always set to either 1 or 2 in the vendor kernels.
+- */
+-#define AP1302_SYSDIV_MIN	1
+-#define AP1302_SYSDIV_MAX	16
+-
+-/*
+- * Hardcode these values for scaler and non-scaler modes.
+- * FIXME: to be re-calcualted for 1 data lanes setups
+- */
+-#define AP1302_MIPI_DIV_PCLK	2
+-#define AP1302_MIPI_DIV_SCLK	1
+-
+-/*
+- * This is supposed to be ranging from 1 to 2, but the value is always
+- * set to 2 in the vendor kernels.
+- */
+-#define AP1302_PLL_ROOT_DIV			2
+-#define AP1302_PLL_CTRL3_PLL_ROOT_DIV_2		BIT(4)
+-
+-/*
+- * We only supports 8-bit formats at the moment
+- */
+-#define AP1302_BIT_DIV				2
+-#define AP1302_PLL_CTRL0_MIPI_MODE_8BIT		0x08
+-
+-/*
+- * This is supposed to be ranging from 1 to 8, but the value is always
+- * set to 2 in the vendor kernels.
+- */
+-#define AP1302_SCLK_ROOT_DIV	2
+-
+-/*
+- * This is hardcoded so that the consistency is maintained between SCLK and
+- * SCLK 2x.
+- */
+-#define AP1302_SCLK2X_ROOT_DIV (AP1302_SCLK_ROOT_DIV / 2)
+-
+-/*
+- * This is supposed to be ranging from 1 to 8, but the value is always
+- * set to 1 in the vendor kernels.
+- */
+-#define AP1302_PCLK_ROOT_DIV			1
+-#define AP1302_PLL_SYS_ROOT_DIVIDER_BYPASS	0x00
+-
+ 
+ static const struct ap1302_mode_info *
+ ap1302_find_mode(struct ap1302_dev *sensor, enum ap1302_frame_rate fr,
+@@ -704,11 +565,9 @@
+ 
+ static int ap1302_set_ctrl_test_pattern(struct ap1302_dev *sensor, int value)
+ {
++	int ret;
+ 	u16 val;
+ 
+-#error "remember test pattern value after power_off"
+-#error "maybe also resolution"
+-
+ 	switch ( value ) {
+ 		case 0:
+ 			val = 0x0211;
+@@ -723,17 +582,35 @@
+ 			break;
+ 		}
+ 
+-	return ap1302_write_reg16( sensor, AP1302_REG_SENSOR_SELECT, val );
++	ret = ap1302_write_reg16( sensor, AP1302_REG_SENSOR_SELECT, val );
++	if ( !ret )
++		sensor->ctrls.test_value = value;
++
++	return ret;
+ 	}
+ 
+ static int ap1302_set_ctrl_hflip(struct ap1302_dev *sensor, int value)
+ {
+-	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 0, !!value );
++	int ret;
++
++	value = !!value;
++	ret = ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 0, value );
++	if ( !ret )
++		sensor->ctrls.hflip_value = value;
++
++	return ret;
+ }
+ 
+ static int ap1302_set_ctrl_vflip(struct ap1302_dev *sensor, int value)
+ {
+-	return ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 1, !!value << 1 );
++	int ret;
++
++	value = !!value;
++	ret = ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 1 << 1, value << 1 );
++	if ( !ret )
++		sensor->ctrls.vflip_value = value;
++
++	return ret;
+ 	}
+ 
+ static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
+@@ -829,33 +706,12 @@
+ 
+ static int ap1302_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
+ {
+-	struct v4l2_subdev *sd = ctrl_to_sd(ctrl);
+-	struct ap1302_dev *sensor = to_ap1302_dev(sd);
+-	int val;
+-
+ 	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+ 
+-#if 0
+-	/* v4l2_ctrl_lock() locks our own mutex */
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_AUTOGAIN:
+-		val = ap1302_get_gain(sensor);
+-		if (val < 0)
+-			return val;
+-		sensor->ctrls.gain->val = val;
+-		break;
+-	case V4L2_CID_EXPOSURE_AUTO:
+-		val = ap1302_get_exposure(sensor);
+-		if (val < 0)
+-			return val;
+-		sensor->ctrls.exposure->val = val;
+-		break;
++	return -EINVAL;
+ 	}
+-#endif
+ 
+-	return 0;
+-}
++static int ap1302_set_fps( struct ap1302_dev *sensor );
+ 
+ static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+ {
+@@ -865,66 +721,10 @@
+ 
+ 	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+ 
+-#if 0
+ 	/* v4l2_ctrl_lock() locks our own mutex */
+ 
+-	/*
+-	 * If the device is not powered up by the host driver do
+-	 * not apply any controls to H/W at this time. Instead
+-	 * the controls will be restored right after power-up.
+-	 */
+-	if (sensor->power_count == 0)
+-		return 0;
+-
+-	switch (ctrl->id) {
+-	case V4L2_CID_AUTOGAIN:
+-		ret = ap1302_set_ctrl_gain(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_EXPOSURE_AUTO:
+-		ret = ap1302_set_ctrl_exposure(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_AUTO_WHITE_BALANCE:
+-		ret = ap1302_set_ctrl_white_balance(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_HUE:
+-		ret = ap1302_set_ctrl_hue(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_CONTRAST:
+-		ret = ap1302_set_ctrl_contrast(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_SATURATION:
+-		ret = ap1302_set_ctrl_saturation(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_TEST_PATTERN:
+-		ret = ap1302_set_ctrl_test_pattern(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_POWER_LINE_FREQUENCY:
+-		ret = ap1302_set_ctrl_light_freq(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_HFLIP:
+-		ret = ap1302_set_ctrl_hflip(sensor, ctrl->val);
+-		break;
+-	case V4L2_CID_VFLIP:
+-		ret = ap1302_set_ctrl_vflip(sensor, ctrl->val);
+-		break;
+-	default:
+-		ret = -EINVAL;
+-		break;
+-	}
+-
+-	return ret;
+-
+-#else
+-
+-	/* v4l2_ctrl_lock() locks our own mutex */
+-
+-	/*
+-	 * If the device is not powered up by the host driver do
+-	 * not apply any controls to H/W at this time. Instead
+-	 * the controls will be restored right after power-up.
+-	 */
+ 	if ( !sensor->power_state )
+-	return 0;
++		return -EINVAL;
+ 
+ 	switch (ctrl->id) {
+ 		case V4L2_CID_TEST_PATTERN:
+@@ -944,10 +744,11 @@
+ 			break;
+ 	}
+ 
+-	return ret;
+-
+-#endif
++	if( !ret && sensor->streaming )
++		/* ap1302_set_fps() will fix MIPI color order */
++		ret = ap1302_set_fps( sensor );
+ 
++	return ret;
+ }
+ 
+ static const struct v4l2_ctrl_ops ap1302_ctrl_ops = {
+@@ -1109,7 +910,6 @@
+ static int ap1302_fw_loop(struct ap1302_dev *sensor, struct ap1302_fw_data *p_fw_data );
+ static int ap1302_set_format( struct ap1302_dev *sensor );
+ static int ap1302_set_mode( struct ap1302_dev *sensor );
+-static int ap1302_set_fps( struct ap1302_dev *sensor );
+ 
+ static int ap1302_s_stream(struct v4l2_subdev *sd, int enable)
+ {
+@@ -1140,12 +940,20 @@
+ 			ret = ap1302_set_mode( sensor );
+ 
+ 		if ( !ret )
++			ret = ap1302_set_ctrl_test_pattern( sensor, sensor->ctrls.test_value );
++
++		if ( !ret )
++			ret = ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 0x03,
++									( sensor->ctrls.vflip_value << 1 ) | sensor->ctrls.hflip_value );
++
++		if ( !ret )
++			/* ap1302_set_fps() also fixes MIPI color order */
+ 			ret = ap1302_set_fps( sensor );
+ 	}
+ 
+ 	mutex_unlock(&sensor->lock);
+ 	return ret;
+-}
++} /* ap1302_s_stream */
+ 
+ static int ap1302_get_fmt(struct v4l2_subdev *sd,
+ 			  struct v4l2_subdev_pad_config *cfg,
+@@ -2113,10 +1921,6 @@
+ 
+     printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
+ 
+-	ret = ap1302_get_regulators(sensor);
+-	if (ret)
+-		return ret;
+-
+ 	mutex_init(&sensor->lock);
+ 
+ 	ret = ap1302_init_controls(sensor);
