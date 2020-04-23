@@ -33,7 +33,8 @@ SRC_URI += "file://0001-linux-av96-devicetree.patch \
         file://0032-media-ov5640-fix-overflow-while-calculating-the-mipi.patch \
         file://0101-mipi-debug.patch \
         file://0102-ap1302-dts.patch \
-        file://0103-ap1302-no-focus.patch"
+        file://0103-ap1302-no-focus.patch \
+        file://0104-ap1302-remove-debug.patch"
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-07-hdmi.config"
