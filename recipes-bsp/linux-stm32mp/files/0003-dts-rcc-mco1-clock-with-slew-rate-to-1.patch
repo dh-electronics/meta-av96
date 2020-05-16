@@ -1,20 +1,18 @@
-From 2455f3cba64fbec931ec0d37ef69091273945ef9 Mon Sep 17 00:00:00 2001
+From bf5835b11488e86ce239bc6bd8b3028b0354d5eb Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 13 May 2019 15:57:05 +0200
-Subject: [PATCH 03/31] dts: rcc mco1 clock with slew-rate to 1
+Subject: [PATCH 03/12] dts: rcc mco1 clock with slew-rate to 1
 
 Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
-
-%% original patch: 0004-dts-rcc-mco1-clock-with-slew-rate-to-1.patch
 ---
  arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi b/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
-index 3804729..b44eaf3 100644
+index 6870cf232256..80e8c17441ab 100644
 --- a/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
 +++ b/arch/arm/boot/dts/stm32mp157a-pinctrl.dtsi
-@@ -1699,7 +1699,7 @@
+@@ -1639,7 +1639,7 @@
  					pinmux = <STM32_PINMUX('A', 13, AF2)>; /* RCC_MCO_1 */
  					bias-disable;
  					drive-push-pull;
@@ -24,5 +22,5 @@ index 3804729..b44eaf3 100644
  			};
  
 -- 
-2.7.4
+2.17.1
 

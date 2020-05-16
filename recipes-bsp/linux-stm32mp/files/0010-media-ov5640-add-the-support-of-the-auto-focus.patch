@@ -1,18 +1,18 @@
-From 688d601fde4d2661ea3d1d860ac2dafca22f61dc Mon Sep 17 00:00:00 2001
+From 9eae45d15e541099567f436e6f3d92ae2e89f15d Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
 Date: Thu, 21 Nov 2019 17:43:45 +0100
-Subject: [PATCH 1/1] media: ov5640: add the support of the auto-focus
+Subject: [PATCH 10/12] media: ov5640: add the support of the auto-focus
 
 Load the auto-focus firmware at the initialization of the sensor and
 request a single focus at the end of the initialization sequence.
 
 Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
 ---
- drivers/media/i2c/ov5640.c | 374 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/media/i2c/ov5640.c | 374 +++++++++++++++++++++++++++++++++++++
  1 file changed, 374 insertions(+)
 
 diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
-index 0a26a18..323e364 100644
+index 81c84f9cf50f..da4da78ccd6e 100644
 --- a/drivers/media/i2c/ov5640.c
 +++ b/drivers/media/i2c/ov5640.c
 @@ -20,6 +20,7 @@
@@ -23,7 +23,7 @@ index 0a26a18..323e364 100644
  #include <linux/slab.h>
  #include <linux/types.h>
  #include <media/v4l2-async.h>
-@@ -99,6 +100,8 @@
+@@ -98,6 +99,8 @@
  #define OV5640_REG_SDE_CTRL5		0x5585
  #define OV5640_REG_AVG_READOUT		0x56a1
  
@@ -32,7 +32,7 @@ index 0a26a18..323e364 100644
  enum ov5640_mode_id {
  	OV5640_MODE_QCIF_176_144 = 0,
  	OV5640_MODE_QVGA_320_240,
-@@ -253,6 +256,8 @@ struct ov5640_dev {
+@@ -252,6 +255,8 @@ struct ov5640_dev {
  	u32 prev_sysclk, prev_hts;
  	u32 ae_low, ae_high, ae_target;
  
@@ -41,7 +41,7 @@ index 0a26a18..323e364 100644
  	bool pending_mode_change;
  	bool streaming;
  };
-@@ -538,6 +543,265 @@ static const struct reg_value ov5640_setting_QSXGA_2592_1944[] = {
+@@ -537,6 +542,265 @@ static const struct reg_value ov5640_setting_QSXGA_2592_1944[] = {
  	{0x5001, 0x83, 0, 70},
  };
  
@@ -307,7 +307,7 @@ index 0a26a18..323e364 100644
  /* power-on sensor init reg table */
  static const struct ov5640_mode_info ov5640_mode_init_data = {
  	0, SUBSAMPLING, 640, 1896, 480, 984,
-@@ -1949,6 +2213,108 @@ static int ov5640_restore_mode(struct ov5640_dev *sensor)
+@@ -1968,6 +2232,108 @@ static int ov5640_restore_mode(struct ov5640_dev *sensor)
  	return ov5640_set_framefmt(sensor, &sensor->fmt);
  }
  
@@ -416,7 +416,7 @@ index 0a26a18..323e364 100644
  static void ov5640_power(struct ov5640_dev *sensor, bool enable)
  {
  	gpiod_set_value_cansleep(sensor->pwdn_gpio, enable ? 0 : 1);
-@@ -2910,6 +3276,12 @@ static int ov5640_s_stream(struct v4l2_subdev *sd, int enable)
+@@ -2928,6 +3294,12 @@ static int ov5640_s_stream(struct v4l2_subdev *sd, int enable)
  		if (!ret)
  			sensor->streaming = enable;
  	}
@@ -429,7 +429,7 @@ index 0a26a18..323e364 100644
  out:
  	mutex_unlock(&sensor->lock);
  	return ret;
-@@ -3020,6 +3392,8 @@ static int ov5640_probe(struct i2c_client *client,
+@@ -3035,6 +3407,8 @@ static int ov5640_probe(struct i2c_client *client,
  
  	sensor->ae_target = 52;
  
@@ -439,5 +439,5 @@ index 0a26a18..323e364 100644
  	ret = fwnode_property_read_u32(dev_fwnode(&client->dev), "rotation",
  				       &rotation);
 -- 
-2.7.4
+2.17.1
 

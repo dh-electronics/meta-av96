@@ -1,7 +1,7 @@
-From e0b50c21cbafbcbbb9126f9bfb7336009a6771a2 Mon Sep 17 00:00:00 2001
+From 50ab951bd2eec00bde9d984a11128dbdcf05d364 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 28 Mar 2019 14:42:22 +0100
-Subject: [PATCH 17/31] media: stm32-dcmi: fix error messages
+Subject: [PATCH 05/12] media: stm32-dcmi: fix error messages
 
 Revisit and add some error messages.
 
@@ -11,10 +11,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/media/platform/stm32/stm32-dcmi.c b/drivers/media/platform/stm32/stm32-dcmi.c
-index 1737892..7680caa 100644
+index 0a59f44f62a9..db14834f379b 100644
 --- a/drivers/media/platform/stm32/stm32-dcmi.c
 +++ b/drivers/media/platform/stm32/stm32-dcmi.c
-@@ -1648,7 +1648,7 @@ static int dcmi_graph_init(struct stm32_dcmi *dcmi)
+@@ -1830,7 +1830,7 @@ static int dcmi_graph_init(struct stm32_dcmi *dcmi)
  	/* Parse the graph to extract a list of subdevice DT nodes. */
  	ret = dcmi_graph_parse(dcmi, dcmi->dev->of_node);
  	if (ret < 0) {
@@ -24,5 +24,5 @@ index 1737892..7680caa 100644
  	}
  
 -- 
-2.7.4
+2.17.1
 

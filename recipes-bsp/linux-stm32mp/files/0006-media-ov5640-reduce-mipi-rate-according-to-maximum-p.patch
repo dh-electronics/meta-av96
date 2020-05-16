@@ -1,7 +1,7 @@
-From 91a982c2861b1cf6f9e8fd8232c415fa50c89cfb Mon Sep 17 00:00:00 2001
+From 32af9753dfb7f431f2964bafe2ddda138d599939 Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
 Date: Fri, 6 Dec 2019 10:38:07 +0100
-Subject: [PATCH 19/31] media: ov5640: reduce mipi rate according to maximum
+Subject: [PATCH 06/12] media: ov5640: reduce mipi rate according to maximum
  pixel clock frequency
 
 Reduce mipi port rate according to maximum pixel clock frequency
@@ -15,10 +15,10 @@ Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
  1 file changed, 16 insertions(+)
 
 diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
-index d5d8b1a..48da5d1 100644
+index 62269ac15b27..74b8f66e3c86 100644
 --- a/drivers/media/i2c/ov5640.c
 +++ b/drivers/media/i2c/ov5640.c
-@@ -945,8 +945,10 @@ static unsigned long ov5640_calc_sys_clk(struct ov5640_dev *sensor,
+@@ -945,8 +945,10 @@ out:
  static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
  				unsigned long rate)
  {
@@ -51,5 +51,5 @@ index d5d8b1a..48da5d1 100644
  
  	ret = ov5640_mod_reg(sensor, OV5640_REG_SC_PLL_CTRL0,
 -- 
-2.7.4
+2.17.1
 

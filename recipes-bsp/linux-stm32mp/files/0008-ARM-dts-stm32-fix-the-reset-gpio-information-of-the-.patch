@@ -1,7 +1,7 @@
-From 87fdcf581efe85939c82f78dc297c171133b8bfb Mon Sep 17 00:00:00 2001
+From fbc60753a9f7ec841e2e12a43cdc6dfd12fa645f Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
 Date: Wed, 23 Oct 2019 15:27:34 +0200
-Subject: [PATCH 30/31] ARM: dts: stm32: fix the reset gpio information of the
+Subject: [PATCH 08/12] ARM: dts: stm32: fix the reset gpio information of the
  ethernet phy
 
 Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
@@ -10,10 +10,10 @@ Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/stm32mp157a-av96.dts b/arch/arm/boot/dts/stm32mp157a-av96.dts
-index b963385..fb45223 100644
+index db9e4603dbbd..6aafbedbce57 100644
 --- a/arch/arm/boot/dts/stm32mp157a-av96.dts
 +++ b/arch/arm/boot/dts/stm32mp157a-av96.dts
-@@ -401,7 +401,10 @@
+@@ -83,7 +83,10 @@
  	max-speed = <1000>;
  	phy-handle = <&phy0>;
  
@@ -26,5 +26,5 @@ index b963385..fb45223 100644
  	mdio0 {
  		#address-cells = <1>;
 -- 
-2.7.4
+2.17.1
 

@@ -1,7 +1,7 @@
-From 6510d9d9c63beecff3c521df52db178cde33d777 Mon Sep 17 00:00:00 2001
+From 30d4b6041a05c8979b6ffa4eb9dfe646d507b902 Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
 Date: Wed, 18 Dec 2019 16:04:23 +0100
-Subject: [PATCH 1/1] media: ov5640: fix overflow while calculating the
+Subject: [PATCH 09/12] media: ov5640: fix overflow while calculating the
  mipi_pclk
 
 Inverts the order of the operation while calculing the pclk_freq.
@@ -13,10 +13,10 @@ Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
  1 file changed, 7 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/media/i2c/ov5640.c b/drivers/media/i2c/ov5640.c
-index 5ddf394..f128872 100644
+index 74b8f66e3c86..81c84f9cf50f 100644
 --- a/drivers/media/i2c/ov5640.c
 +++ b/drivers/media/i2c/ov5640.c
-@@ -1213,7 +1213,7 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
+@@ -948,7 +948,7 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
  	struct i2c_client *client = sensor->i2c_client;
  	const struct ov5640_mode_info *mode = sensor->current_mode;
  	u8 prediv, mult, sysdiv;
@@ -25,7 +25,7 @@ index 5ddf394..f128872 100644
  	u8 mipi_div;
  	int ret;
  
-@@ -1228,17 +1228,16 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
+@@ -963,17 +963,16 @@ static int ov5640_set_mipi_pclk(struct ov5640_dev *sensor,
  	else
  		mipi_div = OV5640_MIPI_DIV_PCLK;
  
@@ -50,5 +50,5 @@ index 5ddf394..f128872 100644
  	}
  
 -- 
-2.7.4
+2.17.1
 
