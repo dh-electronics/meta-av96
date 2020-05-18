@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
 --- ./arch/arm/lib/relocate.S	2018-11-14 17:10:06.000000000 +0100
-+++ ../uboot-source/arch/arm/lib/relocate.S	2020-05-15 17:33:17.417552813 +0200
++++ ../uboot-source/arch/arm/lib/relocate.S	2020-05-18 19:05:32.432461096 +0200
 @@ -78,6 +78,8 @@
   */
  
@@ -11,8 +11,8 @@ diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
  	subs	r4, r0, r1		/* r4 <- relocation offset */
  	beq	relocate_done		/* skip relocation */
 diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/cpu.c
---- ./arch/arm/mach-stm32mp/cpu.c	2020-05-15 17:31:41.449287745 +0200
-+++ ../uboot-source/arch/arm/mach-stm32mp/cpu.c	2020-05-15 17:33:17.441551876 +0200
+--- ./arch/arm/mach-stm32mp/cpu.c	2020-05-18 19:05:03.153633070 +0200
++++ ../uboot-source/arch/arm/mach-stm32mp/cpu.c	2020-05-18 19:05:32.444460615 +0200
 @@ -16,6 +16,7 @@
  #include <dm/lists.h>
  #include <dm/uclass.h>
@@ -109,8 +109,8 @@ diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/
  
  	return 0;
 diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../uboot-source/board/st/stm32mp1/stm32mp1.c
---- ./board/st/stm32mp1/stm32mp1.c	2020-05-15 17:31:41.641280302 +0200
-+++ ../uboot-source/board/st/stm32mp1/stm32mp1.c	2020-05-15 17:33:17.569546879 +0200
+--- ./board/st/stm32mp1/stm32mp1.c	2020-05-18 19:05:03.341625545 +0200
++++ ../uboot-source/board/st/stm32mp1/stm32mp1.c	2020-05-18 19:05:32.516457729 +0200
 @@ -33,6 +33,7 @@
  #include <jffs2/load_kernel.h>
  #include <power/regulator.h>
@@ -174,8 +174,8 @@ diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../uboot-source/board/st/stm32mp1/stm
  	      (u32)syscfg + SYSCFG_IOCTRLSETR,
  	      readl(syscfg + SYSCFG_IOCTRLSETR));
 diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
---- ./common/board_f.c	2020-05-15 17:31:41.325292554 +0200
-+++ ../uboot-source/common/board_f.c	2020-05-15 17:33:17.601545630 +0200
+--- ./common/board_f.c	2020-05-18 19:05:03.053637071 +0200
++++ ../uboot-source/common/board_f.c	2020-05-18 19:05:32.528457249 +0200
 @@ -36,6 +36,7 @@
  #include <asm/mp.h>
  #endif
@@ -251,7 +251,7 @@ diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
  #if defined(CONFIG_MISC_INIT_F)
 diff -Naurw ./common/board_r.c ../uboot-source/common/board_r.c
 --- ./common/board_r.c	2018-11-14 17:10:06.000000000 +0100
-+++ ../uboot-source/common/board_r.c	2020-05-15 17:33:17.601545630 +0200
++++ ../uboot-source/common/board_r.c	2020-05-18 19:05:32.528457249 +0200
 @@ -746,12 +746,16 @@
  #ifdef CONFIG_PPC
  	initr_spi,
@@ -283,8 +283,8 @@ diff -Naurw ./common/board_r.c ../uboot-source/common/board_r.c
  	initr_post,
  #endif
 diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp15_basic_defconfig
---- ./configs/stm32mp15_basic_defconfig	2020-05-15 17:31:41.097301393 +0200
-+++ ../uboot-source/configs/stm32mp15_basic_defconfig	2020-05-15 17:33:17.633544380 +0200
+--- ./configs/stm32mp15_basic_defconfig	2020-05-18 19:05:02.877644114 +0200
++++ ../uboot-source/configs/stm32mp15_basic_defconfig	2020-05-18 19:05:32.548456449 +0200
 @@ -16,6 +16,8 @@
  CONFIG_SPL_MTD_SUPPORT=y
  CONFIG_SPL_POWER_SUPPORT=y
@@ -304,8 +304,8 @@ diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp1
  CONFIG_PINCONF=y
  # CONFIG_SPL_PINCTRL_FULL is not set
 diff -Naurw ./configs/stm32mp15_trusted_defconfig ../uboot-source/configs/stm32mp15_trusted_defconfig
---- ./configs/stm32mp15_trusted_defconfig	2020-05-15 17:31:41.097301393 +0200
-+++ ../uboot-source/configs/stm32mp15_trusted_defconfig	2020-05-15 17:33:17.633544380 +0200
+--- ./configs/stm32mp15_trusted_defconfig	2020-05-18 19:05:02.877644114 +0200
++++ ../uboot-source/configs/stm32mp15_trusted_defconfig	2020-05-18 19:05:32.548456449 +0200
 @@ -6,6 +6,8 @@
  CONFIG_FIT=y
  CONFIG_BOOTCOMMAND="run bootcmd_stm32mp"
@@ -325,8 +325,17 @@ diff -Naurw ./configs/stm32mp15_trusted_defconfig ../uboot-source/configs/stm32m
  CONFIG_PINCONF=y
  CONFIG_PINCTRL_STMFX=y
 diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.c
---- ./drivers/net/dwc_eth_qos.c	2020-05-15 17:31:42.085263091 +0200
-+++ ../uboot-source/drivers/net/dwc_eth_qos.c	2020-05-15 17:33:17.677542661 +0200
+--- ./drivers/net/dwc_eth_qos.c	2020-05-18 19:05:03.581615941 +0200
++++ ../uboot-source/drivers/net/dwc_eth_qos.c	2020-05-18 19:05:32.568455648 +0200
+@@ -705,7 +705,7 @@
+ 			return ret;
+ 		}
+ 
+-		udelay(2);
++		mdelay(10);
+ 
+ 		ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 0);
+ 		if (ret < 0) {
 @@ -731,11 +731,6 @@
  
  static int eqos_stop_resets_stm32(struct udevice *dev)
@@ -338,6 +347,22 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
 -
  	return 0;
  }
+ 
+@@ -1040,13 +1035,13 @@
+ 		goto err;
+ 	}
+ 
++	if (!eqos->phy) {
+ 	ret = eqos->config->ops->eqos_start_resets(dev);
+ 	if (ret < 0) {
+ 		pr_err("eqos_start_resets() failed: %d", ret);
+ 		goto err_stop_clks;
+ 	}
+-
+-	udelay(10);
++	}
+ 
+ 	eqos->reg_access_ok = true;
  
 @@ -1073,7 +1068,7 @@
  	 * don't need to reconnect/reconfigure again
@@ -356,7 +381,18 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
  	dm_gpio_free(dev, &eqos->phy_reset_gpio);
  err_free_reset_eqos:
  	reset_free(&eqos->reset_ctl);
-@@ -1794,6 +1790,12 @@
+@@ -1685,9 +1681,7 @@
+ 	if (!ret) {
+ 		ret = gpio_request_by_name_nodev(phandle_args.node,
+ 						 "reset-gpios", 0,
+-						 &eqos->phy_reset_gpio,
+-						 GPIOD_IS_OUT |
+-						 GPIOD_IS_OUT_ACTIVE);
++						 &eqos->phy_reset_gpio, GPIOD_IS_OUT );
+ 	}
+ 	if (ret)
+ 		pr_warn("gpio_request_by_name(phy reset) not provided %d", ret);
+@@ -1794,6 +1788,12 @@
  		goto err_remove_resources_core;
  	}
  
@@ -371,7 +407,7 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
  		pr_err("mdio_alloc() failed");
 diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../uboot-source/drivers/net/phy/micrel_ksz90x1.c
 --- ./drivers/net/phy/micrel_ksz90x1.c	2018-11-14 17:10:06.000000000 +0100
-+++ ../uboot-source/drivers/net/phy/micrel_ksz90x1.c	2020-05-15 17:33:17.677542661 +0200
++++ ../uboot-source/drivers/net/phy/micrel_ksz90x1.c	2020-05-18 19:05:32.572455487 +0200
 @@ -123,7 +123,7 @@
  		} else {
  			changed = 1;	/* Value was changed in OF */
@@ -391,7 +427,7 @@ diff -Naurw ./drivers/net/phy/micrel_ksz90x1.c ../uboot-source/drivers/net/phy/m
  
 diff -Naurw ./drivers/net/phy/phy.c ../uboot-source/drivers/net/phy/phy.c
 --- ./drivers/net/phy/phy.c	2018-11-14 17:10:06.000000000 +0100
-+++ ../uboot-source/drivers/net/phy/phy.c	2020-05-15 17:33:17.677542661 +0200
++++ ../uboot-source/drivers/net/phy/phy.c	2020-05-18 19:08:10.958107780 +0200
 @@ -737,6 +737,7 @@
  	int i;
  	struct phy_device *phydev;
@@ -401,8 +437,8 @@ diff -Naurw ./drivers/net/phy/phy.c ../uboot-source/drivers/net/phy/phy.c
  	if (phydev)
  		return phydev;
 diff -Naurw ./include/configs/stm32mp1.h ../uboot-source/include/configs/stm32mp1.h
---- ./include/configs/stm32mp1.h	2020-05-15 17:31:42.353252700 +0200
-+++ ../uboot-source/include/configs/stm32mp1.h	2020-05-15 17:33:17.749539850 +0200
+--- ./include/configs/stm32mp1.h	2020-05-18 19:05:03.925602176 +0200
++++ ../uboot-source/include/configs/stm32mp1.h	2020-05-18 19:05:32.608454046 +0200
 @@ -232,7 +232,7 @@
  #else /* CONFIG_STM32MP1_OPTEE */
  
@@ -413,8 +449,8 @@ diff -Naurw ./include/configs/stm32mp1.h ../uboot-source/include/configs/stm32mp
  	"mtdparts_spi-nand0=2m(fsbl),2m(ssbl1),2m(ssbl2),-(UBI)\0"
  
 diff -Naurw ./Makefile ../uboot-source/Makefile
---- ./Makefile	2020-05-15 17:31:42.081263245 +0200
-+++ ../uboot-source/Makefile	2020-05-15 17:33:17.709541411 +0200
+--- ./Makefile	2020-05-18 19:05:03.577616102 +0200
++++ ../uboot-source/Makefile	2020-05-18 19:05:32.632453086 +0200
 @@ -254,7 +254,8 @@
  
  HOSTCC       = cc
