@@ -53,7 +53,7 @@
 
 /* Private defines -----------------------------------------------------------*/
 #define DEFAULT_IRQ_PRIO      1U
-#define I2C_ADDRESS 0x30F
+#define I2C_ADDRESS ( 0x29 << 1 )
 
 
 /* ########################## Assert Selection ############################## */
