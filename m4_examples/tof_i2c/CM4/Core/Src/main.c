@@ -66,6 +66,62 @@ static uint16_t Buffercmp(uint8_t* pBuffer1, uint8_t* pBuffer2, uint16_t BufferL
 
 /* USER CODE END 0 */
 
+int i2c_write( uint16_t addr, uint8_t *p_buf, int len )
+{
+	int ret = 0;
+
+	if(HAL_I2C_Master_Transmit_IT(&hi2c1, addr << 1, p_buf, len)!= HAL_OK)
+	{
+		/* Error_Handler() function is called when error occurs. */
+		Error_Handler();
+	}
+
+	/*##- Wait for the end of the transfer #################################*/
+	/*  Before starting a new communication transfer, you need to check the current
+		state of the peripheral; if it’s busy you need to wait for the end of current
+		transfer before starting a new one.
+		For simplicity reasons, this example is just waiting till the end of the
+		transfer, but application may perform other tasks while transfer operation
+		is ongoing. */
+	while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
+	{
+	}
+
+	if (HAL_I2C_GetError(&hi2c1) == HAL_I2C_ERROR_AF)
+		ret = -1;
+
+	return ret;
+}
+
+int i2c_read( uint16_t addr, uint8_t *p_buf, int len )
+{
+	int ret = 0;
+
+	if(HAL_I2C_Master_Receive_IT(&hi2c1, addr << 1, p_buf, len)!= HAL_OK)
+	{
+		/* Error_Handler() function is called when error occurs. */
+		Error_Handler();
+	}
+
+	/*##- Wait for the end of the transfer #################################*/
+	/*  Before starting a new communication transfer, you need to check the current
+		state of the peripheral; if it’s busy you need to wait for the end of current
+		transfer before starting a new one.
+		For simplicity reasons, this example is just waiting till the end of the
+		transfer, but application may perform other tasks while transfer operation
+		is ongoing. */
+	while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
+	{
+	}
+
+	if (HAL_I2C_GetError(&hi2c1) == HAL_I2C_ERROR_AF)
+		ret = -1;
+
+	return ret;
+}
+
+int single_shot( uint16_t *p_dst );
+
 /**
   * @brief  The application entry point.
   *
@@ -74,6 +130,8 @@ static uint16_t Buffercmp(uint8_t* pBuffer1, uint8_t* pBuffer2, uint16_t BufferL
 volatile int run = 0;
 int main(void)
 {
+	uint16_t dst_mm;
+
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
 
@@ -106,6 +164,8 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
+
+  single_shot( &dst_mm );
 
 #ifdef MASTER_BOARD
 
