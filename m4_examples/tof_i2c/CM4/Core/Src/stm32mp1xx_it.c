@@ -26,6 +26,7 @@
 /* USER CODE END Includes */
 
 extern I2C_HandleTypeDef hi2c1;
+extern IPCC_HandleTypeDef hipcc;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -225,6 +226,20 @@ void I2C1_ER_IRQHandler(void)
   /* USER CODE BEGIN I2C1_ER_IRQn 1 */
 
   /* USER CODE END I2C1_ER_IRQn 1 */
+}
+
+/**
+  * @brief This function handles IPCC RX1 occupied interrupt.
+  */
+void IPCC_RX1_IRQHandler(void)
+{
+  /* USER CODE BEGIN IPCC_RX1_IRQn 0 */
+
+  /* USER CODE END IPCC_RX1_IRQn 0 */
+  HAL_IPCC_RX_IRQHandler(&hipcc);
+  /* USER CODE BEGIN IPCC_RX1_IRQn 1 */
+
+  /* USER CODE END IPCC_RX1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

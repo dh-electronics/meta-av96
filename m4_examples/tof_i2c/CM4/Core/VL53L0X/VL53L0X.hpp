@@ -143,6 +143,7 @@ class VL53L0X {
 		 * Whether a timeout occurred in one of the read functions since the last call to timeoutOccurred().
 		 */
 		bool timeoutOccurred();
+		bool initialized = false;
 	private:
 		/*** Private fields ***/
 

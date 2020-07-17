@@ -19,6 +19,7 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "openamp.h"
 
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -39,26 +40,36 @@
 
 /* USER CODE END PM */
 
+#define MAX_BUFFER_SIZE RPMSG_BUFFER_SIZE
+
+void Error_Handler(void);
+
 /* Private variables ---------------------------------------------------------*/
+IPCC_HandleTypeDef hipcc;
 I2C_HandleTypeDef hi2c1;
+VIRT_UART_HandleTypeDef virtUART0;
+
+__IO FlagStatus VirtUart0RxMsg = RESET;
+uint8_t VirtUart0ChannelBuffRx[MAX_BUFFER_SIZE];
+uint16_t VirtUart0ChannelRxSize = 0;
 
 /* USER CODE BEGIN PV */
 /* Buffer used for transmission */
-uint8_t aTxBuffer[] = { 0xff, 0x01 };
+char tx_buf[ MAX_BUFFER_SIZE ];
 
-/* Buffer used for reception */
-uint8_t aRxBuffer[RXBUFFERSIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 
+static void MX_IPCC_Init(void);
+int MX_OPENAMP_Init(int RPMsgRole, rpmsg_ns_bind_cb ns_bind_cb);
+void virt_UART0_cb0(VIRT_UART_HandleTypeDef *huart);
+
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-static uint16_t Buffercmp(uint8_t* pBuffer1, uint8_t* pBuffer2, uint16_t BufferLength);
 
 /* USER CODE END PFP */
 
@@ -127,7 +138,18 @@ int single_shot( uint16_t *p_dst );
   *
   * @retval None
   */
-volatile int run = 0;
+
+
+enum SEND_STATE {
+	IDLE = 0,
+	STARTED,
+	STOPPED,
+	EXIT
+};
+static int send_state;
+
+static volatile int run = 0;
+
 int main(void)
 {
 	uint16_t dst_mm;
@@ -164,161 +186,61 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
+  /* IPCC initialisation */
+  MX_IPCC_Init();
+  /* OpenAmp initialisation ---------------------------------*/
+  MX_OPENAMP_Init(RPMSG_REMOTE, NULL);
 
-  single_shot( &dst_mm );
-
-#ifdef MASTER_BOARD
-
-  /* Configure User push-button */
-  /* BSP_PB_Init(BUTTON_USER,BUTTON_MODE_GPIO); */
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  /* Wait for User push-button press before starting the Communication */
-  /* while (BSP_PB_GetState(BUTTON_USER) != BUTTON_PRESSED)
+  /*init open amp tty*/
+  /* virtUART0 initialization and cb association*/
+  if (VIRT_UART_Init(&virtUART0) != VIRT_UART_OK)
   {
-  } */
-
-  /* Delay to avoid that possible signal rebound is taken as button release */
-  HAL_Delay(50);
-
-  /* Wait for User push-button release before starting the Communication */
-  /* while (BSP_PB_GetState(BUTTON_USER) != BUTTON_RELEASED)
-  {
-  } */
-
-  /* The board sends the message and expects to receive it back */
-  
-  /*##- Start the transmission process #####################################*/  
-  /* While the I2C in reception process, user can transmit data through 
-     "aTxBuffer" buffer */
-     
-     
-  do
-  {
-    if(HAL_I2C_Master_Transmit_IT(&hi2c1, (uint16_t)I2C_ADDRESS, (uint8_t*)aTxBuffer, TXBUFFERSIZE)!= HAL_OK)
-    {
-      /* Error_Handler() function is called when error occurs. */
-      Error_Handler();
-    }
-
-    /*##- Wait for the end of the transfer #################################*/  
-    /*  Before starting a new communication transfer, you need to check the current   
-        state of the peripheral; if it’s busy you need to wait for the end of current
-        transfer before starting a new one.
-        For simplicity reasons, this example is just waiting till the end of the 
-        transfer, but application may perform other tasks while transfer operation
-        is ongoing. */  
-    while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
-    {
-    } 
-
-    /* When Acknowledge failure occurs (Slave don't acknowledge it's address)
-       Master restarts communication */
-  }
-  while(HAL_I2C_GetError(&hi2c1) == HAL_I2C_ERROR_AF);
-  
-  /* Wait for User push-button press before starting the Communication */
-  /* while (BSP_PB_GetState(BUTTON_USER) != BUTTON_PRESSED)
-  {
-  } */
-
-  /* Delay to avoid that possible signal rebound is taken as button release */
-  HAL_Delay(50);
-  
-  /* Wait for User push-button release before starting the Communication */
-  /* while (BSP_PB_GetState(BUTTON_USER) != BUTTON_RELEASED)
-  {
-  } */
-
-
-  /*##- Put I2C peripheral in reception process ###########################*/  
-  do
-  {
-    if(HAL_I2C_Master_Receive_IT(&hi2c1, (uint16_t)I2C_ADDRESS, (uint8_t *)aRxBuffer, RXBUFFERSIZE) != HAL_OK)
-    {
-      /* Error_Handler() function is called when error occurs. */
-      Error_Handler();
-    }
-
-    /*##- Wait for the end of the transfer #################################*/  
-    /*  Before starting a new communication transfer, you need to check the current   
-        state of the peripheral; if it’s busy you need to wait for the end of current
-        transfer before starting a new one.
-        For simplicity reasons, this example is just waiting till the end of the 
-        transfer, but application may perform other tasks while transfer operation
-        is ongoing. */  
-    while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
-    {
-    } 
-
-    /* When Acknowledge failure occurs (Slave don't acknowledge it's address)
-       Master restarts communication */
-  }
-  while(HAL_I2C_GetError(&hi2c1) == HAL_I2C_ERROR_AF);
-
-#else
-  
-  /* The board receives the message and sends it back */
-
-  /*##- Put I2C peripheral in reception process ###########################*/  
-  if(HAL_I2C_Slave_Receive_IT(&hi2c5, (uint8_t *)aRxBuffer, RXBUFFERSIZE) != HAL_OK)
-  {
-    /* Transfer error in reception process */
     Error_Handler();
   }
-  
-  /*##- Wait for the end of the transfer ###################################*/  
-  /*  Before starting a new communication transfer, you need to check the current   
-      state of the peripheral; if it’s busy you need to wait for the end of current
-      transfer before starting a new one.
-      For simplicity reasons, this example is just waiting till the end of the
-      transfer, but application may perform other tasks while transfer operation
-      is ongoing. */
-  while (HAL_I2C_GetState(&hi2c5) != HAL_I2C_STATE_READY)
-  {
-  }
-  
-  /*##- Start the transmission process #####################################*/  
-  /* While the I2C in reception process, user can transmit data through 
-     "aTxBuffer" buffer */
-  if(HAL_I2C_Slave_Transmit_IT(&hi2c5, (uint8_t*)aTxBuffer, TXBUFFERSIZE)!= HAL_OK)
-  {
-    /* Transfer error in transmission process */
-    Error_Handler();    
-  }
-  
-#endif /* MASTER_BOARD */
 
-  /*##- Wait for the end of the transfer ###################################*/  
-  /*  Before starting a new communication transfer, you need to check the current   
-      state of the peripheral; if it’s busy you need to wait for the end of current
-      transfer before starting a new one.
-      For simplicity reasons, this example is just waiting till the end of the
-      transfer, but application may perform other tasks while transfer operation
-      is ongoing. */
-  while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
+  if (VIRT_UART_RegisterCallback(&virtUART0, VIRT_UART_RXCPLT_CB_ID, virt_UART0_cb0) != VIRT_UART_OK)
   {
-  } 
-  
-  /*##- Compare the sent and received buffers ##############################*/
-  if(Buffercmp((uint8_t*)aTxBuffer,(uint8_t*)aRxBuffer,RXBUFFERSIZE))
-  {
-    /* Processing Error */
-    Error_Handler();      
+    Error_Handler();
   }
-  
-  
-  while (1)
-  {
-  /* USER CODE END WHILE */
 
-  /* USER CODE BEGIN 3 */
 
+  while ( send_state == IDLE )
+    OPENAMP_check_for_message();
+
+  while ( send_state != EXIT ) {
+	  OPENAMP_check_for_message();
+
+	  if ( send_state == STARTED ) {
+		  if( single_shot( &dst_mm ) )
+			  break;
+
+		  sprintf( tx_buf, "%i\n", dst_mm );
+		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+		  HAL_Delay( 500 );
+	  }
   }
-  /* USER CODE END 3 */
 
+  return 0;
+}
+
+/*Open AMP callbacks*/
+/*
+ * This function is called in the context of IdleTask inside the function
+ * OPENAMP_check_for_message.
+ * OpenAMP is not thread safe, so we can't release the semaphore here because
+ * FreeRTOS is not able to manage context switching in this situation.
+ */
+void virt_UART0_cb0(VIRT_UART_HandleTypeDef *huart)
+{
+  if ( !strncmp( (char *)huart->pRxBuffPtr, "START\n", MAX_BUFFER_SIZE - 1 ) ||
+		  !strncmp( (char *)huart->pRxBuffPtr, "START", MAX_BUFFER_SIZE - 1 ) )
+	  send_state = STARTED;
+  if ( !strncmp( (char *)huart->pRxBuffPtr, "STOP\n", MAX_BUFFER_SIZE - 1 ) ||
+		  !strncmp( (char *)huart->pRxBuffPtr, "STOP", MAX_BUFFER_SIZE - 1 ) )
+	  send_state = STOPPED;
+  if ( !strncmp( (char *)huart->pRxBuffPtr, "EXIT\n", MAX_BUFFER_SIZE - 1 ) ||
+		  !strncmp( (char *)huart->pRxBuffPtr, "EXIT", MAX_BUFFER_SIZE - 1 ) )
+	  send_state = EXIT;
 }
 
 /**
@@ -498,27 +420,33 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOI_CLK_ENABLE();
 }
-/* USER CODE BEGIN 4 */
-/**
-  * @brief  Compares two buffers.
-  * @param  pBuffer1, pBuffer2: buffers to be compared.
-  * @param  BufferLength: buffer's length
-  * @retval 0  : pBuffer1 identical to pBuffer2
-  *         >0 : pBuffer1 differs from pBuffer2
-  */
-static uint16_t Buffercmp(uint8_t* pBuffer1, uint8_t* pBuffer2, uint16_t BufferLength)
-{
-  while (BufferLength--)
-  {
-    if ((*pBuffer1) != *pBuffer2)
-    {
-      return BufferLength;
-    }
-    pBuffer1++;
-    pBuffer2++;
-  }
 
-  return 0;
+/* USER CODE BEGIN 4 */
+
+/**
+  * @brief IPCC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IPCC_Init(void)
+{
+
+  /* USER CODE BEGIN IPCC_Init 0 */
+
+  /* USER CODE END IPCC_Init 0 */
+
+  /* USER CODE BEGIN IPCC_Init 1 */
+
+  /* USER CODE END IPCC_Init 1 */
+  hipcc.Instance = IPCC;
+  if (HAL_IPCC_Init(&hipcc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IPCC_Init 2 */
+
+  /* USER CODE END IPCC_Init 2 */
+
 }
 
 /**

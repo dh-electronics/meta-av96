@@ -53,6 +53,7 @@ VL53L0X::VL53L0X(bool ioMode2v8, const uint8_t address) {
 
 void VL53L0X::initialize() {
 	this->initHardware();
+	this->initialized = true;
 }
 
 void VL53L0X::powerOn() {

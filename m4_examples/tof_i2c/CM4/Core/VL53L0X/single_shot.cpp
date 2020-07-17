@@ -6,18 +6,29 @@
  */
 
 #include "VL53L0X.hpp"
+#include "stm32mp1xx_hal.h"
+
+static VL53L0X sensor;
 
 extern "C" int single_shot( uint16_t *p_dst ) {
 	int ret = -1;
-	VL53L0X sensor;
+	int retry = 3;
 
 	if ( p_dst != NULL ) {
 		try {
-			sensor.initialize();
-			sensor.setTimeout(200);
-			*p_dst = sensor.readRangeSingleMillimeters();
-			if ( !sensor.timeoutOccurred() )
-				ret = 0;
+			if ( !sensor.initialized ) {
+				sensor.initialize();
+				sensor.setTimeout(200);
+			}
+
+			while ( retry-- > 0 ) {
+				*p_dst = sensor.readRangeSingleMillimeters();
+				if ( !sensor.timeoutOccurred() ) {
+					ret = 0;
+					break;
+				}
+				HAL_Delay( 100 );
+			}
 		}
 		catch (...)
 		{
