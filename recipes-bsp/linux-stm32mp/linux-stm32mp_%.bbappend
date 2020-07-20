@@ -12,6 +12,7 @@ SRC_URI += "file://0001-linux-av96-devicetree.patch \
         file://0010-media-ov5640-add-the-support-of-the-auto-focus.patch \
         file://0011-dts-av96-merge-stm32mp157a-av96.dts-into-stm32mp157a.patch \
         file://0012-dts-av96-add-the-stm32mp157a-av96-ov5640.dts-file.patch \
+        file://0013-dts-m4-sensor.patch \
         "
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
