@@ -1,50 +1,10 @@
-
-/**
-  ******************************************************************************
-  * @file    main.c
-  * @author  MCD Application Team
-  * @brief   Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy;  Copyright (c) 2019 STMicroelectronics. 
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the 
-  * License. You may obtain a copy of the License at:
-  *                       opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "openamp.h"
 
-/* USER CODE BEGIN Includes */
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* Uncomment this line to use the board as master, if not it is used as slave */
-//#define MASTER_BOARD
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 #define MAX_BUFFER_SIZE RPMSG_BUFFER_SIZE
 
-void Error_Handler(void);
 
-/* Private variables ---------------------------------------------------------*/
 IPCC_HandleTypeDef hipcc;
 I2C_HandleTypeDef hi2c1;
 VIRT_UART_HandleTypeDef virtUART0;
@@ -53,13 +13,10 @@ __IO FlagStatus VirtUart0RxMsg = RESET;
 uint8_t VirtUart0ChannelBuffRx[MAX_BUFFER_SIZE];
 uint16_t VirtUart0ChannelRxSize = 0;
 
-/* USER CODE BEGIN PV */
-/* Buffer used for transmission */
 char tx_buf[ MAX_BUFFER_SIZE ];
 
-/* USER CODE END PV */
 
-/* Private function prototypes -----------------------------------------------*/
+void Error_Handler(void);
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
@@ -68,76 +25,59 @@ static void MX_IPCC_Init(void);
 int MX_OPENAMP_Init(int RPMsgRole, rpmsg_ns_bind_cb ns_bind_cb);
 void virt_UART0_cb0(VIRT_UART_HandleTypeDef *huart);
 
-/* USER CODE BEGIN PFP */
-/* Private function prototypes -----------------------------------------------*/
 
-/* USER CODE END PFP */
-
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
+/**
+ * polling version of i2c_write() - it waits in an endless loop for
+ * the transfer to complete
+ */
 int i2c_write( uint16_t addr, uint8_t *p_buf, int len )
 {
 	int ret = 0;
 
 	if(HAL_I2C_Master_Transmit_IT(&hi2c1, addr << 1, p_buf, len)!= HAL_OK)
 	{
-		/* Error_Handler() function is called when error occurs. */
 		Error_Handler();
 	}
 
-	/*##- Wait for the end of the transfer #################################*/
-	/*  Before starting a new communication transfer, you need to check the current
-		state of the peripheral; if it’s busy you need to wait for the end of current
-		transfer before starting a new one.
-		For simplicity reasons, this example is just waiting till the end of the
-		transfer, but application may perform other tasks while transfer operation
-		is ongoing. */
 	while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
 	{
 	}
 
+	/* see if target device ACKed */
 	if (HAL_I2C_GetError(&hi2c1) == HAL_I2C_ERROR_AF)
 		ret = -1;
 
 	return ret;
 }
 
+/**
+ * polling version of i2c_read() - it waits in an endless loop for
+ * the transfer to complete
+ */
 int i2c_read( uint16_t addr, uint8_t *p_buf, int len )
 {
 	int ret = 0;
 
 	if(HAL_I2C_Master_Receive_IT(&hi2c1, addr << 1, p_buf, len)!= HAL_OK)
 	{
-		/* Error_Handler() function is called when error occurs. */
 		Error_Handler();
 	}
 
-	/*##- Wait for the end of the transfer #################################*/
-	/*  Before starting a new communication transfer, you need to check the current
-		state of the peripheral; if it’s busy you need to wait for the end of current
-		transfer before starting a new one.
-		For simplicity reasons, this example is just waiting till the end of the
-		transfer, but application may perform other tasks while transfer operation
-		is ongoing. */
 	while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
 	{
 	}
 
+	/* see if target device ACKed */
 	if (HAL_I2C_GetError(&hi2c1) == HAL_I2C_ERROR_AF)
 		ret = -1;
 
 	return ret;
 }
 
+
+/* external function in single_shot.cpp */
 int single_shot( uint16_t *p_dst );
 
-/**
-  * @brief  The application entry point.
-  *
-  * @retval None
-  */
 
 
 enum SEND_STATE {
@@ -146,52 +86,41 @@ enum SEND_STATE {
 	STOPPED,
 	EXIT
 };
+
+/* send_state is our main state variable */
 static int send_state;
 
-static volatile int run = 0;
+static volatile int run = 1;
+
 
 int main(void)
 {
 	uint16_t dst_mm;
 
-  /* USER CODE BEGIN 1 */
-  /* USER CODE END 1 */
-
-  /* MCU Configuration----------------------------------------------------------*/
-
   /* Reset of all peripherals, Initialize the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
   if(IS_ENGINEERING_BOOT_MODE())
   {
-    /* Configure the system clock */
-    SystemClock_Config();
-    run = 1;
+	/* this code requires production mode */
+    Error_Handler( );
   }
-  /* USER CODE END Init */
 
   while( !run ) {
   }
 
-  /*HW semaphore Clock enable*/
   __HAL_RCC_HSEM_CLK_ENABLE();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
-  /* USER CODE BEGIN 2 */
 
   /* IPCC initialisation */
   MX_IPCC_Init();
-  /* OpenAmp initialisation ---------------------------------*/
+  /* OpenAmp initialisation */
   MX_OPENAMP_Init(RPMSG_REMOTE, NULL);
 
-  /*init open amp tty*/
+  /* let's set up a single virtual UART */
   /* virtUART0 initialization and cb association*/
   if (VIRT_UART_Init(&virtUART0) != VIRT_UART_OK)
   {
@@ -204,12 +133,20 @@ int main(void)
   }
 
 
+  /**
+   * now we wait for the host to send a valid command
+   * the M4 side can't use the channel while the host didn't initialize it
+   */
   while ( send_state == IDLE )
     OPENAMP_check_for_message();
 
+  /**
+   * main loop
+   */
   while ( send_state != EXIT ) {
 	  OPENAMP_check_for_message();
 
+	  /* in "STARTED" state we send out a ToF distance value every 500ms */
 	  if ( send_state == STARTED ) {
 		  if( single_shot( &dst_mm ) )
 			  break;
@@ -232,6 +169,7 @@ int main(void)
  */
 void virt_UART0_cb0(VIRT_UART_HandleTypeDef *huart)
 {
+  /* let's evaluate the received string */
   if ( !strncmp( (char *)huart->pRxBuffPtr, "START\n", MAX_BUFFER_SIZE - 1 ) ||
 		  !strncmp( (char *)huart->pRxBuffPtr, "START", MAX_BUFFER_SIZE - 1 ) )
 	  send_state = STARTED;
@@ -360,7 +298,7 @@ void SystemClock_Config(void)
   __HAL_RCC_RTC_HSEDIV(24);
 }
 
-/* I2C5 init function */
+/* I2C1 init function */
 static void MX_I2C1_Init(void)
 {
 
@@ -397,56 +335,23 @@ static void MX_I2C1_Init(void)
   HAL_I2CEx_EnableFastModePlus(I2C_FASTMODEPLUS_I2C1);
 }
 
-/** Configure pins as 
-        * Analog 
-        * Input 
-        * Output
-        * EVENT_OUT
-        * EXTI
-     USB_DM1   ------> USBH_HS1_DM
-     USB_DP1   ------> USBH_HS1_DP
-*/
 static void MX_GPIO_Init(void)
 {
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOG_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOI_CLK_ENABLE();
 }
-
-/* USER CODE BEGIN 4 */
 
 /**
   * @brief IPCC Initialization Function
-  * @param None
-  * @retval None
   */
 static void MX_IPCC_Init(void)
 {
-
-  /* USER CODE BEGIN IPCC_Init 0 */
-
-  /* USER CODE END IPCC_Init 0 */
-
-  /* USER CODE BEGIN IPCC_Init 1 */
-
-  /* USER CODE END IPCC_Init 1 */
   hipcc.Instance = IPCC;
   if (HAL_IPCC_Init(&hipcc) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN IPCC_Init 2 */
-
-  /* USER CODE END IPCC_Init 2 */
-
 }
 
 /**
@@ -456,19 +361,11 @@ static void MX_IPCC_Init(void)
   *         you can add your own implementation. 
   * @retval None
   */
-#ifdef MASTER_BOARD
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *I2cHandle)
 {
   /* Toggle LED7: Transfer in transmission process is correct */
   /* BSP_LED_Toggle(LED7); */
 }
-#else
-void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *I2cHandle)
-{
-  /* Toggle LED7: Transfer in transmission process is correct */
-  /* BSP_LED_Toggle(LED7); */
-}
-#endif /* MASTER_BOARD */
 
 /**
   * @brief  Rx Transfer completed callback.
@@ -477,19 +374,11 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *I2cHandle)
   *         you can add your own implementation.
   * @retval None
   */
-#ifdef MASTER_BOARD
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *I2cHandle)
 {
   /* Toggle LED7: Transfer in reception process is correct */
   /* BSP_LED_Toggle(LED7); */
 }
-#else
-void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *I2cHandle)
-{
-  /* Toggle LED7: Transfer in reception process is correct */
-  /* BSP_LED_Toggle(LED7); */
-}
-#endif /* MASTER_BOARD */
 
 /**
   * @brief  I2C error callbacks.
@@ -510,8 +399,6 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *I2cHandle)
   }
 }
 
-/* USER CODE END 4 */
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  file: The file name as string.
@@ -520,40 +407,9 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *I2cHandle)
   */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* Error if LED7 is slowly blinking (1 sec. period) */
   while(1)
   {    
-    /* BSP_LED_Toggle(LED7); */
     HAL_Delay(1000);
   } 
-  /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t* file, uint32_t line)
-{ 
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-    ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  Error_Handler();
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
