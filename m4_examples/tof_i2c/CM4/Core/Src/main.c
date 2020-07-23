@@ -4,6 +4,8 @@
 
 #define MAX_BUFFER_SIZE RPMSG_BUFFER_SIZE
 
+#define ADT7410_ADDR   0x48
+
 
 IPCC_HandleTypeDef hipcc;
 I2C_HandleTypeDef hi2c1;
@@ -13,7 +15,7 @@ __IO FlagStatus VirtUart0RxMsg = RESET;
 uint8_t VirtUart0ChannelBuffRx[MAX_BUFFER_SIZE];
 uint16_t VirtUart0ChannelRxSize = 0;
 
-char tx_buf[ MAX_BUFFER_SIZE ];
+char tx_buf[ 256 ];
 
 
 void Error_Handler(void);
@@ -76,7 +78,7 @@ int i2c_read( uint16_t addr, uint8_t *p_buf, int len )
 
 
 /* external function in single_shot.cpp */
-int single_shot( uint16_t *p_dst );
+int read_tof( uint16_t *p_dst );
 
 
 
@@ -90,12 +92,47 @@ enum SEND_STATE {
 /* send_state is our main state variable */
 static int send_state;
 
-static volatile int run = 1;
+static volatile int run = 0;
+
+uint8_t adt7410_init[] = { 0x03, 0x80 };
+
+/**
+ * read temperature value from ADT7410 sensor
+ */
+int read_temp( uint16_t *p_dst )
+{
+	static int temp_initialized = 0;
+	int ret = 0;
+	uint8_t resp[ 2 ];
+
+	if ( p_dst == NULL )
+		ret = 1;
+
+	if ( !ret && !temp_initialized ) {
+		ret = i2c_write( ADT7410_ADDR, adt7410_init, 2 );
+		if ( !ret )
+			temp_initialized = 1;
+		HAL_Delay( 100 );
+	}
+
+	if ( !ret ) {
+		resp[ 0 ] = 0;
+		ret = i2c_write( ADT7410_ADDR, resp, 1 );
+	}
+
+	if ( !ret ) {
+		ret = i2c_read( ADT7410_ADDR, resp, 2 );
+		if ( !ret )
+			*p_dst = ( (uint16_t )resp[0] << 8 ) + resp[1];
+	}
+
+	return ret;
+}
 
 
 int main(void)
 {
-	uint16_t dst_mm;
+	uint16_t dst_mm, temp;
 
   /* Reset of all peripherals, Initialize the Systick. */
   HAL_Init();
@@ -148,10 +185,13 @@ int main(void)
 
 	  /* in "STARTED" state we send out a ToF distance value every 500ms */
 	  if ( send_state == STARTED ) {
-		  if( single_shot( &dst_mm ) )
+		  if( read_tof( &dst_mm ) )
 			  break;
 
-		  sprintf( tx_buf, "%i\n", dst_mm );
+		  if ( read_temp( &temp ) )
+			  break;
+
+		  sprintf( tx_buf, "%i %.2f\n", (int )dst_mm, (float )temp / 128.0 );
 		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
 		  HAL_Delay( 500 );
 	  }
