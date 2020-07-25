@@ -7,8 +7,6 @@
 #define COUNTOF(__BUFFER__)   (sizeof(__BUFFER__) / sizeof(*(__BUFFER__)))
 
 #define DEFAULT_IRQ_PRIO      1U
-#define I2C_ADDRESS ( 0x29 << 1 )
-
 
 #define TXBUFFERSIZE                      (COUNTOF(aTxBuffer) - 1)
 #define RXBUFFERSIZE                      TXBUFFERSIZE

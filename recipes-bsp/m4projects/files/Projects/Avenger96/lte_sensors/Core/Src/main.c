@@ -1,6 +1,8 @@
 #include "main.h"
 #include "openamp.h"
 
+#include "sens_adux1020.h"
+
 
 #define MAX_BUFFER_SIZE RPMSG_BUFFER_SIZE
 
@@ -127,12 +129,13 @@ enum SEND_STATE {
 static int send_state;
 
 /* dirty trick to emulate breakpoint in main() */
-static volatile int run = 1;
+static volatile int run = 0;
 
 
 int main(void)
 {
-	uint16_t dst_mm, temp;
+  uint16_t dst_mm, temp;
+  adux1020_data  proxy_data;
 
   /* Reset of all peripherals, Initialize the Systick. */
   HAL_Init();
@@ -185,13 +188,19 @@ int main(void)
 
 	  /* in "STARTED" state we send out a ToF distance value every 500ms */
 	  if ( send_state == STARTED ) {
+		  if( adux1020_read( &proxy_data ) )
+			  break;
+
 		  if( read_tof( &dst_mm ) )
 			  break;
 
 		  if ( read_temp( &temp ) )
 			  break;
 
-		  sprintf( tx_buf, "%i %.2f\n", (int )dst_mm, (float )temp / 128.0 );
+		  sprintf( tx_buf, "tof:%i temp:%.2f x1:%i y1: %i x2:%i y2:%i i:%i x:%i y:%i\n",
+				  (int )dst_mm, (float )temp / 128.0,
+				  proxy_data.x1, proxy_data.y1, proxy_data.x2, proxy_data.y2,
+				  proxy_data.i, proxy_data.x, proxy_data.y );
 		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
 		  HAL_Delay( 500 );
 	  }
