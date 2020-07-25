@@ -5,8 +5,8 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://0001-m4-build.patch;patchdir=${WORKDIR}"
 
-SRC_URI += "file://Projects/Avenger96/lte_sensors/RemoteProc/README;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/RemoteProc/fw_cortex_m4.sh;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/Remoteproc/README;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/Remoteproc/fw_cortex_m4.sh;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Src/lock_resource.c;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Src/syscalls.c;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Src/sysmem.c;subdir=git"
@@ -41,5 +41,15 @@ SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/.cpro
 SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/lte_sensors_Debug.cfg;subdir=git"
 
 do_compile_prepend() {
-    lnr ${S}/Projects/Avenger96/lte_sensors/STM32CubeIDE ${S}/Projects/Avenger96/lte_sensors/SW4STM32
+    if [ ! -x "${S}/Projects/Avenger96/lte_sensors/SW4STM32" ]; then
+        lnr ${S}/Projects/Avenger96/lte_sensors/STM32CubeIDE ${S}/Projects/Avenger96/lte_sensors/SW4STM32
+    fi
 }
+
+do_install_append() {
+    install -d ${D}/home/root
+    lnr ${D}/usr/local/Cube-M4-examples/Avenger96/lte_sensors/fw_cortex_m4.sh ${D}/home/root/fw_cortex_m4.sh
+}
+
+FILES_${PN} += "/home/root"
+
