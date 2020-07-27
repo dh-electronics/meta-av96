@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #ifndef __SENS_ADUX1020
 #define __SENS_ADUX1020
 

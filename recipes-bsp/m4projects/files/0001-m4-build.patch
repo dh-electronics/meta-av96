@@ -1,6 +1,6 @@
-diff -Naurw ./Makefile.stm32 ../1.2.0-r0/Makefile.stm32
---- ./Makefile.stm32	2020-07-24 17:42:20.052352203 +0200
-+++ ../1.2.0-r0/Makefile.stm32	2020-07-24 18:49:41.673794292 +0200
+diff -Naurw ./Makefile.stm32 ../1.2.0-r0.new/Makefile.stm32
+--- ./Makefile.stm32	2020-07-26 10:54:26.565746296 +0200
++++ ../1.2.0-r0.new/Makefile.stm32	2020-07-27 14:28:43.311681975 +0200
 @@ -1,4 +1,5 @@
  CC := $(CROSS_COMPILE)gcc
 +CPP := $(CROSS_COMPILE)g++
@@ -43,15 +43,15 @@ diff -Naurw ./Makefile.stm32 ../1.2.0-r0/Makefile.stm32
  	@cp $@.sym $@
  	@$(STRIP) -g $@
  	@$(SIZE) $@
-diff -Naurw ./parse_project_config.py ../1.2.0-r0/parse_project_config.py
---- ./parse_project_config.py	2020-07-24 17:42:20.052352203 +0200
-+++ ../1.2.0-r0/parse_project_config.py	2020-07-24 18:49:48.297516890 +0200
+diff -Naurw ./parse_project_config.py ../1.2.0-r0.new/parse_project_config.py
+--- ./parse_project_config.py	2020-07-26 10:54:26.565746296 +0200
++++ ../1.2.0-r0.new/parse_project_config.py	2020-07-27 14:28:43.311681975 +0200
 @@ -92,7 +92,7 @@
  		#print "text:"+a.text
  		temp=a.text
  
 -		if ((temp.find(".txt")==-1) & (temp.find(".gdb")==-1) & (temp.find(".launch")==-1) & (temp.find(".sh")==-1) & (temp.find("README")==-1)):
-+		if ((temp.find(".txt")==-1) & (temp.find(".gdb")==-1) & (temp.find(".launch")==-1) & (temp.find(".sh")==-1) & (temp.find("README")==-1) & (temp.find(".cpp")==-1)):
++		if (temp.find(".c")==(len(temp) - 2)):
  			temp=temp.replace("PARENT-1-PROJECT_LOC/", "../")
  			temp=temp.replace("PARENT-2-PROJECT_LOC/", "../../")
  			temp=temp.replace("PARENT-3-PROJECT_LOC/", "../../../")
@@ -85,7 +85,7 @@ diff -Naurw ./parse_project_config.py ../1.2.0-r0/parse_project_config.py
 +                #print "text:"+a.text
 +                temp=a.text
 +
-+                if (temp.find(".cpp")!=-1):
++                if (temp.find(".cpp")==(len(temp) - 4)):
 +                        temp=temp.replace("PARENT-1-PROJECT_LOC/", "../")
 +                        temp=temp.replace("PARENT-2-PROJECT_LOC/", "../../")
 +                        temp=temp.replace("PARENT-3-PROJECT_LOC/", "../../../")

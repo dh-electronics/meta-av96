@@ -129,7 +129,7 @@ enum SEND_STATE {
 static int send_state;
 
 /* dirty trick to emulate breakpoint in main() */
-static volatile int run = 0;
+static volatile int run = 1;
 
 
 int main(void)
