@@ -51,7 +51,7 @@ diff -Naurw ./parse_project_config.py ../1.2.0-r0.new/parse_project_config.py
  		temp=a.text
  
 -		if ((temp.find(".txt")==-1) & (temp.find(".gdb")==-1) & (temp.find(".launch")==-1) & (temp.find(".sh")==-1) & (temp.find("README")==-1)):
-+		if (temp.find(".c")==(len(temp) - 2)):
++		if ((temp.find(".c")==(len(temp) - 2)) | (temp.find(".s")==(len(temp) - 2))):
  			temp=temp.replace("PARENT-1-PROJECT_LOC/", "../")
  			temp=temp.replace("PARENT-2-PROJECT_LOC/", "../../")
  			temp=temp.replace("PARENT-3-PROJECT_LOC/", "../../../")
