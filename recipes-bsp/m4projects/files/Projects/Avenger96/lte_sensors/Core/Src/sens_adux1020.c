@@ -2,9 +2,6 @@
 #include "sens_adux1020.h"
 
 
-int i2c_write( uint16_t addr, uint8_t *p_buf, int len );
-int i2c_read( uint16_t addr, uint8_t *p_buf, int len );
-
 static int initted = 0;
 
 static uint8_t init_array[][3] = {
@@ -95,7 +92,7 @@ static int read_reg16( uint8_t addr, uint16_t *p_reg )
 int adux1020_read( adux1020_data *p_data ) {
 	int ret = 0;
 
-	if ( !ret ) {
+	if ( !initted ) {
 		ret = proximity_init( );
 		if (!ret)
 			initted = 1;

@@ -2,7 +2,7 @@
 #include "openamp.h"
 
 #include "sens_adux1020.h"
-
+#include "sens_bno055.h"
 
 #define MAX_BUFFER_SIZE RPMSG_BUFFER_SIZE
 
@@ -136,6 +136,7 @@ int main(void)
 {
   uint16_t dst_mm, temp;
   adux1020_data  proxy_data;
+  bno055_data angle_data;
 
   /* Reset of all peripherals, Initialize the Systick. */
   HAL_Init();
@@ -188,6 +189,9 @@ int main(void)
 
 	  /* in "STARTED" state we send out a ToF distance value every 500ms */
 	  if ( send_state == STARTED ) {
+		  if( bno055_read( &angle_data ) )
+			  break;
+
 		  if( adux1020_read( &proxy_data ) )
 			  break;
 
@@ -197,11 +201,26 @@ int main(void)
 		  if ( read_temp( &temp ) )
 			  break;
 
-		  sprintf( tx_buf, "tof:%i temp:%.2f x1:%i y1: %i x2:%i y2:%i i:%i x:%i y:%i\n",
-				  (int )dst_mm, (float )temp / 128.0,
+		  sprintf( tx_buf, "tof:%5i  temp:%.2f\n", (int )dst_mm, (float )temp / 128.0 );
+		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+
+		  sprintf( tx_buf, "proxy %5i %5i %5i %5i %5i %5i %5i\n",
 				  proxy_data.x1, proxy_data.y1, proxy_data.x2, proxy_data.y2,
 				  proxy_data.i, proxy_data.x, proxy_data.y );
 		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+
+		  sprintf( tx_buf, "acc %5i %5i %5i\n",
+				  angle_data.acc_x, angle_data.acc_y, angle_data.acc_z );
+		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+
+		  sprintf( tx_buf, "mag %5i %5i %5i\n",
+				  angle_data.mag_x, angle_data.mag_y, angle_data.mag_z );
+		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+
+		  sprintf( tx_buf, "gyr %5i %5i %5i\n",
+				  angle_data.gyr_x, angle_data.gyr_y, angle_data.gyr_z );
+		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+
 		  HAL_Delay( 500 );
 	  }
   }

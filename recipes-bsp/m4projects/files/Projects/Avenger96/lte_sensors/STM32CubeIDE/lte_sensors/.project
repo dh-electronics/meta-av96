@@ -53,6 +53,16 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Core/Inc/sens_adux1020.h</locationURI>
 		</link>
 		<link>
+			<name>User/sens_bno055.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Core/Src/sens_bno055.c</locationURI>
+		</link>
+		<link>
+			<name>User/sens_bno055.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Core/Inc/sens_bno055.h</locationURI>
+		</link>
+		<link>
 			<name>Core/Src/lock_resource.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Core/Src/lock_resource.c</locationURI>

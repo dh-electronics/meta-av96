@@ -15,6 +15,10 @@
 #ifdef __cplusplus
  extern "C" {
 #endif
+
+int i2c_write( uint16_t addr, uint8_t *p_buf, int len );
+int i2c_read( uint16_t addr, uint8_t *p_buf, int len );
+
 #ifdef __cplusplus
 }
 #endif
