@@ -190,7 +190,7 @@
 		<link>
 			<name>User/VL530LX/VL53L0X.cpp</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/Core/VL53L0X/VL53L0X.cpp</locationURI>
+			<locationURI>PARENT-5-PROJECT_LOC/vl53l0x/VL53L0X.cpp</locationURI>
 		</link>
 		<link>
 			<name>User/VL530LX/single_shot.cpp</name>

@@ -3,7 +3,11 @@ M4_BOARDS = "Avenger96"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+SRC_URI += "git://github.com/mjbogusz/vl53l0x-linux;protocol=https;name=vl53l0x;destsuffix=git/vl53l0x"
+SRCREV_vl53l0x="61f0e9adb25f7bbbf09127c08497c6b019ba07a9"
+
 SRC_URI += "file://0001-m4-build.patch;patchdir=${WORKDIR}"
+SRC_URI += "file://0002-vl53l0x.patch;patchdir=${S}/vl53l0x"
 
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Remoteproc/README;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Remoteproc/fw_cortex_m4.sh;subdir=git"
@@ -33,11 +37,7 @@ SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Inc/lock_resource.h;subdi
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Inc/openamp_log.h;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Inc/openamp_conf.h;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/single_shot.cpp;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/VL53L0X.cpp;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/I2Cdev.cpp;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/VL53L0X_defines.hpp;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/I2Cdev.hpp;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/VL53L0X.hpp;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/lte_sensors_Debug.launch;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/STM32MP157AACX_RAM.ld;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/.project;subdir=git"
