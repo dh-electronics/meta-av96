@@ -17,7 +17,7 @@ __IO FlagStatus VirtUart0RxMsg = RESET;
 uint8_t VirtUart0ChannelBuffRx[MAX_BUFFER_SIZE];
 uint16_t VirtUart0ChannelRxSize = 0;
 
-char tx_buf[ 256 ];
+char tx_buf[ MAX_BUFFER_SIZE ];
 
 
 void Error_Handler(void);
@@ -201,24 +201,39 @@ int main(void)
 		  if ( read_temp( &temp ) )
 			  break;
 
-		  sprintf( tx_buf, "tof:%5i  temp:%.2f\n", (int )dst_mm, (float )temp / 128.0 );
-		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+		  /* put together json block */
+		  sprintf( tx_buf, "{\n  tof: \"%i\",\n", (int )dst_mm );
+		  sprintf( tx_buf + strlen(tx_buf), "  temp: \"%.2f\",\n", (float )temp / 128.0 );
 
-		  sprintf( tx_buf, "proxy %5i %5i %5i %5i %5i %5i %5i\n",
-				  proxy_data.x1, proxy_data.y1, proxy_data.x2, proxy_data.y2,
-				  proxy_data.i, proxy_data.x, proxy_data.y );
-		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+		  strcat( tx_buf, "  proxy: {\n" );
+		  sprintf( tx_buf + strlen(tx_buf), "    x1: \"%i\",\n", proxy_data.x1 );
+		  sprintf( tx_buf + strlen(tx_buf), "    y1: \"%i\",\n", proxy_data.y1 );
+		  sprintf( tx_buf + strlen(tx_buf), "    x2: \"%i\",\n", proxy_data.x2 );
+		  sprintf( tx_buf + strlen(tx_buf), "    y2: \"%i\",\n", proxy_data.y2 );
+		  sprintf( tx_buf + strlen(tx_buf), "    i: \"%i\",\n", proxy_data.i );
+		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", proxy_data.x );
+		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", proxy_data.y );
+		  strcat( tx_buf, "  },\n" );
 
-		  sprintf( tx_buf, "acc %5i %5i %5i\n",
-				  angle_data.acc_x, angle_data.acc_y, angle_data.acc_z );
-		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+		  strcat( tx_buf, "  acc: {\n" );
+		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", angle_data.acc_x );
+		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", angle_data.acc_y );
+		  sprintf( tx_buf + strlen(tx_buf), "    z: \"%i\",\n", angle_data.acc_z );
+		  strcat( tx_buf, "  },\n" );
 
-		  sprintf( tx_buf, "mag %5i %5i %5i\n",
-				  angle_data.mag_x, angle_data.mag_y, angle_data.mag_z );
-		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+		  strcat( tx_buf, "  mag: {\n" );
+		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", angle_data.mag_x );
+		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", angle_data.mag_y );
+		  sprintf( tx_buf + strlen(tx_buf), "    z: \"%i\",\n", angle_data.mag_z );
+		  strcat( tx_buf, "  },\n" );
 
-		  sprintf( tx_buf, "gyr %5i %5i %5i\n",
-				  angle_data.gyr_x, angle_data.gyr_y, angle_data.gyr_z );
+		  strcat( tx_buf, "  gyr: {\n" );
+		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", angle_data.gyr_x );
+		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", angle_data.gyr_y );
+		  sprintf( tx_buf + strlen(tx_buf), "    z: \"%i\",\n", angle_data.gyr_z );
+		  strcat( tx_buf, "  },\n" );
+
+		  strcat( tx_buf, "}\n" );
 		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
 
 		  HAL_Delay( 500 );
