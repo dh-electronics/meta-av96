@@ -137,6 +137,8 @@ int main(void)
   uint16_t dst_mm, temp;
   adux1020_data  proxy_data;
   bno055_data angle_data;
+  float fi_x, fi_y;
+  int intensity;
 
   /* Reset of all peripherals, Initialize the Systick. */
   HAL_Init();
@@ -202,39 +204,53 @@ int main(void)
 			  break;
 
 		  /* put together json block */
-		  sprintf( tx_buf, "{\n  tof: \"%i\",\n", (int )dst_mm );
-		  sprintf( tx_buf + strlen(tx_buf), "  temp: \"%.2f\",\n", (float )temp / 128.0 );
+		  sprintf( tx_buf, "{ \"tof\": %i,", (int )dst_mm );
+		  sprintf( tx_buf + strlen(tx_buf), " \"temp\": %.2f,", (float )temp / 128.0 );
 
-		  strcat( tx_buf, "  proxy: {\n" );
-		  sprintf( tx_buf + strlen(tx_buf), "    x1: \"%i\",\n", proxy_data.x1 );
-		  sprintf( tx_buf + strlen(tx_buf), "    y1: \"%i\",\n", proxy_data.y1 );
-		  sprintf( tx_buf + strlen(tx_buf), "    x2: \"%i\",\n", proxy_data.x2 );
-		  sprintf( tx_buf + strlen(tx_buf), "    y2: \"%i\",\n", proxy_data.y2 );
-		  sprintf( tx_buf + strlen(tx_buf), "    i: \"%i\",\n", proxy_data.i );
-		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", proxy_data.x );
-		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", proxy_data.y );
-		  strcat( tx_buf, "  },\n" );
+		  /* calculate angles and intensity according to AN-1419 */
+		  if ( proxy_data.x1 + proxy_data.x2 != 0 )
+			  fi_x = ( (float )( proxy_data.x1 - proxy_data.x2 ) / (float )( proxy_data.x1 + proxy_data.x2 ) ) / 3.14159265359 * 180;
+		  else
+			  fi_x = 0;
+		  if ( proxy_data.y1 + proxy_data.y2 != 0 )
+			  fi_y = ( (float )( proxy_data.y1 - proxy_data.y2 ) / (float )( proxy_data.y1 + proxy_data.y2 ) ) / 3.14159265359 * 180;
+		  else
+			  fi_y = 0;
+		  intensity = proxy_data.x1 + proxy_data.x2 + proxy_data.y1 + proxy_data.y2;
 
-		  strcat( tx_buf, "  acc: {\n" );
-		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", angle_data.acc_x );
-		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", angle_data.acc_y );
-		  sprintf( tx_buf + strlen(tx_buf), "    z: \"%i\",\n", angle_data.acc_z );
-		  strcat( tx_buf, "  },\n" );
+		  strcat( tx_buf, " \"proxy\": {" );
+		  sprintf( tx_buf + strlen(tx_buf), " \"x1\": %i,", proxy_data.x1 );
+		  sprintf( tx_buf + strlen(tx_buf), " \"y1\": %i,", proxy_data.y1 );
+		  sprintf( tx_buf + strlen(tx_buf), " \"x2\": %i,", proxy_data.x2 );
+		  sprintf( tx_buf + strlen(tx_buf), " \"y2\": %i,", proxy_data.y2 );
+		  sprintf( tx_buf + strlen(tx_buf), " \"i\": %i,", proxy_data.i );
+		  sprintf( tx_buf + strlen(tx_buf), " \"x\": %i,", proxy_data.x );
+		  sprintf( tx_buf + strlen(tx_buf), " \"y\": %i,", proxy_data.y );
+		  sprintf( tx_buf + strlen(tx_buf), " \"fi_x\": %.2f,", fi_x );
+		  sprintf( tx_buf + strlen(tx_buf), " \"fi_y\": %.2f,", fi_y );
+		  sprintf( tx_buf + strlen(tx_buf), " \"int\": %i", intensity );
+		  strcat( tx_buf, " }," );
 
-		  strcat( tx_buf, "  mag: {\n" );
-		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", angle_data.mag_x );
-		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", angle_data.mag_y );
-		  sprintf( tx_buf + strlen(tx_buf), "    z: \"%i\",\n", angle_data.mag_z );
-		  strcat( tx_buf, "  },\n" );
+		  strcat( tx_buf, " \"acc\": {" );
+		  sprintf( tx_buf + strlen(tx_buf), " \"x\": %i,", angle_data.acc_x );
+		  sprintf( tx_buf + strlen(tx_buf), " \"y\": %i,", angle_data.acc_y );
+		  sprintf( tx_buf + strlen(tx_buf), " \"z\": %i", angle_data.acc_z );
+		  strcat( tx_buf, " }," );
 
-		  strcat( tx_buf, "  gyr: {\n" );
-		  sprintf( tx_buf + strlen(tx_buf), "    x: \"%i\",\n", angle_data.gyr_x );
-		  sprintf( tx_buf + strlen(tx_buf), "    y: \"%i\",\n", angle_data.gyr_y );
-		  sprintf( tx_buf + strlen(tx_buf), "    z: \"%i\",\n", angle_data.gyr_z );
-		  strcat( tx_buf, "  },\n" );
+		  strcat( tx_buf, " \"mag\": {" );
+		  sprintf( tx_buf + strlen(tx_buf), " \"x\": %i,", angle_data.mag_x );
+		  sprintf( tx_buf + strlen(tx_buf), " \"y\": %i,", angle_data.mag_y );
+		  sprintf( tx_buf + strlen(tx_buf), " \"z\": %i", angle_data.mag_z );
+		  strcat( tx_buf, " }," );
 
-		  strcat( tx_buf, "}\n" );
-		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) + 1 );
+		  strcat( tx_buf, " \"gyr\": {" );
+		  sprintf( tx_buf + strlen(tx_buf), " \"x\": %i,", angle_data.gyr_x );
+		  sprintf( tx_buf + strlen(tx_buf), " \"y\": %i,", angle_data.gyr_y );
+		  sprintf( tx_buf + strlen(tx_buf), " \"z\": %i", angle_data.gyr_z );
+		  strcat( tx_buf, " }" );
+
+		  strcat( tx_buf, " }\n" );
+		  VIRT_UART_Transmit(&virtUART0, (uint8_t *)tx_buf, strlen(tx_buf) );
 
 		  HAL_Delay( 500 );
 	  }
