@@ -16,6 +16,7 @@ SRC_URI += "file://usr/bin/gldemo_start_stop.sh"
 SRC_URI += "file://usr/share/weston/icon/meld.png"
 SRC_URI += "file://lib/firmware/ap1302/on_ar1337_cdaf_dw9718.290520_01.bin"
 SRC_URI += "file://lib/firmware/ap1302/test_pattern.bin"
+SRC_URI += "file://home/root/v4l2_start.sh"
 
 do_install() {
     install -d ${D}${sysconfdir}/xdg/weston
@@ -26,6 +27,7 @@ do_install() {
     install -d ${D}${bindir}
     install -d ${D}${datadir}/weston/icon
     install -d ${D}${base_libdir}/firmware/ap1302
+    install -d ${D}/home/root
 
     install -m 755 ${WORKDIR}/etc/issue ${D}${sysconfdir}
     install -m 755 ${WORKDIR}/etc/xdg/weston/* ${D}${sysconfdir}/xdg/weston/
@@ -36,6 +38,7 @@ do_install() {
     install -m 755 ${WORKDIR}/usr/bin/* ${D}${bindir}
     install -m 755 ${WORKDIR}/usr/share/weston/icon/* ${D}${datadir}/weston/icon/
     install -m 755 ${WORKDIR}/lib/firmware/ap1302/* ${D}${base_libdir}/firmware/ap1302/
+    install -m 755 ${WORKDIR}/home/root/v4l2_start.sh ${D}/home/root/
 }
 
 FILES_${PN} += "${sysconfdir}"
@@ -47,5 +50,6 @@ FILES_${PN} += "${base_sbindir}"
 FILES_${PN} += "${bindir}"
 FILES_${PN} += "${datadir}/weston/icon"
 FILES_${PN} += "${base_libdir}/firmware/ap1302"
+FILES_${PN} += "/home/root"
 
 RDEPENDS_${PN} += "bash"
