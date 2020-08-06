@@ -13,6 +13,8 @@ SRC_URI += "file://0001-linux-av96-devicetree.patch \
         file://0011-dts-av96-merge-stm32mp157a-av96.dts-into-stm32mp157a.patch \
         file://0012-dts-av96-add-the-stm32mp157a-av96-ov5640.dts-file.patch \
         file://0013-dts-m4-sensor.patch \
+        file://0020-ap1302-dts.patch \
+        file://0021-ap1302-ar1337-fw.patch \
         "
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-06-brcmfmac.config"
@@ -21,6 +23,7 @@ KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-08-bt_sco.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-09-tpm.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-10-usb_ftdi.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-11-st_mipid02.config"
+KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/4.19/fragment-12-ap1302.config"
 
 SRC_URI += "file://fragment-06-brcmfmac.config;subdir=fragments/4.19"
 SRC_URI += "file://fragment-07-hdmi.config;subdir=fragments/4.19"
@@ -28,3 +31,4 @@ SRC_URI += "file://fragment-08-bt_sco.config;subdir=fragments/4.19"
 SRC_URI += "file://fragment-09-tpm.config;subdir=fragments/4.19"
 SRC_URI += "file://fragment-10-usb_ftdi.config;subdir=fragments/4.19"
 SRC_URI += "file://fragment-11-st_mipid02.config;subdir=fragments/4.19"
+SRC_URI += "file://fragment-12-ap1302.config;subdir=fragments/4.19"
