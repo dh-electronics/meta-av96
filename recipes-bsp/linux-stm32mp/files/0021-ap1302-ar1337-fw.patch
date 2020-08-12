@@ -1,7 +1,7 @@
 diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
 --- ./drivers/media/i2c/ap1302.c	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-08-06 14:12:49.180029195 +0200
-@@ -0,0 +1,2046 @@
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-08-12 17:34:32.726626504 +0200
+@@ -0,0 +1,2118 @@
 +/*
 + * Copyright (C) 2020 Arrow Electronics
 + * Author: Botond Kardos
@@ -37,9 +37,19 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +
 +#define AP1302_DBG_CONSOLE_OUTPUT   0
++#define AP1302_TRACE_LOG            0
++
++#if AP1302_DBG_CONSOLE_OUTPUT
++ #define DBG_PRINT  printk
++#else
++ #define DBG_PRINT
++#endif
 +
 +#define AP1302_FW_TEST    "ap1302/test_pattern.bin"
 +#define AP1302_FW_NORMAL  "ap1302/on_ar1337_cdaf_dw9718.290520_01.bin"
++
++#define AP1302_EXP_TIME_DEFAULT         4000
++#define AP1302_EXP_TIME_MAX             100000
 +
 +/* min/typical/max system clock (xclk) frequencies */
 +#define AP1302_XCLK_MIN 24000000
@@ -74,6 +84,9 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +#define AP1302_REG_ORIENTATION  		0x100c
 +
 +#define AP1302_REG_PREVIEW_MAX_FPS 		0x2020
++
++#define AP1302_REG_AE_CTRL				0x5002
++#define AP1302_REG_AE_MANUAL_EXP_TIME	0x500c
 +
 +#define AP1302_REG_BOOTDATA_STAGE       0x6002
 +#define AP1302_REG_SENSOR_SELECT		0x600c
@@ -110,6 +123,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	AP1302_15_FPS,
 +	AP1302_24_FPS,
 +	AP1302_30_FPS,
++	AP1302_60_FPS,
 +	AP1302_NUM_FRAMERATES,
 +};
 +
@@ -137,6 +151,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	[AP1302_15_FPS] = 15,
 +	[AP1302_24_FPS] = 24,
 +	[AP1302_30_FPS] = 30,
++	[AP1302_60_FPS] = 60,
 +};
 +
 +/* regulator supplies */
@@ -175,6 +190,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct v4l2_ctrl *vflip;
 +	int vflip_value;
 +	struct v4l2_ctrl *link_freq;
++	struct v4l2_ctrl *auto_exp;
++	struct v4l2_ctrl *exposure;
 +};
 +
 +struct ap1302_dev {
@@ -212,7 +229,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	u32 ae_low, ae_high, ae_target;
 +
 +	u8 tmp_buf[ AP1302_TMP_BUF_SIZE ];
-+#if AP1302_DBG_CONSOLE_OUTPUT
++#if AP1302_DBG_CONSOLE_OUTPUT && AP1302_TRACE_LOG
 +	u8 dbg_buf1[ 512 ];
 +	u8 dbg_buf2[ 512 ];
 +#endif
@@ -435,6 +452,20 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	return ap1302_write_buf( sensor, buf, sizeof( buf ) );
 +}
 +
++static int ap1302_write_reg32(struct ap1302_dev *sensor, u16 reg, u32 val)
++{
++	u8 buf[ 6 ];
++
++	buf[ 0 ] = reg >> 8;
++	buf[ 1 ] = reg & 0xff;
++	buf[ 2 ] = val >> 24;
++	buf[ 3 ] = ( val >> 16 ) & 0xff;
++	buf[ 4 ] = ( val >> 8 ) & 0xff;
++	buf[ 5 ] = val & 0xff;
++
++	return ap1302_write_buf( sensor, buf, sizeof( buf ) );
++}
++
 +static int ap1302_mod_reg(struct ap1302_dev *sensor, u16 reg,
 +			  u8 mask, u8 val)
 +{
@@ -484,14 +515,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	    (!nearest && (mode->hact != width || mode->vact != height)))
 +		return NULL;
 +
-+	printk( KERN_ALERT "**** %s %i   h: %i   v: %i\n", __func__, (int )__LINE__, mode->hact, mode->vact );
++	DBG_PRINT( KERN_ALERT "**** %s %i   h: %i   v: %i\n", __func__, (int )__LINE__, mode->hact, mode->vact );
 +	return mode;
 +}
 +
 +
 +static void ap1302_power(struct ap1302_dev *sensor, bool enable)
 +{
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	gpiod_set_value_cansleep(sensor->pwdn_gpio, enable ? 0 : 1);
 +}
@@ -503,7 +534,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	gpiod_set_value_cansleep(sensor->reset_gpio, 0);
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	/* camera power cycle */
 +	ap1302_power(sensor, false);
@@ -523,7 +554,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct i2c_client *client = sensor->i2c_client;
 +	int ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	ret = clk_prepare_enable(sensor->xclk);
 +	if (ret) {
@@ -622,6 +653,32 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	return ret;
 +}
 +
++static int ap1302_set_ctrl_auto_exp(struct ap1302_dev *sensor, int value)
++{
++	int ret;
++	u16 reg_val;
++
++	DBG_PRINT( KERN_ALERT "**** %s %i   value: %i\n", __func__, (int )__LINE__, value );
++
++	if ( value == V4L2_EXPOSURE_AUTO )
++		reg_val = 0x0c;
++	else
++		reg_val = 0x09;
++
++	ret = ap1302_mod_reg16( sensor, AP1302_REG_AE_CTRL, 0x0f, reg_val );
++	return ret;
++}
++
++static int ap1302_set_ctrl_exp(struct ap1302_dev *sensor, int value)
++{
++	int ret;
++
++	DBG_PRINT( KERN_ALERT "**** %s %i   value: %i\n", __func__, (int )__LINE__, value );
++
++	ret = ap1302_write_reg32( sensor, AP1302_REG_AE_MANUAL_EXP_TIME, value );
++	return ret;
++}
++
 +static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
 +				  struct v4l2_subdev_pad_config *cfg,
 +				  struct v4l2_subdev_frame_size_enum *fse)
@@ -650,8 +707,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	int minfps, maxfps, best_fps, fps;
 +	int i;
 +
-+	printk( KERN_ALERT "**** %s %i   w: %i   h: %i   num: %i   denom: %i\n",
-+			__func__, (int )__LINE__, width, height, fi->numerator, fi->denominator );
++	DBG_PRINT( KERN_ALERT "**** %s %i   w: %i   h: %i   num: %i   denom: %i\n",
++			   __func__, (int )__LINE__, width, height, fi->numerator, fi->denominator );
 +
 +	minfps = ap1302_framerates[0];
 +	maxfps = ap1302_framerates[ARRAY_SIZE(ap1302_framerates) - 1];
@@ -693,7 +750,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct v4l2_fract tpf;
 +	int ret;
 +
-+	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++	DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	if (fie->pad != 0)
 +		return -EINVAL;
@@ -705,7 +762,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	ret = ap1302_try_frame_interval(sensor, &tpf,
 +					fie->width, fie->height);
-+	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +	if (ret < 0)
 +		return -EINVAL;
 +
@@ -715,7 +772,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +static int ap1302_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
 +{
-+	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++	DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	return -EINVAL;
 +}
@@ -728,7 +785,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct ap1302_dev *sensor = to_ap1302_dev(sd);
 +	int ret;
 +
-+	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++	DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	/* v4l2_ctrl_lock() locks our own mutex */
 +
@@ -746,6 +803,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +		case V4L2_CID_VFLIP:
 +			ret = ap1302_set_ctrl_vflip(sensor, ctrl->val);
++			break;
++
++		case V4L2_CID_EXPOSURE_AUTO:
++			ret = ap1302_set_ctrl_auto_exp(sensor, ctrl->val);
++			break;
++
++		case V4L2_CID_EXPOSURE:
++			ret = ap1302_set_ctrl_exp(sensor, ctrl->val);
 +			break;
 +
 +		default:
@@ -792,6 +857,13 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if (ctrls->link_freq)
 +		ctrls->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 +
++	/* Auto/manual exposure */
++	ctrls->auto_exp = v4l2_ctrl_new_std_menu(hdl, ops, V4L2_CID_EXPOSURE_AUTO,
++											 V4L2_EXPOSURE_MANUAL, 0,
++											 V4L2_EXPOSURE_MANUAL);
++	ctrls->exposure = v4l2_ctrl_new_std(hdl, ops, V4L2_CID_EXPOSURE,
++					    0, AP1302_EXP_TIME_MAX, 1, AP1302_EXP_TIME_DEFAULT);
++
 +	if (hdl->error) {
 +		ret = hdl->error;
 +		goto free_ctrls;
@@ -809,7 +881,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +				 struct v4l2_subdev_pad_config *cfg,
 +				 struct v4l2_subdev_mbus_code_enum *code)
 +{
-+	printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++	DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	if (code->pad != 0)
 +		return -EINVAL;
@@ -825,7 +897,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct ap1302_dev *sensor = to_ap1302_dev(sd);
 +	int ret = 0;
 +
-+    printk( KERN_ALERT "**** %s %i   on: %i\n", __func__, (int )__LINE__, on );
++    DBG_PRINT( KERN_ALERT "**** %s %i   on: %i\n", __func__, (int )__LINE__, on );
 +
 +	mutex_lock(&sensor->lock);
 +
@@ -846,7 +918,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +{
 +	struct ap1302_dev *sensor = to_ap1302_dev(sd);
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	mutex_lock(&sensor->lock);
 +	fi->interval = sensor->frame_interval;
@@ -862,7 +934,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	const struct ap1302_mode_info *mode;
 +	int frame_rate, ret = 0;
 +
-+    printk( KERN_ALERT "**** %s %i   num: %i   denum: %i\n", __func__, (int )__LINE__, fi->interval.numerator, fi->interval.denominator );
++    DBG_PRINT( KERN_ALERT "**** %s %i   num: %i   denum: %i\n", __func__, (int )__LINE__, fi->interval.numerator, fi->interval.denominator );
 +
 +	if (fi->pad != 0)
 +		return -EINVAL;
@@ -878,7 +950,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	frame_rate = ap1302_try_frame_interval(sensor, &fi->interval,
 +					       mode->hact, mode->vact);
-+    printk( KERN_ALERT "**** %s %i   frame_rate: %i\n", __func__, (int )__LINE__, frame_rate );
++    DBG_PRINT( KERN_ALERT "**** %s %i   frame_rate: %i\n", __func__, (int )__LINE__, frame_rate );
 +
 +	if (frame_rate < 0) {
 +		/* Always return a valid frame interval value */
@@ -888,7 +960,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	mode = ap1302_find_mode(sensor, frame_rate, mode->hact,
 +				mode->vact, true);
-+    printk( KERN_ALERT "**** %s %i   mode: 0x%08x\n", __func__, (int )__LINE__, (int )mode );
++    DBG_PRINT( KERN_ALERT "**** %s %i   mode: 0x%08x\n", __func__, (int )__LINE__, (int )mode );
 +
 +	if (!mode) {
 +		ret = -EINVAL;
@@ -925,14 +997,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct ap1302_dev *sensor = to_ap1302_dev(sd);
 +	int ret = 0;
 +
-+    printk( KERN_ALERT "**** %s %i   enable: %i\n", __func__, (int )__LINE__, enable );
++    DBG_PRINT( KERN_ALERT "**** %s %i   enable: %i\n", __func__, (int )__LINE__, enable );
 +
 +	mutex_lock(&sensor->lock);
 +
 +	if ( enable && sensor->ep.bus_type == V4L2_MBUS_CSI2 ) {
 +		if ( !sensor->streaming && !sensor->fw_down ) {
 +			ret = ap1302_fw_loop( sensor, (struct ap1302_fw_data *)sensor->fw_sensor->data );
-+			printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++			DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +		}
 +
 +		if (!ret)
@@ -971,7 +1043,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct ap1302_dev *sensor = to_ap1302_dev(sd);
 +	struct v4l2_mbus_framefmt *fmt;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	if (format->pad != 0)
 +		return -EINVAL;
@@ -979,7 +1051,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	mutex_lock(&sensor->lock);
 +
 +	if (format->which == V4L2_SUBDEV_FORMAT_TRY) {
-+		printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++		DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +		fmt = v4l2_subdev_get_try_format(&sensor->sd, cfg,
 +						 format->pad);
@@ -991,7 +1063,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	mutex_unlock(&sensor->lock);
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +	return 0;
 +}
 +
@@ -1004,7 +1076,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	const struct ap1302_mode_info *mode;
 +	int i;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	mode = ap1302_find_mode(sensor, fr, fmt->width, fmt->height, true);
 +	if (!mode)
@@ -1027,7 +1099,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	fmt->quantization = V4L2_QUANTIZATION_FULL_RANGE;
 +	fmt->xfer_func = V4L2_MAP_XFER_FUNC_DEFAULT(fmt->colorspace);
 +
-+    printk( KERN_ALERT "**** %s %i   code:0x%x\n", __func__, (int )__LINE__, fmt->code );
++    DBG_PRINT( KERN_ALERT "**** %s %i   code:0x%x\n", __func__, (int )__LINE__, fmt->code );
 +	return 0;
 +}
 +
@@ -1041,7 +1113,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	struct v4l2_mbus_framefmt *fmt;
 +	int ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	if (format->pad != 0)
 +		return -EINVAL;
@@ -1058,7 +1130,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if (ret)
 +		goto out;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	if (format->which == V4L2_SUBDEV_FORMAT_TRY)
 +		fmt = v4l2_subdev_get_try_format(sd, cfg, 0);
@@ -1138,7 +1210,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		goto power_off;
 +	}
 +
-+    printk( KERN_ALERT "**** %s %i  CHIP ID: 0x%04x\n", __func__, (int )__LINE__, (int )val );
++    DBG_PRINT( KERN_ALERT "**** %s %i  CHIP ID: 0x%04x\n", __func__, (int )__LINE__, (int )val );
 +
 +	if ( val != AP1302_CHIP_VERSION ) {
 +		ret = -EINVAL;
@@ -1153,7 +1225,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	}
 +
 +	adv_addr = be32_to_cpu( adv_addr );
-+    printk( KERN_ALERT "**** %s %i  ADVANCED_BASE: 0x%08x\n", __func__, (int )__LINE__, (int )adv_addr );
++    DBG_PRINT( KERN_ALERT "**** %s %i  ADVANCED_BASE: 0x%08x\n", __func__, (int )__LINE__, (int )adv_addr );
 +
 +	return 0;
 +
@@ -1234,16 +1306,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +};
 +
 +static const struct read_reg ap1302_read_regs[] = {
-+	{ AP1302_REG_OUT0_WIDTH, 2 },
 +	{ AP1302_REG_OUT0_WIDTH, 2 }, { AP1302_REG_OUT0_HEIGHT, 2 }, { AP1302_REG_OUT0_FMT, 2 },
-+	{ 0x0092, 2}, { 0x0094, 2}, { 0x0096, 2}, { 0x00c4, 2}, { 0x00c6, 2}, { 0x00e0, 2},
-+	{ 0x00d8, 2}, { 0x1000, 2}, { 0x2030, 2}, { 0x00be, 2}, { 0x004e, 2}, { 0x2000, 2},
-+	{ 0x2002, 2}, { 0x2004, 2}, { 0x2006, 2}, { 0x2008, 2}, { 0x200a, 2}, { 0x200c, 2},
-+	{ 0x200e, 2}, { 0x2010, 2}, { 0x2012, 2}, { 0x2014, 2}, { 0x2016, 2}, { 0x2018, 2},
-+	{ 0x201a, 2}, { 0x201c, 4}, { 0x2020, 2}, { 0x2022, 2}, { 0x2024, 4}, { 0x2028, 4},
-+	{ 0x202c, 2}, { 0x202e, 2}, { 0x2032, 2}, { 0x2034, 2}, { 0x2036, 2},
-+	{ 0x2050, 4}, { 0x2054, 4}, { 0x2058, 4}, { 0x205c, 4}, { 0x2064, 4}, { 0x2068, 4},
-+	{ 0x206c, 4}, { 0x2070, 4}, { 0x2074, 4}, { 0x2078, 4},
 +};
 +
 +
@@ -1282,7 +1345,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	}
 +
 +	ret = ap1302_write_regs( sensor, p_stage, 1 );
-+    printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++    DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +
 +	if ( wait_new_stage ) {
 +		/* wait for new BOOTDATA_STAGE  */
@@ -1293,7 +1356,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +				break;
 +		}
 +
-+		printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   stage: 0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
++		DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   stage: 0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
 +
 +		if ( !ret && ( cnt == 10 ) )
 +			ret = -EINVAL;
@@ -1302,9 +1365,9 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	return ret;
 +};
 +
-+static int ap1302_dbg_record(struct ap1302_dev *sensor, int line )
++static int ap1302_trace_log(struct ap1302_dev *sensor, int line )
 +{
-+#if AP1302_DBG_CONSOLE_OUTPUT
++#if AP1302_DBG_CONSOLE_OUTPUT && AP1302_TRACE_LOG
 +	int ret;
 +	int cnt, idx, idx2, len;
 +	u16 stage;
@@ -1363,19 +1426,19 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	ret = 0;
 +	offs = 0;
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* let's download 1st chunk */
 +	sensor->tmp_buf[ 0 ] = addr >> 8;
 +	sensor->tmp_buf[ 1 ] = addr & 0xff;
 +	memcpy( sensor->tmp_buf + 2, p_buf, p_fw_data->pll_init_size );
 +	ret = ap1302_write_buf( sensor, sensor->tmp_buf, p_fw_data->pll_init_size + 2 );
-+    printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++    DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +
 +	if ( ret )
 +		return ret;
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* change stage */
 +	ret = ap1302_fw_change_state( sensor, 1, true );
@@ -1383,18 +1446,18 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if ( ret )
 +		return ret;
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* set PLL */
 +	ret = ap1302_write_regs( sensor, ap1302_fw_pll_320M, ARRAY_SIZE( ap1302_fw_pll_320M ) );
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* change stage */
 +	if ( !ret )
 +		ret = ap1302_fw_change_state( sensor, 2, true );
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* see if PLL locks */
 +	for ( cnt = 0 ; !ret && ( cnt < 10 ) ; cnt++ ) {
@@ -1404,7 +1467,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +			break;
 +	}
 +
-+	printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i\n", __func__, (int )__LINE__, ret, cnt );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   cnt:%i\n", __func__, (int )__LINE__, ret, cnt );
 +
 +	if ( !ret && ( cnt == 10 ) )
 +		ret = -EINVAL;
@@ -1412,7 +1475,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if ( ret )
 +		return ret;
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* download the rest */
 +	offs += p_fw_data->pll_init_size;
@@ -1430,14 +1493,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		memcpy( sensor->tmp_buf + 2, p_buf, chunk );
 +		ret = ap1302_write_buf( sensor, sensor->tmp_buf, chunk + 2 );
 +
-+#if 0
++#if AP1302_DBG_CONSOLE_OUTPUT && AP1302_TRACE_LOG
 +		if ( !ret ) {
 +			ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
 +			printk( KERN_ALERT "**** %s %i   ret: %i   addr: 0x%04x   stage: 0x%04x\n", __func__, (int )__LINE__, ret, addr, val );
 +		}
 +#endif
 +
-+		(void )ap1302_dbg_record( sensor, __LINE__ );
++		(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +		addr += chunk;
 +		if ( addr >= AP1302_REG_BOOTDATA_WRAP )
@@ -1450,11 +1513,11 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +			break;
 +	} /* while */
 +
-+	printk( KERN_ALERT "**** %s %i   ret: %i   offs: 0x%04x\n", __func__, (int )__LINE__, ret, offs );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   offs: 0x%04x\n", __func__, (int )__LINE__, ret, offs );
 +
 +	/* hack here to make test pattern bootdata download work */
 +	if ( !ret && ( offs < len ) ) {
-+		msleep( 100 );
++		msleep( 2 );
 +		for ( cnt = 0 ; !ret && ( cnt < ARRAY_SIZE( ap1302_read_regs ) ) ; cnt++ ) {
 +			ret = ap1302_read_buf(sensor, ap1302_read_regs[cnt].reg,
 +								  sensor->tmp_buf, ap1302_read_regs[cnt].len );
@@ -1462,7 +1525,9 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		}
 +	}
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* continue downloading the rest */
 +	while ( !ret && ( offs < len ) ) {
@@ -1476,14 +1541,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		memcpy( sensor->tmp_buf + 2, p_buf, chunk );
 +		ret = ap1302_write_buf( sensor, sensor->tmp_buf, chunk + 2 );
 +
-+#if 0
++#if AP1302_DBG_CONSOLE_OUTPUT && AP1302_TRACE_LOG
 +		if ( !ret ) {
 +			ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
 +			printk( KERN_ALERT "**** %s %i   ret: %i   addr: 0x%04x   stage: 0x%04x\n", __func__, (int )__LINE__, ret, addr, val );
 +		}
 +#endif
 +
-+		(void )ap1302_dbg_record( sensor, __LINE__ );
++		(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +		addr += chunk;
 +		if ( addr >= AP1302_REG_BOOTDATA_WRAP )
@@ -1495,6 +1560,9 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if ( ret )
 +		return ret;
 +
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   offs: 0x%04x\n", __func__, (int )__LINE__, ret, offs );
++
++#if AP1302_DBG_CONSOLE_OUTPUT && AP1302_TRACE_LOG
 +	/* wait for bootdata checksum to be calculated by downloaded FW */
 +	for( cnt = 0 ; !ret && ( cnt < 100 ) ; cnt++ ) {
 +		msleep( 2 );
@@ -1506,21 +1574,22 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +			break;
 +	}
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	if ( ret )
 +		return ret;
 +
-+	printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   val:0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   val:0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
 +	if ( !ret ) {
 +		ret = ap1302_read_reg16(sensor, AP1302_REG_BOOTDATA_STAGE, &val );
-+		printk( KERN_ALERT "**** %s %i   ret: %i   stage: 0x%04x\n", __func__, (int )__LINE__, ret, val );
++		DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   stage: 0x%04x\n", __func__, (int )__LINE__, ret, val );
 +	}
++#endif
 +
 +	/* change stage */
 +	(void )ap1302_fw_change_state( sensor, 0xffff, true );
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* wait for bootdata checksum to be calculated by downloaded FW */
 +	for( cnt = 0 ; !ret && ( cnt < 100 ) ; cnt++ ) {
@@ -1533,9 +1602,9 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +			break;
 +	}
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
-+	printk( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   val:0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   cnt:%i   val:0x%04x\n", __func__, (int )__LINE__, ret, cnt, val );
 +
 +	if ( !ret && ( cnt == 100 ) )
 +		ret = -EINVAL;
@@ -1543,28 +1612,26 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if ( ret )
 +		return ret;
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	/* set defaults */
 +	ret = ap1302_write_regs( sensor, ap1302_fw_defaults, ARRAY_SIZE( ap1302_fw_defaults ) );
-+    printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++    DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +
 +#if AP1302_DBG_CONSOLE_OUTPUT
-+	for ( cnt = 0 ; !ret && ( cnt < 100 ) ; cnt++ ) {
-+#else
 +	for ( cnt = 0 ; !ret && ( cnt < 10 ) ; cnt++ ) {
-+#endif
-+		(void )ap1302_dbg_record( sensor, __LINE__ );
++		(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +		ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
 +		printk( KERN_ALERT "**** %s %i   ret: %i   val: 0x%04x\n", __func__, (int )__LINE__, ret, val );
 +		msleep( 200 );
 +	}
++#endif
 +
 +	if ( !ret )
 +		sensor->fw_down = true;
 +
-+	(void )ap1302_dbg_record( sensor, __LINE__ );
++	(void )ap1302_trace_log( sensor, __LINE__ );
 +
 +	return ret;
 +} /* fw_loop */
@@ -1589,8 +1656,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	}
 +
 +	ret = ap1302_write_regs( sensor, p_regs, len );
-+	printk( KERN_ALERT "**** %s %i   code: 0x%04x   ret: %i\n",
-+			__func__, (int )__LINE__, sensor->fmt.code, ret );
++	DBG_PRINT( KERN_ALERT "**** %s %i   code: 0x%04x   ret: %i\n",
++			   __func__, (int )__LINE__, sensor->fmt.code, ret );
 +
 +	return ret;
 +}
@@ -1600,12 +1667,18 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	int ret;
 +
 +	ret = ap1302_write_regs( sensor, ap1302_ae_values, ARRAY_SIZE( ap1302_ae_values ) );
-+	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++
++	if ( !ret )
++		ret = ap1302_set_ctrl_auto_exp( sensor, V4L2_EXPOSURE_MANUAL );
++
++	if ( !ret )
++		ret = ap1302_set_ctrl_exp( sensor, AP1302_EXP_TIME_DEFAULT );
 +
 +	if ( !ret ) {
 +	ret = ap1302_write_regs( sensor, sensor->current_mode->p_mode, sensor->current_mode->mode_len );
-+	printk( KERN_ALERT "**** %s %i   w: %i   h: %i   ret: %i\n",
-+			__func__, (int )__LINE__, sensor->current_mode->hact, sensor->current_mode->vact, ret );
++	DBG_PRINT( KERN_ALERT "**** %s %i   w: %i   h: %i   ret: %i\n",
++			   __func__, (int )__LINE__, sensor->current_mode->hact, sensor->current_mode->vact, ret );
 +	}
 +
 +	return ret;
@@ -1620,7 +1693,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	cnt = 0;
 +	val = ap1302_framerates[ sensor->current_fr ] << 8;
-+    printk( KERN_ALERT "**** %s %i   val: 0x%04x\n", __func__, (int )__LINE__, (int )val );
++    DBG_PRINT( KERN_ALERT "**** %s %i   val: 0x%04x\n", __func__, (int )__LINE__, (int )val );
 +	ret = ap1302_write_reg16( sensor, AP1302_REG_PREVIEW_MAX_FPS, val );
 +
 +	if ( !ret )
@@ -1630,13 +1703,13 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		frame1 = val >> 8;
 +
 +		/* wait some frames 1st */
-+		for ( cnt = 0 ; cnt < 5 ; cnt++ ) {
++		for ( cnt = 0 ; cnt < 20 ; cnt++ ) {
 +			ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
 +			if ( ret )
 +				break;
 +
 +			frame2 = val >> 8;
-+			if ( ( ( frame2 - frame1 ) & 0xff ) > 2 ) {
++			if ( ( ( frame2 - frame1 ) & 0xff ) > 10 ) {
 +				/* fix MIPI color order */
 +
 +				switch ( sensor->fmt.code )
@@ -1662,7 +1735,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		}
 +	}
 +
-+	printk( KERN_ALERT "**** %s %i   ret: %i   cnt: %i\n", __func__, (int )__LINE__, ret, cnt );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i   cnt: %i\n", __func__, (int )__LINE__, ret, cnt );
 +	return ret;
 +}
 +
@@ -1670,11 +1743,11 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +{
 +	int ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +	ret = 0;
 +
 +	ret = request_firmware(&sensor->fw_test, AP1302_FW_TEST, &sensor->i2c_client->dev);
-+	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +
 +	if ( !ret && sensor->fw_test->data == NULL )
 +		ret = -EINVAL;
@@ -1684,10 +1757,10 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		goto power_off;
 +	}
 +
-+	printk( KERN_ALERT "**** %s %i   size: %i\n", __func__, (int )__LINE__, sensor->fw_test->size );
++	DBG_PRINT( KERN_ALERT "**** %s %i   size: %i\n", __func__, (int )__LINE__, sensor->fw_test->size );
 +
 +	ret = request_firmware(&sensor->fw_sensor, AP1302_FW_NORMAL, &sensor->i2c_client->dev);
-+	printk( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
++	DBG_PRINT( KERN_ALERT "**** %s %i   ret: %i\n", __func__, (int )__LINE__, ret );
 +
 +	if ( !ret && sensor->fw_sensor->data == NULL )
 +		ret = -EINVAL;
@@ -1697,7 +1770,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		goto release_fw;
 +	}
 +
-+	printk( KERN_ALERT "**** %s %i   size: %i\n", __func__, (int )__LINE__, sensor->fw_sensor->size );
++	DBG_PRINT( KERN_ALERT "**** %s %i   size: %i\n", __func__, (int )__LINE__, sensor->fw_sensor->size );
 +		return 0;
 +
 +release_fw:
@@ -1819,7 +1892,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +	sensor->i2c_client = client;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	/* get system clock (xclk) */
 +	sensor->xclk = devm_clk_get(dev, "xclk");
@@ -1828,7 +1901,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		return PTR_ERR(sensor->xclk);
 +	}
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	sensor->xclk_freq = clk_get_rate(sensor->xclk);
 +	if (sensor->xclk_freq < AP1302_XCLK_MIN ||
@@ -1842,19 +1915,19 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	sensor->pwdn_gpio = devm_gpiod_get_optional(dev, "powerdown",
 +						    GPIOD_OUT_HIGH);
 +	if (IS_ERR(sensor->pwdn_gpio))
-+		printk( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
++		DBG_PRINT( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
 +
 +	/* request optional reset pin */
 +	sensor->reset_gpio = devm_gpiod_get_optional(dev, "reset",
 +						     GPIOD_OUT_LOW);
 +	if (IS_ERR(sensor->reset_gpio))
-+		printk( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
++		DBG_PRINT( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
 +
 +	/* request optional I2C address select pin */
 +	sensor->i2csel_gpio = devm_gpiod_get_optional(dev, "i2csel",
 +						    GPIOD_OUT_HIGH);
 +	if (IS_ERR(sensor->i2csel_gpio))
-+		printk( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
++		DBG_PRINT( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
 +	else
 +		gpiod_set_value_cansleep(sensor->i2csel_gpio, 1);
 +
@@ -1862,7 +1935,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	sensor->pwr_cam_gpio = devm_gpiod_get_optional(dev, "pwrcam",
 +						    GPIOD_OUT_HIGH);
 +	if (IS_ERR(sensor->pwr_cam_gpio))
-+		printk( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
++		DBG_PRINT( KERN_ALERT "**** %s %i  ERROR\n", __func__, (int )__LINE__ );
 +	else
 +		gpiod_set_value_cansleep(sensor->pwr_cam_gpio, 1);
 +
@@ -1870,7 +1943,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if (ret)
 +		return ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	mutex_init(&sensor->lock);
 +
@@ -1878,13 +1951,13 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if (ret)
 +		return ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	ret = ap1302_download_fw(sensor);
 +	if (ret)
 +		return ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	/*
 +	 * default init sequence initialize sensor to
@@ -1931,7 +2004,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		return -EINVAL;
 +	}
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	ret = v4l2_fwnode_endpoint_parse(endpoint, &sensor->ep);
 +	fwnode_handle_put(endpoint);
@@ -1940,7 +2013,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		return ret;
 +	}
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	v4l2_i2c_subdev_init(&sensor->sd, client, &ap1302_subdev_ops);
 +
@@ -1952,7 +2025,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if (ret)
 +		return ret;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	mutex_init(&sensor->lock);
 +
@@ -1960,32 +2033,31 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	if (ret)
 +		goto entity_cleanup;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	ret = v4l2_async_register_subdev(&sensor->sd);
 +	if (ret)
 +		goto free_ctrls;
 +
-+    printk( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
++    DBG_PRINT( KERN_ALERT "**** %s %i\n", __func__, (int )__LINE__ );
 +
 +	my_sensor = sensor;
 +	path = kobject_get_path(&dev->kobj, GFP_KERNEL);
-+	if ( path != NULL ) {
++	if ( path != NULL )
 +		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_write16.attr);
-+		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_write16.attr.name );
++	else {
++		DBG_PRINT( KERN_ALERT "**** %s %i   path: NULL\n", __func__, (int )__LINE__ );
++		ret = -EINVAL;
 +	}
-+	else
-+		printk( KERN_ALERT "**** %s %i   path: NULL\n", __func__, (int )__LINE__ );
 +
-+	if ( !ret ) {
++	if ( !ret )
 +		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_write32.attr);
-+		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_write32.attr.name );
-+	}
 +
-+	if ( !ret ) {
++	if ( !ret )
 +		ret = sysfs_create_file(&dev->kobj, &ap1302_sysfs_attr_dump.attr);
-+		printk( KERN_ALERT "**** %s %i   ret: %i   path: /sys%s/%s\n", __func__, (int )__LINE__, ret, path, ap1302_sysfs_attr_dump.attr.name );
-+	}
++
++	if ( !ret )
++		printk( KERN_ALERT "ap1302 sysfs path: /sys%s\n", path );
 +
 +	return 0;
 +
@@ -2049,8 +2121,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +MODULE_FIRMWARE(AP1302_FW_NORMAL);
 +MODULE_FIRMWARE(AP1302_FW_TEST);
 diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconfig
---- ./drivers/media/i2c/Kconfig	2020-08-06 14:11:58.450043777 +0200
-+++ ../kernel-source/drivers/media/i2c/Kconfig	2020-08-06 14:12:49.180029195 +0200
+--- ./drivers/media/i2c/Kconfig	2020-08-12 17:33:55.564448555 +0200
++++ ../kernel-source/drivers/media/i2c/Kconfig	2020-08-12 17:34:32.726626504 +0200
 @@ -887,6 +887,18 @@
  	  To compile this driver as a module, choose M here: the
  	  module will be called mt9v111.
@@ -2071,8 +2143,8 @@ diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconf
  	tristate "Siliconfile SR030PC30 sensor support"
  	depends on I2C && VIDEO_V4L2
 diff -Naurw ./drivers/media/i2c/Makefile ../kernel-source/drivers/media/i2c/Makefile
---- ./drivers/media/i2c/Makefile	2020-08-06 14:11:58.450043777 +0200
-+++ ../kernel-source/drivers/media/i2c/Makefile	2020-08-06 14:12:49.180029195 +0200
+--- ./drivers/media/i2c/Makefile	2020-08-12 17:33:55.564448555 +0200
++++ ../kernel-source/drivers/media/i2c/Makefile	2020-08-12 17:34:32.726626504 +0200
 @@ -88,6 +88,7 @@
  obj-$(CONFIG_VIDEO_MT9V011) += mt9v011.o
  obj-$(CONFIG_VIDEO_MT9V032) += mt9v032.o
@@ -2081,60 +2153,3 @@ diff -Naurw ./drivers/media/i2c/Makefile ../kernel-source/drivers/media/i2c/Make
  obj-$(CONFIG_VIDEO_SR030PC30)	+= sr030pc30.o
  obj-$(CONFIG_VIDEO_NOON010PC30)	+= noon010pc30.o
  obj-$(CONFIG_VIDEO_RJ54N1)	+= rj54n1cb0c.o
-diff -Naurw ./drivers/media/i2c/st-mipid02.c ../kernel-source/drivers/media/i2c/st-mipid02.c
---- ./drivers/media/i2c/st-mipid02.c	2020-08-06 14:11:58.454043618 +0200
-+++ ../kernel-source/drivers/media/i2c/st-mipid02.c	2020-08-06 14:12:49.180029195 +0200
-@@ -22,6 +22,8 @@
- #include <media/v4l2-fwnode.h>
- #include <media/v4l2-subdev.h>
- 
-+#define SWAP_PINS   1
-+
- #define V4L2_MBUS_CSI2_DPHY V4L2_MBUS_CSI2
- 
- #define MIPID02_CLK_LANE_WR_REG1			0x01
-@@ -40,6 +42,7 @@
- 
- /* Bits definition for MIPID02_CLK_LANE_REG1 */
- #define CLK_ENABLE					BIT(0)
-+#define CLK_SWAP					BIT(1)
- /* Bits definition for MIPID02_CLK_LANE_REG3 */
- #define CLK_MIPI_CSI					BIT(1)
- /* Bits definition for MIPID02_DATA_LANE0_REG1 */
-@@ -419,7 +422,12 @@
- 		dev_err(&client->dev, "clk lane must be map to lane 0\n");
- 		return -EINVAL;
- 	}
-+
-+#if SWAP_PINS
-+	bridge->r.clk_lane_reg1 |= (polarities[0] << 1) | CLK_ENABLE | CLK_SWAP;
-+#else
- 	bridge->r.clk_lane_reg1 |= (polarities[0] << 1) | CLK_ENABLE;
-+#endif
- 
- 	return 0;
- }
-@@ -436,7 +444,11 @@
- 	 * data lane 0 as pin swap polarity reversed compared to clock and
- 	 * data lane 1
- 	 */
-+#if SWAP_PINS
-+	if (are_pin_swap)
-+#else
- 	if (!are_pin_swap)
-+#endif
- 		bridge->r.data_lane0_reg1 = 1 << 1;
- 	bridge->r.data_lane0_reg1 |= DATA_ENABLE;
- 
-@@ -451,7 +463,11 @@
- 	if (nb == 1 && !are_lanes_swap)
- 		return 0;
- 
-+#if SWAP_PINS
-+	if (!are_pin_swap)
-+#else
- 	if (are_pin_swap)
-+#endif
- 		bridge->r.data_lane1_reg1 = 1 << 1;
- 	bridge->r.data_lane1_reg1 |= DATA_ENABLE;
- 

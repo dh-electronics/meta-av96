@@ -1,0 +1,57 @@
+diff -Naurw ./drivers/media/i2c/st-mipid02.c ../kernel-source/drivers/media/i2c/st-mipid02.c
+--- ./drivers/media/i2c/st-mipid02.c	2020-08-06 14:11:58.454043618 +0200
++++ ../kernel-source/drivers/media/i2c/st-mipid02.c	2020-08-06 14:12:49.180029195 +0200
+@@ -22,6 +22,8 @@
+ #include <media/v4l2-fwnode.h>
+ #include <media/v4l2-subdev.h>
+ 
++#define SWAP_PINS   1
++
+ #define V4L2_MBUS_CSI2_DPHY V4L2_MBUS_CSI2
+ 
+ #define MIPID02_CLK_LANE_WR_REG1			0x01
+@@ -40,6 +42,7 @@
+ 
+ /* Bits definition for MIPID02_CLK_LANE_REG1 */
+ #define CLK_ENABLE					BIT(0)
++#define CLK_SWAP					BIT(1)
+ /* Bits definition for MIPID02_CLK_LANE_REG3 */
+ #define CLK_MIPI_CSI					BIT(1)
+ /* Bits definition for MIPID02_DATA_LANE0_REG1 */
+@@ -419,7 +422,12 @@
+ 		dev_err(&client->dev, "clk lane must be map to lane 0\n");
+ 		return -EINVAL;
+ 	}
++
++#if SWAP_PINS
++	bridge->r.clk_lane_reg1 |= (polarities[0] << 1) | CLK_ENABLE | CLK_SWAP;
++#else
+ 	bridge->r.clk_lane_reg1 |= (polarities[0] << 1) | CLK_ENABLE;
++#endif
+ 
+ 	return 0;
+ }
+@@ -436,7 +444,11 @@
+ 	 * data lane 0 as pin swap polarity reversed compared to clock and
+ 	 * data lane 1
+ 	 */
++#if SWAP_PINS
++	if (are_pin_swap)
++#else
+ 	if (!are_pin_swap)
++#endif
+ 		bridge->r.data_lane0_reg1 = 1 << 1;
+ 	bridge->r.data_lane0_reg1 |= DATA_ENABLE;
+ 
+@@ -451,7 +463,11 @@
+ 	if (nb == 1 && !are_lanes_swap)
+ 		return 0;
+ 
++#if SWAP_PINS
++	if (!are_pin_swap)
++#else
+ 	if (are_pin_swap)
++#endif
+ 		bridge->r.data_lane1_reg1 = 1 << 1;
+ 	bridge->r.data_lane1_reg1 |= DATA_ENABLE;
+ 
