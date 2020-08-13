@@ -1,7 +1,7 @@
 diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
 --- ./drivers/media/i2c/ap1302.c	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-08-12 17:34:32.726626504 +0200
-@@ -0,0 +1,2118 @@
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-08-13 18:14:08.532518515 +0200
+@@ -0,0 +1,2168 @@
 +/*
 + * Copyright (C) 2020 Arrow Electronics
 + * Author: Botond Kardos
@@ -112,9 +112,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +
 +enum ap1302_mode_id {
-+	AP1302_MODE_VGA_640_480 = 0,
++	AP1302_MODE_320_240 = 0,
++	AP1302_MODE_VGA_640_480,
 +	AP1302_MODE_1024_576,
 +	AP1302_MODE_720P_1280_720,
++	AP1302_MODE_1080P_1920_1080,
++/*	AP1302_MODE_2560_1440, */
++/*	AP1302_MODE_2160P_3840_2160, */
++	AP1302_MODE_4160_3120,
 +	AP1302_NUM_MODES,
 +};
 +
@@ -266,6 +271,13 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	{ 4, { 0x20, 0x16,  0x1E, 0x1E }, },
 +};
 +
++static struct ap1302_reg_value ap1302_mode_320_240[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x01, 0x40 }, },
++	{ 4, { 0x20, 0x02,  0x00, 0xF0 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++};
++
 +static struct ap1302_reg_value ap1302_mode_640_480[ ] = {
 +	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
 +	{ 4, { 0x20, 0x00,  0x02, 0x80 }, },
@@ -287,11 +299,44 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
 +};
 +
++static struct ap1302_reg_value ap1302_mode_1920_1080[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x07, 0x80 }, },
++	{ 4, { 0x20, 0x02,  0x04, 0x38 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++};
++
++static struct ap1302_reg_value ap1302_mode_2560_1440[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x0a, 0x00 }, },
++	{ 4, { 0x20, 0x02,  0x05, 0xa0 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++};
++
++static struct ap1302_reg_value ap1302_mode_3840_2160[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x0f, 0x00 }, },
++	{ 4, { 0x20, 0x02,  0x08, 0x70 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++};
++
++static struct ap1302_reg_value ap1302_mode_4160_3120[ ] = {
++	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
++	{ 4, { 0x20, 0x00,  0x10, 0x40 }, },
++	{ 4, { 0x20, 0x02,  0x0c, 0x30 }, },
++	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
++};
++
 +static const struct ap1302_mode_info
 +ap1302_mode_data[AP1302_NUM_MODES] = {
++	{AP1302_MODE_320_240, 320, 240, ap1302_mode_320_240, ARRAY_SIZE(ap1302_mode_320_240)},
 +	{AP1302_MODE_VGA_640_480, 640, 480, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480)},
 +	{AP1302_MODE_1024_576, 1024, 576, ap1302_mode_1024_576, ARRAY_SIZE(ap1302_mode_1024_576)},
 +	{AP1302_MODE_720P_1280_720, 1280, 720, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
++	{AP1302_MODE_1080P_1920_1080, 1920, 1080, ap1302_mode_1920_1080, ARRAY_SIZE(ap1302_mode_1920_1080)},
++/*	{AP1302_MODE_2560_1440, 2560, 1440, ap1302_mode_2560_1440, ARRAY_SIZE(ap1302_mode_2560_1440)}, */
++/*	{AP1302_MODE_2160P_3840_2160, 3840, 2160, ap1302_mode_3840_2160, ARRAY_SIZE(ap1302_mode_3840_2160)}, */
++	{AP1302_MODE_4160_3120, 4160, 3120, ap1302_mode_4160_3120, ARRAY_SIZE(ap1302_mode_4160_3120)},
 +};
 +
 +
@@ -506,6 +551,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +{
 +	const struct ap1302_mode_info *mode;
 +
++	DBG_PRINT( KERN_ALERT "**** %s %i   width: %i   height: %i\n", __func__, (int )__LINE__, width, height );
 +	mode = v4l2_find_nearest_size(ap1302_mode_data,
 +				      ARRAY_SIZE(ap1302_mode_data),
 +				      hact, vact,
@@ -683,6 +729,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +				  struct v4l2_subdev_pad_config *cfg,
 +				  struct v4l2_subdev_frame_size_enum *fse)
 +{
++	DBG_PRINT( KERN_ALERT "**** %s %i   index: %i\n", __func__, (int )__LINE__, fse->index );
++
 +	if (fse->pad != 0)
 +		return -EINVAL;
 +	if (fse->index >= AP1302_NUM_MODES)
@@ -694,6 +742,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	fse->min_height =
 +		ap1302_mode_data[fse->index].vact;
 +	fse->max_height = fse->min_height;
++
++	DBG_PRINT( KERN_ALERT "**** %s %i   w: %i   h: %i\n", __func__, (int )__LINE__, fse->max_width, fse->max_height );
 +
 +	return 0;
 +}
@@ -2121,8 +2171,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +MODULE_FIRMWARE(AP1302_FW_NORMAL);
 +MODULE_FIRMWARE(AP1302_FW_TEST);
 diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconfig
---- ./drivers/media/i2c/Kconfig	2020-08-12 17:33:55.564448555 +0200
-+++ ../kernel-source/drivers/media/i2c/Kconfig	2020-08-12 17:34:32.726626504 +0200
+--- ./drivers/media/i2c/Kconfig	2020-08-13 18:12:50.828147374 +0200
++++ ../kernel-source/drivers/media/i2c/Kconfig	2020-08-13 18:14:08.532518515 +0200
 @@ -887,6 +887,18 @@
  	  To compile this driver as a module, choose M here: the
  	  module will be called mt9v111.
@@ -2143,8 +2193,8 @@ diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconf
  	tristate "Siliconfile SR030PC30 sensor support"
  	depends on I2C && VIDEO_V4L2
 diff -Naurw ./drivers/media/i2c/Makefile ../kernel-source/drivers/media/i2c/Makefile
---- ./drivers/media/i2c/Makefile	2020-08-12 17:33:55.564448555 +0200
-+++ ../kernel-source/drivers/media/i2c/Makefile	2020-08-12 17:34:32.726626504 +0200
+--- ./drivers/media/i2c/Makefile	2020-08-13 18:12:50.828147374 +0200
++++ ../kernel-source/drivers/media/i2c/Makefile	2020-08-13 18:14:08.532518515 +0200
 @@ -88,6 +88,7 @@
  obj-$(CONFIG_VIDEO_MT9V011) += mt9v011.o
  obj-$(CONFIG_VIDEO_MT9V032) += mt9v032.o

@@ -11,5 +11,9 @@ IMAGE_INSTALL += "dhcp-server \
                   trousers \
                   tpm2-tss-engine \
                   stress-ng \
-                  av96-root-files"
+                  av96-root-files \
+                  packagegroup-core-buildessential \
+                  libjpeg-turbo-dev \
+                  libv4l-dev \
+                  git"
 
