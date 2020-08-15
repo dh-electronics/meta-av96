@@ -15,5 +15,7 @@ IMAGE_INSTALL += "dhcp-server \
                   packagegroup-core-buildessential \
                   libjpeg-turbo-dev \
                   libv4l-dev \
-                  git"
+                  git \
+                  v4l2grab \
+                  "
 

@@ -1,7 +1,7 @@
 diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap1302.c
 --- ./drivers/media/i2c/ap1302.c	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-08-13 18:14:08.532518515 +0200
-@@ -0,0 +1,2168 @@
++++ ../kernel-source/drivers/media/i2c/ap1302.c	2020-08-15 10:46:49.790400696 +0200
+@@ -0,0 +1,2185 @@
 +/*
 + * Copyright (C) 2020 Arrow Electronics
 + * Author: Botond Kardos
@@ -124,11 +124,10 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +};
 +
 +enum ap1302_frame_rate {
-+	AP1302_10_FPS = 0,
++	AP1302_3_FPS = 0,
++	AP1302_10_FPS,
 +	AP1302_15_FPS,
-+	AP1302_24_FPS,
-+	AP1302_30_FPS,
-+	AP1302_60_FPS,
++	AP1302_25_FPS,
 +	AP1302_NUM_FRAMERATES,
 +};
 +
@@ -152,11 +151,10 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		 "MIPI CSI-2 virtual channel (0..3), default 0");
 +
 +static const int ap1302_framerates[] = {
++	[AP1302_3_FPS] = 3,
 +	[AP1302_10_FPS] = 10,
 +	[AP1302_15_FPS] = 15,
-+	[AP1302_24_FPS] = 24,
-+	[AP1302_30_FPS] = 30,
-+	[AP1302_60_FPS] = 60,
++	[AP1302_25_FPS] = 25,
 +};
 +
 +/* regulator supplies */
@@ -184,6 +182,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	u32 vact;
 +	struct ap1302_reg_value *p_mode;
 +	int mode_len;
++	int max_fps;
 +};
 +
 +struct ap1302_ctrls {
@@ -306,6 +305,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
 +};
 +
++#if 0
 +static struct ap1302_reg_value ap1302_mode_2560_1440[ ] = {
 +	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
 +	{ 4, { 0x20, 0x00,  0x0a, 0x00 }, },
@@ -319,6 +319,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +	{ 4, { 0x20, 0x02,  0x08, 0x70 }, },
 +	{ 4, { 0x11, 0x84,  0x00, 0x0B }, },
 +};
++#endif
 +
 +static struct ap1302_reg_value ap1302_mode_4160_3120[ ] = {
 +	{ 4, { 0x11, 0x84,  0x00, 0x01 }, },
@@ -329,14 +330,14 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +
 +static const struct ap1302_mode_info
 +ap1302_mode_data[AP1302_NUM_MODES] = {
-+	{AP1302_MODE_320_240, 320, 240, ap1302_mode_320_240, ARRAY_SIZE(ap1302_mode_320_240)},
-+	{AP1302_MODE_VGA_640_480, 640, 480, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480)},
-+	{AP1302_MODE_1024_576, 1024, 576, ap1302_mode_1024_576, ARRAY_SIZE(ap1302_mode_1024_576)},
-+	{AP1302_MODE_720P_1280_720, 1280, 720, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720)},
-+	{AP1302_MODE_1080P_1920_1080, 1920, 1080, ap1302_mode_1920_1080, ARRAY_SIZE(ap1302_mode_1920_1080)},
++	{AP1302_MODE_320_240, 320, 240, ap1302_mode_320_240, ARRAY_SIZE(ap1302_mode_320_240), 25},
++	{AP1302_MODE_VGA_640_480, 640, 480, ap1302_mode_640_480, ARRAY_SIZE(ap1302_mode_640_480), 25},
++	{AP1302_MODE_1024_576, 1024, 576, ap1302_mode_1024_576, ARRAY_SIZE(ap1302_mode_1024_576), 25},
++	{AP1302_MODE_720P_1280_720, 1280, 720, ap1302_mode_1280_720, ARRAY_SIZE(ap1302_mode_1280_720), 15},
++	{AP1302_MODE_1080P_1920_1080, 1920, 1080, ap1302_mode_1920_1080, ARRAY_SIZE(ap1302_mode_1920_1080), 15},
 +/*	{AP1302_MODE_2560_1440, 2560, 1440, ap1302_mode_2560_1440, ARRAY_SIZE(ap1302_mode_2560_1440)}, */
 +/*	{AP1302_MODE_2160P_3840_2160, 3840, 2160, ap1302_mode_3840_2160, ARRAY_SIZE(ap1302_mode_3840_2160)}, */
-+	{AP1302_MODE_4160_3120, 4160, 3120, ap1302_mode_4160_3120, ARRAY_SIZE(ap1302_mode_4160_3120)},
++	{AP1302_MODE_4160_3120, 4160, 3120, ap1302_mode_4160_3120, ARRAY_SIZE(ap1302_mode_4160_3120), 3},
 +};
 +
 +
@@ -753,7 +754,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +				     u32 width, u32 height)
 +{
 +	const struct ap1302_mode_info *mode;
-+	enum ap1302_frame_rate rate = AP1302_15_FPS;
++	enum ap1302_frame_rate rate = AP1302_3_FPS;
 +	int minfps, maxfps, best_fps, fps;
 +	int i;
 +
@@ -761,12 +762,22 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +			   __func__, (int )__LINE__, width, height, fi->numerator, fi->denominator );
 +
 +	minfps = ap1302_framerates[0];
-+	maxfps = ap1302_framerates[ARRAY_SIZE(ap1302_framerates) - 1];
++	for ( i = AP1302_NUM_MODES - 1 ; i >= 0 ; i-- ) {
++		maxfps = ap1302_mode_data[ i ].max_fps;
++		if ( ( width >= ap1302_mode_data[ i ].hact ) ||
++			 ( height >= ap1302_mode_data[ i ].vact ) )
++			break;
++	}
 +
 +	if (fi->numerator == 0) {
 +		fi->denominator = maxfps;
 +		fi->numerator = 1;
-+		rate = AP1302_30_FPS;
++		for ( i = 0 ; i < AP1302_NUM_FRAMERATES ; i++ ) {
++			if ( maxfps == ap1302_framerates[ i ] ) {
++				rate = i;
++				break;
++			}
++		}
 +		goto find_mode;
 +	}
 +
@@ -1076,6 +1087,12 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		if ( !ret )
 +			ret = ap1302_mod_reg16( sensor, AP1302_REG_ORIENTATION, 0x03,
 +									( sensor->ctrls.vflip_value << 1 ) | sensor->ctrls.hflip_value );
++
++		if ( !ret )
++			ret = ap1302_set_ctrl_auto_exp(sensor, sensor->ctrls.auto_exp->val);
++
++		if ( !ret )
++			ret = ap1302_set_ctrl_exp(sensor, sensor->ctrls.exposure->val);
 +
 +		if ( !ret )
 +			/* ap1302_set_fps() also fixes MIPI color order */
@@ -1753,7 +1770,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +		frame1 = val >> 8;
 +
 +		/* wait some frames 1st */
-+		for ( cnt = 0 ; cnt < 20 ; cnt++ ) {
++		for ( cnt = 0 ; cnt < 50 ; cnt++ ) {
 +			ret = ap1302_read_reg16(sensor, AP1302_REG_FRAME_CNT, &val );
 +			if ( ret )
 +				break;
@@ -2171,8 +2188,8 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 +MODULE_FIRMWARE(AP1302_FW_NORMAL);
 +MODULE_FIRMWARE(AP1302_FW_TEST);
 diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconfig
---- ./drivers/media/i2c/Kconfig	2020-08-13 18:12:50.828147374 +0200
-+++ ../kernel-source/drivers/media/i2c/Kconfig	2020-08-13 18:14:08.532518515 +0200
+--- ./drivers/media/i2c/Kconfig	2020-08-15 10:46:21.738948698 +0200
++++ ../kernel-source/drivers/media/i2c/Kconfig	2020-08-15 10:46:49.790400696 +0200
 @@ -887,6 +887,18 @@
  	  To compile this driver as a module, choose M here: the
  	  module will be called mt9v111.
@@ -2193,8 +2210,8 @@ diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconf
  	tristate "Siliconfile SR030PC30 sensor support"
  	depends on I2C && VIDEO_V4L2
 diff -Naurw ./drivers/media/i2c/Makefile ../kernel-source/drivers/media/i2c/Makefile
---- ./drivers/media/i2c/Makefile	2020-08-13 18:12:50.828147374 +0200
-+++ ../kernel-source/drivers/media/i2c/Makefile	2020-08-13 18:14:08.532518515 +0200
+--- ./drivers/media/i2c/Makefile	2020-08-15 10:46:21.738948698 +0200
++++ ../kernel-source/drivers/media/i2c/Makefile	2020-08-15 10:46:49.790400696 +0200
 @@ -88,6 +88,7 @@
  obj-$(CONFIG_VIDEO_MT9V011) += mt9v011.o
  obj-$(CONFIG_VIDEO_MT9V032) += mt9v032.o

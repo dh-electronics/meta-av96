@@ -17,6 +17,7 @@ SRC_URI += "file://usr/share/weston/icon/meld.png"
 SRC_URI += "file://lib/firmware/ap1302/on_ar1337_cdaf_dw9718.290520_01.bin"
 SRC_URI += "file://lib/firmware/ap1302/test_pattern.bin"
 SRC_URI += "file://home/root/v4l2_start.sh"
+SRC_URI += "file://home/root/README-ap1302.txt"
 
 do_install() {
     install -d ${D}${sysconfdir}/xdg/weston
@@ -39,6 +40,7 @@ do_install() {
     install -m 755 ${WORKDIR}/usr/share/weston/icon/* ${D}${datadir}/weston/icon/
     install -m 755 ${WORKDIR}/lib/firmware/ap1302/* ${D}${base_libdir}/firmware/ap1302/
     install -m 755 ${WORKDIR}/home/root/v4l2_start.sh ${D}/home/root/
+    install -m 755 ${WORKDIR}/home/root/README-ap1302.txt ${D}/home/root/
 }
 
 FILES_${PN} += "${sysconfdir}"
