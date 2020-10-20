@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+/*
+ * Copyright (C) STMicroelectronics 2019 - All Rights Reserved
+ * Author: Alexandre Torgue <alexandre.torgue@st.com> for STMicroelectronics.
+ */
+
+/dts-v1/;
+
+#include "stm32mp157.dtsi"
+#include "stm32mp15xa.dtsi"
+#include "stm32mp157a-av96-pinctrl.dtsi"
+#include "stm32mp15xxac-pinctrl.dtsi"
+#include "stm32mp157a-av96.dtsi"
+
+/ {
+	model = "Arrow Electronics Avenger96 Board";
+	compatible = "st,stm32mp157a-av96", "st,stm32mp157";
+
+	aliases {
+		ethernet0 = &ethernet0;
+		serial0 = &uart4;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	config {
+		dh,avenger96-hwver = <1>;
+		dh,hwver-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>,
+				<&gpiod 9 GPIO_ACTIVE_HIGH>;
+	};
+
+	reserved-memory {
+		gpu_reserved: gpu@da000000 {
+			reg = <0xda000000 0x4000000>;
+			no-map;
+		};
+
+		optee_memory: optee@0xde000000 {
+			reg = <0xde000000 0x02000000>;
+			no-map;
+		};
+	};
+};
+
