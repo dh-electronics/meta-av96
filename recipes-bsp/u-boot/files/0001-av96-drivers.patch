@@ -1,0 +1,432 @@
+diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
+--- ./arch/arm/lib/relocate.S	2020-10-21 15:17:47.606973221 +0200
++++ ../uboot-source/arch/arm/lib/relocate.S	2020-10-22 16:11:45.545436733 +0200
+@@ -78,6 +78,8 @@
+  */
+ 
+ ENTRY(relocate_code)
++	/* b	relocate_code */
++
+ 	ldr	r1, =__image_copy_start	/* r1 <- SRC &__image_copy_start */
+ 	subs	r4, r0, r1		/* r4 <- relocation offset */
+ 	beq	relocate_done		/* skip relocation */
+diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/cpu.c
+--- ./arch/arm/mach-stm32mp/cpu.c	2020-10-21 15:17:47.626972306 +0200
++++ ../uboot-source/arch/arm/mach-stm32mp/cpu.c	2020-10-22 16:11:45.545436733 +0200
+@@ -14,6 +14,7 @@
+ #include <asm/arch/sys_proto.h>
+ #include <dm/device.h>
+ #include <dm/uclass.h>
++#include <i2c_eeprom.h>
+ 
+ /* RCC register */
+ #define RCC_TZCR		(STM32_RCC_BASE + 0x00)
+@@ -76,6 +77,9 @@
+ #define PKG_SHIFT	27
+ #define PKG_MASK	GENMASK(2, 0)
+ 
++/* MAC ADDR offset in MAC EEPROM */
++#define MAC24AA02_MAC_ADDR  0xfa
++
+ #if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
+ #ifndef CONFIG_STM32MP1_TRUSTED
+ static void security_init(void)
+@@ -498,7 +502,7 @@
+  * If there is no MAC address in the environment, then it will be initialized
+  * (silently) from the value in the OTP.
+  */
+-__weak int setup_mac_address(void)
++static int setup_mac_address_otp(void)
+ {
+ #if defined(CONFIG_NET)
+ 	int ret;
+@@ -533,13 +537,51 @@
+ 
+ 	ret = eth_env_set_enetaddr("ethaddr", enetaddr);
+ 	if (ret)
+-		pr_err("Failed to set mac address %pM from OTP: %d\n",
++		pr_debug("Failed to set mac address %pM from OTP: %d\n",
+ 		       enetaddr, ret);
+ #endif
+ 
+ 	return 0;
+ }
+ 
++/*
++ * If there is no MAC address in the environment, then it will be initialized
++ * (silently) from the value in the MAC EEPROM.
++ */
++static int setup_mac_address_i2c(void)
++{
++#if defined(CONFIG_NET)
++	uchar ethaddr[6];
++	struct udevice *dev;
++	int ret;
++
++	if (eth_env_get_enetaddr("ethaddr", ethaddr))
++		return 0;
++
++	ret = uclass_first_device_err(UCLASS_I2C_EEPROM, &dev);
++	if (ret) {
++		pr_debug( "invalid MAC address in OTP\n" );
++		pr_err( "MAC EEPROM not found\n" );
++		return ret;
++	}
++
++	ret = i2c_eeprom_read(dev, MAC24AA02_MAC_ADDR, ethaddr, 6);
++	if (ret) {
++		pr_debug( "invalid MAC address in OTP\n" );
++		pr_err( "Failed to read MAC EEPROM\n" );
++		return ret;
++	}
++
++	if (is_valid_ethaddr(ethaddr))
++		eth_env_set_enetaddr("ethaddr", ethaddr);
++	else {
++		pr_err("invalid MAC address in OTP and in MAC EEPROM %pM\n", ethaddr);
++		return -EINVAL;
++	}
++#endif
++	return 0;
++}
++
+ static int setup_serial_number(void)
+ {
+ 	char *serial_env;
+@@ -580,7 +622,8 @@
+ {
+ 	setup_serial_number();
+ 	setup_boot_mode();
+-	setup_mac_address();
++	if ( setup_mac_address_otp() )
++	  setup_mac_address_i2c();
+ 
+ 	return 0;
+ }
+diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../uboot-source/board/st/stm32mp1/stm32mp1.c
+--- ./board/st/stm32mp1/stm32mp1.c	2020-10-21 15:17:47.778965347 +0200
++++ ../uboot-source/board/st/stm32mp1/stm32mp1.c	2020-10-22 16:11:45.545436733 +0200
+@@ -32,6 +32,7 @@
+ #include <linux/iopoll.h>
+ #include <power/regulator.h>
+ #include <usb/dwc2_udc.h>
++#include <fuse.h>
+ 
+ /* SYSCFG registers */
+ #define SYSCFG_BOOTR		0x00
+@@ -497,9 +498,30 @@
+ }
+ #endif /* CONFIG_ADC */
+ 
++/**
++ * we need to program PRODUCT_BELOW_2V5 fuse for enabling high-speed
++ * mode on some pins
++ */
++static int check_product_below_2v5( void )
++{
++	int ret;
++	u32 otp;
++
++	ret = fuse_read( 0, 18, &otp );
++	if ( !ret ) {
++		if ( !( otp & ( 1u << 13 ) ) ) {
++			pr_err( "PRODUCT_BELOW_2V5 fuse not set. Programming ...\n" );
++			ret = fuse_prog( 0, 18, ( 1u << 13 ) );
++			mdelay( 3000 );
++			do_reset(NULL, 0, 0, NULL);
++		}
++	}
++
++	return ret;
++}
++
+ static void sysconf_init(void)
+ {
+-#ifndef CONFIG_STM32MP1_TRUSTED
+ 	u8 *syscfg;
+ #ifdef CONFIG_DM_REGULATOR
+ 	struct udevice *pwr_dev;
+@@ -550,6 +572,12 @@
+ 			return;
+ 		}
+ 
++		ret = check_product_below_2v5( );
++		if (ret) {
++			pr_err("Reading fuse failed\n");
++			return;
++		}
++
+ 		ret = misc_read(dev, STM32_BSEC_SHADOW(18), &otp, 4);
+ 		if (ret > 0)
+ 			otp = otp & BIT(13);
+@@ -580,6 +608,7 @@
+ 	}
+ #endif
+ 
++#ifndef CONFIG_STM32MP1_TRUSTED
+ 	/* activate automatic I/O compensation
+ 	 * warning: need to ensure CSI enabled and ready in clock driver
+ 	 */
+diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
+--- ./common/board_f.c	2020-10-21 15:17:47.794964614 +0200
++++ ../uboot-source/common/board_f.c	2020-10-22 16:11:45.545436733 +0200
+@@ -45,6 +45,7 @@
+ #include <asm/mp.h>
+ #endif
+ #include <asm/io.h>
++#include <asm/gpio.h>
+ #include <asm/sections.h>
+ #include <dm/root.h>
+ #include <linux/errno.h>
+@@ -869,6 +870,56 @@
+ 	return 0;
+ }
+ 
++/**
++ * check_hw_ver() checks Avenger96 board HW coding
++ * see PD9 and PG13 pins in schematics
++ */
++static int check_hw_ver(void)
++{
++	ofnode node;
++	struct gpio_desc gpio;
++	int dts_av96_ver;
++	unsigned int board_ver = 0u;
++
++	dts_av96_ver = fdtdec_get_config_int(gd->fdt_blob, "dh,avenger96-hwver", -1) & 0xff;
++
++	node = ofnode_path("/config");
++	if (!ofnode_valid(node)) {
++		debug("%s: no /config node?\n", __func__);
++		return EINVAL;
++	}
++
++	if (gpio_request_by_name_nodev(node, "dh,hwver-gpios", 0, &gpio, GPIOD_IS_IN)) {
++		debug("%s: could not find /config/dh,hwver-gpios/0\n", __func__);
++		return EINVAL;
++	}
++
++	if (dm_gpio_get_value(&gpio))
++		board_ver |= 0x01u;
++
++	dm_gpio_free(NULL, &gpio);
++
++
++	if (gpio_request_by_name_nodev(node, "dh,hwver-gpios", 1, &gpio, GPIOD_IS_IN)) {
++		debug("%s: could not find /config/dh,hwver-gpios/1\n", __func__);
++		return EINVAL;
++	}
++
++	if (dm_gpio_get_value(&gpio))
++		board_ver |= 0x02u;
++
++	dm_gpio_free(NULL, &gpio);
++
++	if ( board_ver != dts_av96_ver ) {
++		printf( "\n********************************************\n" );
++		printf( "* HW coding should be 0x%02x, detected: 0x%02x *\n", dts_av96_ver, (int )board_ver );
++		printf( "********************************************\n\n" );
++		mdelay( 10000 );
++	}
++
++	return 0;
++}
++
+ static const init_fnc_t init_sequence_f[] = {
+ 	setup_mon_len,
+ #ifdef CONFIG_OF_CONTROL
+@@ -925,6 +976,7 @@
+ #endif
+ #if defined(CONFIG_DISPLAY_BOARDINFO)
+ 	show_board_info,
++	check_hw_ver,
+ #endif
+ 	INIT_FUNC_WATCHDOG_INIT
+ #if defined(CONFIG_MISC_INIT_F)
+diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp15_basic_defconfig
+--- ./configs/stm32mp15_basic_defconfig	2020-10-21 15:17:47.822963331 +0200
++++ ../uboot-source/configs/stm32mp15_basic_defconfig	2020-10-22 16:13:57.994194839 +0200
+@@ -2,12 +2,12 @@
+ CONFIG_ARCH_STM32MP=y
+ CONFIG_SYS_MALLOC_F_LEN=0x3000
+ CONFIG_SPL_MMC_SUPPORT=y
+-CONFIG_ENV_OFFSET=0x280000
++CONFIG_ENV_OFFSET=0x180000
+ CONFIG_SPL=y
+ CONFIG_TARGET_ST_STM32MP15x=y
+ CONFIG_CMD_STM32PROG=y
+ CONFIG_ENV_SECT_SIZE=0x40000
+-CONFIG_ENV_OFFSET_REDUND=0x2C0000
++CONFIG_ENV_OFFSET_REDUND=0x1C0000
+ CONFIG_SPL_SPI_FLASH_SUPPORT=y
+ CONFIG_SPL_SPI_SUPPORT=y
+ # CONFIG_ARMV7_VIRT is not set
+@@ -22,6 +22,8 @@
+ CONFIG_SPL_POWER_SUPPORT=y
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0x80000
+ CONFIG_SYS_PROMPT="STM32MP> "
++CONFIG_MISC=y
++CONFIG_I2C_EEPROM=y
+ # CONFIG_CMD_BOOTD is not set
+ CONFIG_CMD_DTIMG=y
+ # CONFIG_CMD_ELF is not set
+@@ -51,6 +53,7 @@
+ CONFIG_CMD_REGULATOR=y
+ CONFIG_CMD_EXT4_WRITE=y
+ CONFIG_CMD_MTDPARTS=y
++CONFIG_MTDPARTS_NOR0_BOOT="256k(fsbl1),256k(fsbl2),1m(ssbl),256k(u-boot-env)"
+ CONFIG_CMD_UBI=y
+ # CONFIG_SPL_DOS_PARTITION is not set
+ CONFIG_DEFAULT_DEVICE_TREE="stm32mp157c-ev1"
+@@ -110,6 +113,8 @@
+ CONFIG_DM_ETH=y
+ CONFIG_DWC_ETH_QOS=y
+ CONFIG_PHY=y
++CONFIG_PHY_MICREL=y
++CONFIG_PHY_MICREL_KSZ90X1=y
+ CONFIG_PHY_STM32_USBPHYC=y
+ CONFIG_PINCONF=y
+ # CONFIG_SPL_PINCTRL_FULL is not set
+diff -Naurw ./configs/stm32mp15_trusted_defconfig ../uboot-source/configs/stm32mp15_trusted_defconfig
+--- ./configs/stm32mp15_trusted_defconfig	2020-10-21 15:17:47.822963331 +0200
++++ ../uboot-source/configs/stm32mp15_trusted_defconfig	2020-10-22 16:13:34.666765810 +0200
+@@ -1,15 +1,17 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_STM32MP=y
+ CONFIG_SYS_MALLOC_F_LEN=0x3000
+-CONFIG_ENV_OFFSET=0x280000
++CONFIG_ENV_OFFSET=0x180000
+ CONFIG_TARGET_ST_STM32MP15x=y
+ CONFIG_CMD_STM32PROG=y
+ CONFIG_ENV_SECT_SIZE=0x40000
+-CONFIG_ENV_OFFSET_REDUND=0x2C0000
++CONFIG_ENV_OFFSET_REDUND=0x1C0000
+ CONFIG_DISTRO_DEFAULTS=y
+ CONFIG_FIT=y
+ CONFIG_BOOTCOMMAND="run bootcmd_stm32mp"
+ CONFIG_SYS_PROMPT="STM32MP> "
++CONFIG_MISC=y
++CONFIG_I2C_EEPROM=y
+ # CONFIG_CMD_BOOTD is not set
+ CONFIG_CMD_DTIMG=y
+ # CONFIG_CMD_ELF is not set
+@@ -39,6 +41,7 @@
+ CONFIG_CMD_REGULATOR=y
+ CONFIG_CMD_EXT4_WRITE=y
+ CONFIG_CMD_MTDPARTS=y
++CONFIG_MTDPARTS_NOR0_BOOT="256k(fsbl1),256k(fsbl2),1m(ssbl),256k(u-boot-env)"
+ CONFIG_CMD_UBI=y
+ CONFIG_DEFAULT_DEVICE_TREE="stm32mp157c-ev1"
+ CONFIG_ENV_IS_NOWHERE=y
+@@ -97,6 +100,8 @@
+ CONFIG_DM_ETH=y
+ CONFIG_DWC_ETH_QOS=y
+ CONFIG_PHY=y
++CONFIG_PHY_MICREL=y
++CONFIG_PHY_MICREL_KSZ90X1=y
+ CONFIG_PHY_STM32_USBPHYC=y
+ CONFIG_PINCONF=y
+ CONFIG_PINCTRL_STMFX=y
+diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.c
+--- ./drivers/net/dwc_eth_qos.c	2020-10-21 15:17:47.690969377 +0200
++++ ../uboot-source/drivers/net/dwc_eth_qos.c	2020-10-22 16:11:45.545436733 +0200
+@@ -707,7 +707,7 @@
+ 			return ret;
+ 		}
+ 
+-		udelay(2);
++		mdelay(10);
+ 
+ 		ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 0);
+ 		if (ret < 0) {
+@@ -733,18 +733,6 @@
+ 
+ static int eqos_stop_resets_stm32(struct udevice *dev)
+ {
+-	struct eqos_priv *eqos = dev_get_priv(dev);
+-	int ret;
+-
+-	if (dm_gpio_is_valid(&eqos->phy_reset_gpio)) {
+-		ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 1);
+-		if (ret < 0) {
+-			pr_err("dm_gpio_set_value(phy_reset, assert) failed: %d",
+-			       ret);
+-			return ret;
+-		}
+-	}
+-
+ 	return 0;
+ }
+ 
+@@ -1049,13 +1037,13 @@
+ 		goto err;
+ 	}
+ 
++	if (!eqos->phy) {
+ 	ret = eqos->config->ops->eqos_start_resets(dev);
+ 	if (ret < 0) {
+ 		pr_err("eqos_start_resets() failed: %d", ret);
+ 		goto err_stop_clks;
+ 	}
+-
+-	udelay(10);
++	}
+ 
+ 	eqos->reg_access_ok = true;
+ 
+@@ -1629,6 +1617,7 @@
+ err_free_clk_slave_bus:
+ 	clk_free(&eqos->clk_slave_bus);
+ err_free_gpio_phy_reset:
++	pr_err("**** dm_gpio_free( phy_reset_gpio )\n" );
+ 	dm_gpio_free(dev, &eqos->phy_reset_gpio);
+ err_free_reset_eqos:
+ 	reset_free(&eqos->reset_ctl);
+@@ -1697,9 +1686,7 @@
+ 		/* search "reset-gpios" in phy node */
+ 		ret = gpio_request_by_name_nodev(phandle_args.node,
+ 						 "reset-gpios", 0,
+-						 &eqos->phy_reset_gpio,
+-						 GPIOD_IS_OUT |
+-						 GPIOD_IS_OUT_ACTIVE);
++						 &eqos->phy_reset_gpio, GPIOD_IS_OUT );
+ 		if (ret)
+ 			pr_warn("gpio_request_by_name(phy reset) not provided %d",
+ 				ret);
+@@ -1810,6 +1797,12 @@
+ 		goto err_remove_resources_core;
+ 	}
+ 
++	ret = eqos->config->ops->eqos_start_resets(dev);
++	if (ret < 0) {
++		pr_err("eqos_start_resets() failed: %d", ret);
++		goto err_remove_resources_tegra;
++	}
++
+ 	eqos->mii = mdio_alloc();
+ 	if (!eqos->mii) {
+ 		pr_err("mdio_alloc() failed");
+diff -Naurw ./drivers/net/phy/phy.c ../uboot-source/drivers/net/phy/phy.c
+--- ./drivers/net/phy/phy.c	2020-10-21 15:17:47.694969194 +0200
++++ ../uboot-source/drivers/net/phy/phy.c	2020-10-22 16:11:45.545436733 +0200
+@@ -783,6 +783,7 @@
+ 	int i;
+ 	struct phy_device *phydev;
+ 
++	mdelay(5);		/* 5 ms */
+ 	phydev = search_for_existing_phy(bus, phy_mask, interface);
+ 	if (phydev)
+ 		return phydev;
+diff -Naurw ./Makefile ../uboot-source/Makefile
+--- ./Makefile	2020-10-21 15:17:47.546975965 +0200
++++ ../uboot-source/Makefile	2020-10-22 16:11:45.545436733 +0200
+@@ -273,7 +273,8 @@
+ 
+ HOSTCC       = cc
+ HOSTCXX      = c++
+-HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
++#HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
++HOSTCFLAGS   = -Wall -Wstrict-prototypes -g -O1 -fomit-frame-pointer \
+ 		$(if $(CONFIG_TOOLS_DEBUG),-g)
+ HOSTCXXFLAGS = -O2
+ 

@@ -25,6 +25,12 @@
 		stdout-path = "serial0:115200n8";
 	};
 
+	config {
+		dh,avenger96-hwver = <1>;
+		dh,hwver-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>,
+				<&gpiod 9 GPIO_ACTIVE_HIGH>;
+	};
+
 	reserved-memory {
 		gpu_reserved: gpu@da000000 {
 			reg = <0xda000000 0x4000000>;

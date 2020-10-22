@@ -474,10 +474,12 @@
 };
 
 &usbphyc_port0 {
+	phy-supply = <&vdd_usb>;
 	st,phy-tuning = <&usb_phy_tuning>;
 };
 
 &usbphyc_port1 {
+	phy-supply = <&vdd_usb>;
 	st,phy-tuning = <&usb_phy_tuning>;
 };
 

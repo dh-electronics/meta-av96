@@ -30,7 +30,37 @@
 	};
 };
 
-# don't forget to coment this out when porting
+&qspi {
+        pinctrl-names = "default";
+        pinctrl-0 = <&qspi_clk_pins_a &qspi_bk1_pins_a &qspi_bk2_pins_a>;
+        reg = <0x58003000 0x1000>, <0x70000000 0x4000000>;
+        #address-cells = <1>;
+        #size-cells = <0>;
+        status = "okay";
+
+        flash0: mx66l51235l@0 {
+                compatible = "jedec,spi-nor";
+                reg = <0>;
+                spi-rx-bus-width = <4>;
+                spi-max-frequency = <108000000>;
+                #address-cells = <1>;
+                #size-cells = <1>;
+        };
+};
+
+&usbotg_hs {
+	pinctrl-0 = <&usbotg_hs_pins_a>;
+	pinctrl-names = "default";
+	phys = <&usbphyc_port1 0>;
+	phy-names = "usb2-phy";
+	status = "okay";
+};
+
+&usbphyc {
+	status = "okay";
+};
+
+/* don't forget to ignore this block when porting */
 #if 0
 &clk_hse {
 	st,digbypass;
