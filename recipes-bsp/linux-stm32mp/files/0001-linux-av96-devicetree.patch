@@ -1,7 +1,7 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2020-10-27 11:27:01.894745413 +0100
-@@ -0,0 +1,729 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2020-11-02 18:33:06.150747358 +0100
+@@ -0,0 +1,719 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) Arrow Electronics 2020 - All Rights Reserved
@@ -204,15 +204,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +};
 +
 +&hash1 {
-+	status = "okay";
-+};
-+
-+&i2c1 {
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&i2c1_pins_a>;
-+	pinctrl-1 = <&i2c1_pins_sleep_a>;
-+	i2c-scl-rising-time-ns = <185>;
-+	i2c-scl-falling-time-ns = <20>;
 +	status = "okay";
 +};
 +
@@ -661,10 +652,9 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +	status = "okay";
 +
 +	bluetooth {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&btreg>;
 +		compatible = "brcm,bcm43438-bt";
 +		max-speed = <3000000>;
++		shutdown-gpios = <&gpioz 6 GPIO_ACTIVE_HIGH>;
 +	};
 +};
 +
@@ -733,8 +723,8 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +};
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi	2020-10-27 11:16:10.892141419 +0100
-@@ -0,0 +1,1343 @@
++++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi	2020-11-02 18:32:51.959451894 +0100
+@@ -0,0 +1,1333 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) Arrow Electronics 2020 - All Rights Reserved
@@ -2028,16 +2018,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi ../kernel-source/a
 +		};
 +	};
 +
-+	btreg: bt_reg_on-0 {
-+		pins {
-+			pinmux = <STM32_PINMUX('Z', 6, GPIO)>;
-+			drive-push-pull;
-+			bias-pull-up;
-+			output-high;
-+			slew-rate = <0>;
-+		};
-+	};
-+
 +	i2c4_pins_a: i2c4-0 {
 +		pins {
 +			pinmux = <STM32_PINMUX('Z', 4, AF6)>, /* I2C4_SCL */
@@ -2078,3 +2058,15 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96-pinctrl.dtsi ../kernel-source/a
 +		};
 +	};
 +};
+diff -Naurw ./drivers/base/core.c ../kernel-source/drivers/base/core.c
+--- ./drivers/base/core.c	2020-10-27 10:18:44.080359866 +0100
++++ ../kernel-source/drivers/base/core.c	2020-10-31 14:47:57.091177667 +0100
+@@ -418,7 +418,7 @@
+ 	list_add_tail_rcu(&link->s_node, &supplier->links.consumers);
+ 	list_add_tail_rcu(&link->c_node, &consumer->links.suppliers);
+ 
+-	dev_dbg(consumer, "Linked as a consumer to %s\n", dev_name(supplier));
++	dev_info(consumer, "Linked as a consumer to %s\n", dev_name(supplier));
+ 
+  out:
+ 	device_pm_unlock();
