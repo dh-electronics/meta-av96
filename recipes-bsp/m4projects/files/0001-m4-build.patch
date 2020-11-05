@@ -1,0 +1,127 @@
+diff -Naurw ./Makefile.stm32 ../1.2.0-r0/Makefile.stm32
+--- ./Makefile.stm32	2020-11-03 10:05:30.477698440 +0100
++++ ../1.2.0-r0/Makefile.stm32	2020-11-03 10:14:24.883257617 +0100
+@@ -1,4 +1,5 @@
+ CC := $(CROSS_COMPILE)gcc
++CPP := $(CROSS_COMPILE)g++
+ LD := $(CROSS_COMPILE)ld
+ AS := $(CROSS_COMPILE)ar
+ STRIP := $(CROSS_COMPILE)strip
+@@ -39,7 +40,7 @@
+ 
+ # LDFLAGS rules
+ LDFLAGS	+= $(COMMONFLAGS)
+-LDFLAGS	+= -specs=nosys.specs -specs=nano.specs
++LDFLAGS	+= -specs=nosys.specs -specs=nano.specs -u _printf_float
+ LDFLAGS	+= -Wl,-Map=$(BUILD_OUT)/output.map -Wl,--gc-sections -lm
+ #LDFLAGS	+= -D__MEM_START__=0x2ffc2000 -D__MEM_END__=0x2fff3000 -D__MEM_SIZE__=0x31000
+ #debug LINKER
+@@ -58,8 +59,17 @@
+ COBJ+=$1
+ endef
+ 
++define cpp-compilation-rule
++$1: $2 $(LDSCRIPT)
++	@echo $2 \< $1
++	@mkdir -pv `dirname $1`
++	$(CPP) $(CFLAGS) -c $2 -o $1
++COBJ+=$1
++endef
++
+ # generate a compilation rule for each source file
+ $(foreach r,$(CSRC), $(eval $(call c-compilation-rule,$(BUILD_OUT)/$(r).o,$(r))))
++$(foreach r,$(CPPSRC), $(eval $(call cpp-compilation-rule,$(BUILD_OUT)/$(r).o,$(r))))
+ 
+ # Include dep files
+ #DEPS= $(foreach file,$(CSRC),$(file).d)
+@@ -68,7 +78,7 @@
+ # Build elf output
+ $(TESTELF): $(COBJ)
+ 	@echo link $@
+-	$(CC)  $(LDFLAGS) -o $@.sym $^ $(LDLIBS) -T$(LDSCRIPT)
++	$(CPP)  $(LDFLAGS) -o $@.sym $^ $(LDLIBS) -T$(LDSCRIPT)
+ 	@cp $@.sym $@
+ 	@$(STRIP) -g $@
+ 	@$(SIZE) $@
+diff -Naurw ./parse_project_config.py ../1.2.0-r0/parse_project_config.py
+--- ./parse_project_config.py	2020-11-03 10:05:30.477698440 +0100
++++ ../1.2.0-r0/parse_project_config.py	2020-11-03 10:18:29.999265048 +0100
+@@ -88,7 +88,7 @@
+         #print("text:"+a.text)
+         temp=a.text
+ 
+-        if ((temp.find(".txt")==-1) & (temp.find(".gdb")==-1) & (temp.find(".launch")==-1) & (temp.find(".sh")==-1) & (temp.find("README")==-1)):
++        if ((temp.find(".c")==(len(temp) - 2)) | (temp.find(".s")==(len(temp) - 2))):
+             temp=temp.replace("PARENT-1-PROJECT_LOC/", "../")
+             temp=temp.replace("PARENT-2-PROJECT_LOC/", "../../")
+             temp=temp.replace("PARENT-3-PROJECT_LOC/", "../../../")
+@@ -98,7 +98,42 @@
+             temp=temp.replace("PARENT-7-PROJECT_LOC/", "../../../../../../../")
+             temp=temp.replace("PROJECT_LOC/", "../")
+ 
+-            #print(temp)
++            print(temp)
++            temp=fullpath(temp)
++
++            f.write(temp+" \\\n")
++
++f.write("\n")
++
++
++f.write("CPPSRC += \\\n")
++
++  
++for i in root.iter('link'):
++    a=i.find('locationURI')
++    if a==None:
++        a=i.find('location')
++    if a==None:
++        print("could not find any file")
++        exit(1)
++
++    if a.text is None:
++        print("no text")
++    else:
++        #print("text:"+a.text)
++        temp=a.text
++
++        if (temp.find(".cpp")==(len(temp) - 4)):
++            temp=temp.replace("PARENT-1-PROJECT_LOC/", "../")
++            temp=temp.replace("PARENT-2-PROJECT_LOC/", "../../")
++            temp=temp.replace("PARENT-3-PROJECT_LOC/", "../../../")
++            temp=temp.replace("PARENT-4-PROJECT_LOC/", "../../../../")
++            temp=temp.replace("PARENT-5-PROJECT_LOC/", "../../../../../")
++            temp=temp.replace("PARENT-6-PROJECT_LOC/", "../../../../../../")
++            temp=temp.replace("PARENT-7-PROJECT_LOC/", "../../../../../../../")
++            temp=temp.replace("PROJECT_LOC/", "../")
++
++            print(temp)
+             temp=fullpath(temp)
+ 
+             f.write(temp+" \\\n")
+@@ -117,7 +152,7 @@
+     if temp == buildconfig:
+         for i in j.iter('option'):
+             a=i.get('superClass')
+-            if a == 'gnu.c.compiler.option.include.paths':
++            if a == 'com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths':
+                 for j in i.iter('listOptionValue'):
+                     temp=j.get('value')
+                     if temp != "":
+@@ -128,14 +163,14 @@
+                         #print(temp)
+                         cflags=cflags+" -I"+temp+" \\\n"
+ 
+-            if a == 'gnu.c.compiler.option.preprocessor.def.symbols':
++            if a == 'com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.definedsymbols':
+                 for j in i.iter('listOptionValue'):
+                     temp=j.get('value')
+                     if temp != "":
+                         #print(temp)
+                         cflags=cflags+" -D"+temp+" \\\n"
+ 
+-            if a == 'fr.ac6.managedbuild.tool.gnu.cross.c.linker.script':
++            if a == 'com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.option.script':
+                 temp=i.get('value')
+                 temp=temp.replace("../", "",1)
+                 temp=fullpath(temp)
