@@ -7,5 +7,11 @@ IMAGE_INSTALL += "dhcp-server \
                   openssl \
                   openssl-bin \
                   stress-ng \
-                  av96-root-files"
+                  av96-root-files \
+                  python3 \
+                  python3-pip \
+                  python3-pyserial \
+                  python3-flask-socketio \
+                  python3-werkzeug-tests \
+                  lte-sensors-dashboard"
 
