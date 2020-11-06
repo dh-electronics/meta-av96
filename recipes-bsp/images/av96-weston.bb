@@ -6,6 +6,7 @@ include recipes-st/images/st-image-weston.bb
 IMAGE_INSTALL += "dhcp-server \
                   openssl \
                   openssl-bin \
+                  packagegroup-security-tpm2 \
                   stress-ng \
                   av96-root-files \
                   python3 \

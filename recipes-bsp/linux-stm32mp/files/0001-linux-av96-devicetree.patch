@@ -1,7 +1,7 @@
 diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/boot/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
 +++ ../kernel-source/arch/arm/boot/dts/stm32mp157a-av96.dtsi	2020-11-02 18:33:06.150747358 +0100
-@@ -0,0 +1,719 @@
+@@ -0,0 +1,705 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
 + * Copyright (C) Arrow Electronics 2020 - All Rights Reserved
@@ -663,20 +663,6 @@ diff -Naurw ./arch/arm/boot/dts/stm32mp157a-av96.dtsi ../kernel-source/arch/arm/
 +	pinctrl-0 = <&spi1_pins_a>;
 +	pinctrl-1 = <&spi1_sleep_pins_a>;
 +	status = "disabled";
-+};
-+
-+&spi2 {
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&spi2_pins_a>;
-+	pinctrl-1 = <&spi2_sleep_pins_a>;
-+	status = "okay";
-+	cs-gpios = <&gpioi 0 GPIO_ACTIVE_LOW>;
-+
-+	tpm_tis@0 {
-+		compatible = "tcg,tpm_tis-spi";
-+		reg = <0>;
-+		spi-max-frequency = <10000000>;
-+	};
 +};
 +
 +&usbh_ehci {

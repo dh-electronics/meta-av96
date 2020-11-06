@@ -21,7 +21,6 @@
 	status = "okay";
 };
 
-
 &dcmi {
 	status = "okay";
 	pinctrl-names = "default", "sleep";
@@ -39,7 +38,6 @@
 		};
 	};
 };
-
 
 &i2c2 {
 	clock-frequency = <1000000>;
@@ -108,5 +106,20 @@
 				};
 			};
 		};
+	};
+};
+
+/* Tresor board */
+&spi2 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&spi2_pins_a>;
+	pinctrl-1 = <&spi2_sleep_pins_a>;
+	status = "okay";
+	cs-gpios = <&gpioi 0 GPIO_ACTIVE_LOW>;
+
+	tpm_tis@0 {
+		compatible = "tcg,tpm_tis-spi";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
 	};
 };
