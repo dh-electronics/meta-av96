@@ -35,9 +35,9 @@ sensor data can be seen at:
     All the sources of the Python-based Web application can be found in this
 image at /home/root/LTE_sensors_av96_dashboard
     C and C++ sources of the M4 firmware can be found at:
-    https://github.com/bkardosa/meta-av96/tree/lte_demo/recipes-bsp/m4projects/files/Projects
+    https://github.com/dh-electronics/meta-av96/tree/dunfell/recipes-bsp/m4projects/files/Projects/
 
 
     Rebuilding the image
-    See: https://github.com/bkardosa/manifest-av96/tree/lte_demo
+    See: https://github.com/dh-electronics/manifest-av96/
 

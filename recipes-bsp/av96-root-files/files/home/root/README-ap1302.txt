@@ -13,11 +13,11 @@ on_ar1337_cdaf_dw9718.290520_01.bin which was created from
 on the AP1302 ISP and implements Contrast-Detect-Auto-Focus (CDAF) using the
 DW9718S actuator found in the “Truly” AR1337 camera modules. CDAF works but
 the firmware has problems with AE (auto-exposure) in very bright scenes.
-Because of this AE is originally disabled by the ap1302 Linux driver. The
+Because of this AE is initially disabled by the ap1302 Linux driver. The
 AP1302 ISP is still allowed to determine the gain value automatically.
 
     Rebuilding the image: follow instructions at
-https://github.com/dh-electronics/manifest-av96/tree/thud-ap1302-dev
+https://github.com/dh-electronics/manifest-av96/
 
 
     Supported resolutions and maximum fps:
