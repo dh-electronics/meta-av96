@@ -18,6 +18,7 @@ SRC_URI += "file://lib/firmware/ap1302/on_ar1337_cdaf_dw9718.290520_01.bin"
 SRC_URI += "file://lib/firmware/ap1302/test_pattern.bin"
 SRC_URI += "file://home/root/v4l2_start.sh"
 SRC_URI += "file://home/root/README-ap1302.txt"
+SRC_URI += "file://usr/local/demo/application/camera/bin/launch_camera_preview.sh"
 
 do_install() {
     install -d ${D}${sysconfdir}
@@ -30,6 +31,7 @@ do_install() {
     install -d ${D}${datadir}/weston/icon
     install -d ${D}${base_libdir}/firmware/ap1302
     install -d ${D}/home/root
+    install -d ${D}${prefix}/local/demo/application/camera/bin
 
     install -m 755 ${WORKDIR}/etc/issue ${D}${sysconfdir}
     install -m 755 ${WORKDIR}/etc/xdg/weston/* ${D}${sysconfdir}/xdg/weston/
@@ -42,6 +44,7 @@ do_install() {
     install -m 755 ${WORKDIR}/lib/firmware/ap1302/* ${D}${base_libdir}/firmware/ap1302/
     install -m 755 ${WORKDIR}/home/root/v4l2_start.sh ${D}/home/root/
     install -m 755 ${WORKDIR}/home/root/README-ap1302.txt ${D}/home/root/
+    install -m 755 ${WORKDIR}/usr/local/demo/application/camera/bin/* ${D}${prefix}/local/demo/application/camera/bin/
 }
 
 FILES_${PN} += "${sysconfdir}"
@@ -54,5 +57,6 @@ FILES_${PN} += "${bindir}"
 FILES_${PN} += "${datadir}/weston/icon"
 FILES_${PN} += "${base_libdir}/firmware/ap1302"
 FILES_${PN} += "/home/root"
+FILES_${PN} += "${prefix}/local/demo/application/"
 
 RDEPENDS_${PN} += "bash"
