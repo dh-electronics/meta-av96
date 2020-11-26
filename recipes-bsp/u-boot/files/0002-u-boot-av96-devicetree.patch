@@ -1,6 +1,30 @@
+diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dts ../uboot-source/arch/arm/dts/stm32mp157a-av96.dts
+--- ./arch/arm/dts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dts	2020-11-24 18:15:23.747472143 +0100
+@@ -0,0 +1,20 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
++/*
++ * Copyright (C) Arrow Electronics 2020 - All Rights Reserved
++ * Author: Botond Kardos <botond.kardos@arroweurope.com> for Arrow Electronics
++ */
++
++/dts-v1/;
++
++#include "stm32mp157.dtsi"
++#include "stm32mp15xa.dtsi"
++#include "stm32mp157a-av96-pinctrl.dtsi"
++#include "stm32mp15xxac-pinctrl.dtsi"
++#include "stm32mp157a-av96.dtsi"
++
++/ {
++	model = "Arrow Electronics Avenger96 Board";
++	compatible = "st,stm32mp157a-av96", "st,stm32mp157";
++
++};
++
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dtsi ../uboot-source/arch/arm/dts/stm32mp157a-av96.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dtsi	2020-11-13 19:19:52.836151584 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96.dtsi	2020-11-25 18:02:01.629082452 +0100
 @@ -0,0 +1,523 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -527,7 +551,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96.dtsi ../uboot-source/arch/arm/dts/st
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96-pinctrl.dtsi ../uboot-source/arch/arm/dts/stm32mp157a-av96-pinctrl.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-av96-pinctrl.dtsi	2020-11-13 19:20:06.775906401 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96-pinctrl.dtsi	2020-11-25 18:02:01.629082452 +0100
 @@ -0,0 +1,1484 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -2015,7 +2039,7 @@ diff -Naurw ./arch/arm/dts/stm32mp157a-av96-pinctrl.dtsi ../uboot-source/arch/ar
 +};
 diff -Naurw ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi ../uboot-source/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi
 --- ./arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../uboot-source/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	2020-11-13 19:20:19.091689019 +0100
++++ ../uboot-source/arch/arm/dts/stm32mp157a-av96-u-boot.dtsi	2020-11-25 18:02:01.629082452 +0100
 @@ -0,0 +1,240 @@
 +// SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 +/*

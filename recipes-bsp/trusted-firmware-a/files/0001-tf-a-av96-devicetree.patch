@@ -1,6 +1,29 @@
+diff -Naurw ./fdts/stm32mp157a-av96.dts ../tfa-source/fdts/stm32mp157a-av96.dts
+--- ./fdts/stm32mp157a-av96.dts	1970-01-01 01:00:00.000000000 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dts	2020-11-24 18:15:23.743472533 +0100
+@@ -0,0 +1,19 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
++/*
++ * Copyright (C) Arrow Electronics 2019 - All Rights Reserved
++ * Author: Botond Kardos <botond.kardos@arroweurope.com>
++ */
++/dts-v1/;
++
++#include "stm32mp157.dtsi"
++#include "stm32mp15xa.dtsi"
++#include "stm32mp157a-av96-pinctrl.dtsi"
++#include "stm32mp15xxac-pinctrl.dtsi"
++#include <dt-bindings/soc/st,stm32-etzpc.h>
++
++/ {
++	model = "Arrow Electronics STM32MP157A Avenger96 board";
++	compatible = "st,stm32mp157a-av96", "st,stm32mp157";
++};
++
++#include "stm32mp157a-av96.dtsi"
 diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dtsi
 --- ./fdts/stm32mp157a-av96.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2020-11-13 19:41:50.562914403 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96.dtsi	2020-11-25 18:19:31.186423923 +0100
 @@ -0,0 +1,565 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
@@ -569,7 +592,7 @@ diff -Naurw ./fdts/stm32mp157a-av96.dtsi ../tfa-source/fdts/stm32mp157a-av96.dts
 +};
 diff -Naurw ./fdts/stm32mp157a-av96-pinctrl.dtsi ../tfa-source/fdts/stm32mp157a-av96-pinctrl.dtsi
 --- ./fdts/stm32mp157a-av96-pinctrl.dtsi	1970-01-01 01:00:00.000000000 +0100
-+++ ../tfa-source/fdts/stm32mp157a-av96-pinctrl.dtsi	2020-11-13 19:39:40.454735480 +0100
++++ ../tfa-source/fdts/stm32mp157a-av96-pinctrl.dtsi	2020-11-25 18:19:31.186423923 +0100
 @@ -0,0 +1,292 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
 +/*
