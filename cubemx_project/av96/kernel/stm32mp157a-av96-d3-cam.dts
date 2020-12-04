@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+/*
+ * Copyright (C) Arrow Electronics 2020 - All Rights Reserved
+ * Author: Botond Kardos <botond.kardos@arroweurope.com> for Arrow Electronics
+ */
+/dts-v1/;
+
+#include "stm32mp157a-av96.dtsi"
+
+/ {
+	model = "Arrow Electronics STM32MP157A Avenger96 board";
+	compatible = "st,stm32mp157a-av96", "st,stm32mp157c-ed1", "st,stm32mp157";
+};
+
+&i2c1 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c1_pins_a>;
+	pinctrl-1 = <&i2c1_pins_sleep_a>;
+	i2c-scl-rising-time-ns = <185>;
+	i2c-scl-falling-time-ns = <20>;
+	status = "okay";
+};
+
+&dcmi {
+	status = "okay";
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&dcmi_pins_a>;
+	pinctrl-1 = <&dcmi_sleep_pins_a>;
+
+	port {
+		dcmi_0: endpoint {
+			remote-endpoint = <&mipid02_2>;
+			bus-width = <8>;
+			hsync-active = <0>;
+			vsync-active = <0>;
+			pclk-sample = <0>;
+			pclk-max-frequency = <77000000>;
+		};
+	};
+};
+
+&i2c2 {
+	ov5640: camera@3c {
+		compatible = "ovti,ov5640";
+		reg = <0x3c>;
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&rcc_pins_a>;
+		pinctrl-1 = <&rcc_sleep_pins_a>;
+		clocks = <&rcc CK_MCO1>;
+		clock-names = "xclk";
+		assigned-clocks = <&rcc CK_MCO1>;
+		assigned-clock-rates = <24000000>;
+		DOVDD-supply = <&v1v8>;
+		reset-gpios = <&gpioa 12 GPIO_ACTIVE_LOW>;/* 31 PA12 TP54 - D3 mezz= GPIOI= TP6 CSI0_RESET (31 low speed) */
+		powerdown-gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;/* 32 PB5 TP60 - D3 mezz= GPIOJ= TP7 CSI0_PWDN (32 low speed) */
+		rotation = <180>;
+		status = "okay";
+
+		port {
+			ov5640_0: endpoint {
+				remote-endpoint = <&mipid02_0>;
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+				pclk-max-frequency = <77000000>;
+			};
+		};
+	};
+};
+
+&i2c4 {
+	mipid02: mipid02@14 {
+		compatible = "st,st-mipid02";
+		reg = <0x14>;
+		status = "okay";
+		clocks = <&rcc CK_MCO1>;
+		clock-names = "xclk";
+		assigned-clocks = <&rcc CK_MCO1>;
+		assigned-clock-rates = <24000000>;
+		VDDE-supply = <&v1v8>;
+		VDDIN-supply = <&v1v8>;
+		reset-gpios = <&gpioz 0 GPIO_ACTIVE_LOW>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+
+				mipid02_0: endpoint_0 {
+					data-lanes = <1 2>;
+					remote-endpoint = <&ov5640_0>;
+				};
+			};
+			port@2 {
+				reg = <2>;
+
+				mipid02_2: endpoint {
+					bus-width = <8>;
+					hsync-active = <0>;
+					vsync-active = <0>;
+					pclk-sample = <0>;
+					remote-endpoint = <&dcmi_0>;
+				};
+			};
+		};
+	};
+};
+
+/* Tresor board */
+&spi2 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&spi2_pins_a>;
+	pinctrl-1 = <&spi2_sleep_pins_a>;
+	status = "okay";
+	cs-gpios = <&gpioi 0 GPIO_ACTIVE_LOW>;
+
+	tpm_tis@0 {
+		compatible = "tcg,tpm_tis-spi";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+	};
+};

@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)
+/*
+ * Copyright (C) Arrow Electronics 2020 - All Rights Reserved
+ * Author: Botond Kardos <botond.kardos@arroweurope.com> for Arrow Electronics
+ */
+
+/dts-v1/;
+
+#include "stm32mp157.dtsi"
+#include "stm32mp15xa.dtsi"
+#include "stm32mp157a-av96-pinctrl.dtsi"
+#include "stm32mp15xxac-pinctrl.dtsi"
+#include "stm32mp157a-av96.dtsi"
+
+/ {
+	model = "Arrow Electronics Avenger96 Board";
+	compatible = "st,stm32mp157a-av96", "st,stm32mp157";
+
+};
+

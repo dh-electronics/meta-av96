@@ -1,7 +1,6 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://0001-linux-av96-devicetree.patch"
-SRC_URI += "file://0002-linux-ap1302.patch"
+SRC_URI += "file://0001-linux-ap1302.patch"
 
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/5.4/fragment-06-brcmfmac.config"
 KERNEL_CONFIG_FRAGMENTS += "${WORKDIR}/fragments/5.4/fragment-07-hdmi.config"

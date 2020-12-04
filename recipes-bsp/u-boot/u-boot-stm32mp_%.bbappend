@@ -1,4 +1,3 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://0001-u-boot-av96-drivers.patch"
-SRC_URI += "file://0002-u-boot-av96-devicetree.patch"
