@@ -14,5 +14,8 @@ IMAGE_INSTALL += "dhcp-server \
                   python3-pyserial \
                   python3-flask-socketio \
                   python3-werkzeug-tests \
-                  lte-sensors-dashboard"
+                  lte-sensors-dashboard \
+                  docker-ce \
+                  docker-ce-contrib \
+                  python3-docker-compose"
 
