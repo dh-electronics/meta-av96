@@ -3,8 +3,7 @@ LICENSE = "Proprietary"
 
 include recipes-st/images/st-image-weston.bb
 
-IMAGE_INSTALL += "dhcp-server \
-                  openssl \
+IMAGE_INSTALL += "openssl \
                   openssl-bin \
                   packagegroup-security-tpm2 \
                   stress-ng \
