@@ -25,7 +25,7 @@ one USB-Ethernet interface over X5 usb-otg connector. The former is called
 "eth0" the later is "usb0". A DHCP client is running on eth0 which requests
 IP address autometically when connected to a router. A DHCP server is running
 on usb0 which will give a dynamic IP address for the PC when connected. The
-IP address of usb0 interface is always 192.168.7.1.
+IP address of usb0 interface is always 192.168.5.1.
     So when the board is connected to a PC through usb-ethernet collected
 sensor data can be seen at:
       http://192.168.7.1:5000/

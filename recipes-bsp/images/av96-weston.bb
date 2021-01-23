@@ -13,8 +13,8 @@ IMAGE_INSTALL += "openssl \
                   python3-pyserial \
                   python3-flask-socketio \
                   python3-werkzeug-tests \
+                  m4projects-av96 \
                   lte-sensors-dashboard \
                   docker-ce \
                   docker-ce-contrib \
                   python3-docker-compose"
-
