@@ -8,13 +8,13 @@ process but starts with a different 'repo' manifest file:
     - create the build directory following ST's recommendations at
         https://wiki.st.com/stm32mpu/wiki/Example_of_directory_structure_for_Packages
     - enter the working directory and execute the following commands
-      $ repo init -u https://github.com/dh-electronics/manifest-av96 -b dunfell
+      $ repo init -u https://github.com/dh-electronics/manifest-av96 -b dunfell-ai-demo
       $ repo sync
       $ source layers/meta-arrow/scripts/init-build-env.sh
-      $ bitbake av96-weston
+      $ bitbake av96-ai-demo
 
-    The last command will build the BSP. The full build will take about 1-2
-hours dpending on machine and internet speed and will require around 25GB
+    The last command will build the BSP. The full build will take about 2-3
+hours dpending on machine and internet speed and will require around 50GB
 disk space. When the build completes it puts all the required files into the
 'deploy' folder. Execute the following commands:
       $ cd tmp-glibc/deploy/images/stm32mp1-av96/
