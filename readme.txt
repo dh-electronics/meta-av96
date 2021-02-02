@@ -18,7 +18,7 @@ hours dpending on machine and internet speed and will require around 50GB
 disk space. When the build completes it puts all the required files into the
 'deploy' folder. Execute the following commands:
       $ cd tmp-glibc/deploy/images/stm32mp1-av96/
-      $ ./scripts/create_sdcard_from_flashlayout.sh flashlayout_av96-weston/trusted/FlashLayout_sdcard_stm32mp157a-av96-trusted.tsv
+      $ ./scripts/create_sdcard_from_flashlayout.sh flashlayout_av96-ai-demo/trusted/FlashLayout_sdcard_stm32mp157a-av96-trusted.tsv
 
     The last command creates FlashLayout_sdcard_stm32mp157a-av96-trusted.raw .
 We can write it to a uSD card with:
