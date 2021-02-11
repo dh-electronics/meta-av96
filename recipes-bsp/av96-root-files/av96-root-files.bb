@@ -30,6 +30,10 @@ do_install() {
     install -d ${D}${systemd_unitdir}/network
 
     install -m 755 ${WORKDIR}/etc/issue ${D}${sysconfdir}
+
+    if ${@bb.utils.contains('GLIBC_GENERATE_LOCALES','fr_FR.UTF-8','true','false',d)}; then
+        sed 's/keymap_layout=us/keymap_layout=fr/g' -i ${WORKDIR}/etc/xdg/weston/weston.ini
+    fi
     install -m 755 ${WORKDIR}/etc/xdg/weston/* ${D}${sysconfdir}/xdg/weston/
     install -m 755 ${WORKDIR}/lib/firmware/brcm/* ${D}${base_libdir}/firmware/brcm/
     install -m 755 ${WORKDIR}/sbin/* ${D}${base_sbindir}

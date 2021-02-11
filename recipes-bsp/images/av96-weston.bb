@@ -17,4 +17,10 @@ IMAGE_INSTALL += "openssl \
                   lte-sensors-dashboard \
                   docker-ce \
                   docker-ce-contrib \
-                  python3-docker-compose"
+                  python3-docker-compose \
+                  glibc-utils \
+                  localedef \
+"
+
+IMAGE_LINGUAS += "${@bb.utils.contains('GLIBC_GENERATE_LOCALES','fr_FR.UTF-8','fr-fr','',d)}"
+
