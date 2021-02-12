@@ -39,6 +39,6 @@ $ sudo dd if=FlashLayout_sdcard_stm32mp157a-av96-trusted.raw bs=1M of=/dev/sdX &
 
 <br></br>
 #### French locale and keyboard support in Weston
-conf/machine/stm32mp1-av96.conf must be modified to enable French locale. Uncomment the line containing GLIBC_GENERATE_LOCALES and start a clean build for adding French locale.
+`conf/machine/stm32mp1-av96.conf` must be modified to enable French locale. Uncomment the line containing GLIBC_GENERATE_LOCALES and start a clean build for adding French locale.
 
 
