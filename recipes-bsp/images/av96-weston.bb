@@ -8,6 +8,8 @@ IMAGE_INSTALL += "openssl \
                   packagegroup-security-tpm2 \
                   stress-ng \
                   av96-root-files \
+                  ap1302-firmware \
+                  wifi-firmware \
                   python3 \
                   python3-pip \
                   python3-pyserial \
