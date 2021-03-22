@@ -149,14 +149,14 @@
 
 			vddcore: buck1 {
 				regulator-name = "vddcore";
-				regulator-min-microvolt = <1200000>;
+				regulator-min-microvolt = <1350000>;
 				regulator-max-microvolt = <1350000>;
 				regulator-always-on;
 				regulator-initial-mode = <0>;
 				regulator-over-current-protection;
 				lp-stop {
 					regulator-on-in-suspend;
-					regulator-suspend-microvolt = <1200000>;
+					regulator-suspend-microvolt = <1350000>;
 				};
 				standby-ddr-sr {
 					regulator-off-in-suspend;
@@ -447,13 +447,13 @@
 		CLK_LPTIM45_LSE
 	>;
 
-	/* VCO = 1300.0 MHz => P = 650 (CPU) */
-	/* pll1: st,pll@0 {
+	/* VCO = 1596 MHz => P = 798 (CPU) */
+	pll1: st,pll@0 {
 		compatible = "st,stm32mp1-pll";
 		reg = <0>;
-		cfg = < 2 80 0 0 0 PQR(1,0,0) >;
-		frac = < 0x800 >;
-	}; */
+		cfg = < 1 65 0 0 0 PQR(1,0,0) >;
+		frac = < 0x1000 >;
+	};
 
 	/* VCO = 1066.0 MHz => P = 266 (AXI), Q = 533 (GPU), R = 533 (DDR) */
 	pll2: st,pll@1 {

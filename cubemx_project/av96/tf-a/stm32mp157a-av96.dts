@@ -6,7 +6,7 @@
 /dts-v1/;
 
 #include "stm32mp157.dtsi"
-#include "stm32mp15xa.dtsi"
+#include "stm32mp15xd.dtsi"
 #include "stm32mp157a-av96-pinctrl.dtsi"
 #include "stm32mp15xxac-pinctrl.dtsi"
 #include <dt-bindings/soc/st,stm32-etzpc.h>
