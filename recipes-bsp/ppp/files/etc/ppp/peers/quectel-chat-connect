@@ -1,0 +1,16 @@
+# /etc/ppp/peers/quectel-chat-connect
+ABORT "BUSY"
+ABORT "NO CARRIER"
+ABORT "NO DIALTONE"
+ABORT "ERROR"
+ABORT "NO ANSWER"
+TIMEOUT 30
+"" AT
+OK ATE0
+OK ATI;+CSUB;+CSQ;+CPIN?;+COPS?;+CGREG?;&D2
+# Insert the APN provided by your network operator, default APN is Arkessa
+# OK AT+CGDCONT=1,"IP","internet.gec.network",,0,0
+# This APN is for 1NCE
+OK AT+CGDCONT=1,"IP","iot.1nce.net",,0,0
+OK ATD*99#
+CONNECT
