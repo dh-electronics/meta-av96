@@ -19,6 +19,10 @@ if [ "$1" == "stop" ]; then
     gpioset 0 14=1
     sleep 1
     gpioset 0 14=0
+    sleep 1
+    gpioset 0 14=1
+    sleep 1
+    gpioset 0 14=0
 
     # wait for the modem to shut down
     sleep 30

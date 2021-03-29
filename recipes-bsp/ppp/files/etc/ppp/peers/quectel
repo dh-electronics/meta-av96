@@ -1,7 +1,7 @@
 # /etc/ppp/peers/quectel-pppd
 # Usage:root>pppd call quectel-pppd
 #Modem path, like /dev/ttyUSB3,/dev/ttyACM0, depend on your module, default path is /dev/ttyUSB3
-/dev/ttySTM2 115200
+/dev/ttyUSB3 3000000
 #Insert the username and password for authentication, default user and password are test
 user "test" password "test"
 # The chat script, customize your APN in this file
