@@ -5,8 +5,8 @@ PR = "r0"
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}-${PV}:"
 
-SRC_URI = "git://github.com/bkardosa/LTE_sensors_av96_dashboard.git;protocol=https;name=gitlab"
-SRCREV_gitlab = "master"
+SRC_URI = "git://github.com/ArrowElectronics/LTE_sensors_av96_dashboard.git;protocol=https;name=github"
+SRCREV_github = "master"
 
 SRC_URI += "file://README-lte-sensors-demo.txt"
 
