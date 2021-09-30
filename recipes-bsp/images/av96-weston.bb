@@ -5,7 +5,6 @@ include recipes-st/images/st-image-weston.bb
 
 IMAGE_INSTALL += "openssl \
                   openssl-bin \
-                  packagegroup-security-tpm2 \
                   stress-ng \
                   av96-root-files \
                   ap1302-firmware \
@@ -15,12 +14,8 @@ IMAGE_INSTALL += "openssl \
                   python3-pyserial \
                   python3-flask-socketio \
                   python3-werkzeug-tests \
-                  m4projects-av96 \
                   lte-azure-demo \
                   lte-sensors-dashboard \
-                  docker-ce \
-                  docker-ce-contrib \
-                  python3-docker-compose \
                   glibc-utils \
                   localedef \
                   ppp \

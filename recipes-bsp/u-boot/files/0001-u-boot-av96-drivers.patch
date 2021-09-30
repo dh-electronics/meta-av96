@@ -1,6 +1,6 @@
 diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
---- ./arch/arm/lib/relocate.S	2020-11-25 17:51:48.488946955 +0100
-+++ ../uboot-source/arch/arm/lib/relocate.S	2020-11-25 17:52:46.653321149 +0100
+--- ./arch/arm/lib/relocate.S	2021-09-30 13:53:24.702212040 +0200
++++ ../uboot-source/arch/arm/lib/relocate.S	2021-09-30 14:25:41.789505886 +0200
 @@ -78,6 +78,8 @@
   */
  
@@ -11,17 +11,17 @@ diff -Naurw ./arch/arm/lib/relocate.S ../uboot-source/arch/arm/lib/relocate.S
  	subs	r4, r0, r1		/* r4 <- relocation offset */
  	beq	relocate_done		/* skip relocation */
 diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/cpu.c
---- ./arch/arm/mach-stm32mp/cpu.c	2020-11-25 17:51:50.420826447 +0100
-+++ ../uboot-source/arch/arm/mach-stm32mp/cpu.c	2020-11-25 17:52:46.669320154 +0100
-@@ -14,6 +14,7 @@
- #include <asm/arch/sys_proto.h>
+--- ./arch/arm/mach-stm32mp/cpu.c	2021-09-30 13:53:24.738211454 +0200
++++ ../uboot-source/arch/arm/mach-stm32mp/cpu.c	2021-09-30 14:25:41.789505886 +0200
+@@ -18,6 +18,7 @@
  #include <dm/device.h>
  #include <dm/uclass.h>
+ #include <linux/bitops.h>
 +#include <i2c_eeprom.h>
  
  /* RCC register */
  #define RCC_TZCR		(STM32_RCC_BASE + 0x00)
-@@ -82,6 +83,9 @@
+@@ -86,6 +87,9 @@
   */
  u8 early_tlb[PGTABLE_SIZE] __section(".data") __aligned(0x4000);
  
@@ -29,9 +29,9 @@ diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/
 +#define MAC24AA02_MAC_ADDR  0xfa
 +
  #if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
- #ifndef CONFIG_STM32MP1_TRUSTED
+ #ifndef CONFIG_TFABOOT
  static void security_init(void)
-@@ -539,7 +543,7 @@
+@@ -556,7 +560,7 @@
   * If there is no MAC address in the environment, then it will be initialized
   * (silently) from the value in the OTP.
   */
@@ -40,8 +40,8 @@ diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/
  {
  #if defined(CONFIG_NET)
  	int ret;
-@@ -574,13 +578,51 @@
- 
+@@ -590,13 +594,51 @@
+ 	pr_debug("OTP MAC address = %pM\n", enetaddr);
  	ret = eth_env_set_enetaddr("ethaddr", enetaddr);
  	if (ret)
 -		pr_err("Failed to set mac address %pM from OTP: %d\n",
@@ -78,7 +78,7 @@ diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/
 +		pr_debug( "invalid MAC address in OTP\n" );
 +		pr_err( "Failed to read MAC EEPROM\n" );
 +		return ret;
-+	}
++  }
 +
 +	if (is_valid_ethaddr(ethaddr))
 +		eth_env_set_enetaddr("ethaddr", ethaddr);
@@ -92,31 +92,31 @@ diff -Naurw ./arch/arm/mach-stm32mp/cpu.c ../uboot-source/arch/arm/mach-stm32mp/
 +
  static int setup_serial_number(void)
  {
- 	char *serial_env;
-@@ -621,7 +663,8 @@
+ 	char serial_string[25];
+@@ -627,7 +669,8 @@
+ int arch_misc_init(void)
  {
- 	setup_serial_number();
  	setup_boot_mode();
 -	setup_mac_address();
 +	if ( setup_mac_address_otp() )
-+	  setup_mac_address_i2c();
++		setup_mac_address_i2c();
+ 	setup_serial_number();
  
  	return 0;
- }
 diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../uboot-source/board/st/stm32mp1/stm32mp1.c
---- ./board/st/stm32mp1/stm32mp1.c	2020-11-25 17:51:50.640812724 +0100
-+++ ../uboot-source/board/st/stm32mp1/stm32mp1.c	2020-11-25 17:52:46.753314921 +0100
-@@ -33,6 +33,7 @@
+--- ./board/st/stm32mp1/stm32mp1.c	2021-09-30 13:53:24.878209176 +0200
++++ ../uboot-source/board/st/stm32mp1/stm32mp1.c	2021-09-30 14:25:41.789505886 +0200
+@@ -40,6 +40,7 @@
  #include <linux/iopoll.h>
  #include <power/regulator.h>
  #include <usb/dwc2_udc.h>
 +#include <fuse.h>
  
- /* SYSCFG registers */
- #define SYSCFG_BOOTR		0x00
-@@ -517,9 +518,30 @@
+ #include "../../st/common/stusb160x.h"
+ 
+@@ -447,6 +448,28 @@
+ 	return 0;
  }
- #endif /* CONFIG_ADC */
  
 +/**
 + * we need to program PRODUCT_BELOW_2V5 fuse for enabling high-speed
@@ -142,11 +142,8 @@ diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../uboot-source/board/st/stm32mp1/stm
 +
  static void sysconf_init(void)
  {
--#ifndef CONFIG_STM32MP1_TRUSTED
  	u8 *syscfg;
- #ifdef CONFIG_DM_REGULATOR
- 	struct udevice *pwr_dev;
-@@ -570,6 +592,12 @@
+@@ -496,6 +519,12 @@
  			return;
  		}
  
@@ -159,18 +156,10 @@ diff -Naurw ./board/st/stm32mp1/stm32mp1.c ../uboot-source/board/st/stm32mp1/stm
  		ret = misc_read(dev, STM32_BSEC_SHADOW(18), &otp, 4);
  		if (ret > 0)
  			otp = otp & BIT(13);
-@@ -600,6 +628,7 @@
- 	}
- #endif
- 
-+#ifndef CONFIG_STM32MP1_TRUSTED
- 	/* activate automatic I/O compensation
- 	 * warning: need to ensure CSI enabled and ready in clock driver
- 	 */
 diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
---- ./common/board_f.c	2020-11-25 17:51:49.836862873 +0100
-+++ ../uboot-source/common/board_f.c	2020-11-25 17:52:46.769313924 +0100
-@@ -45,6 +45,7 @@
+--- ./common/board_f.c	2021-09-30 13:53:24.902208785 +0200
++++ ../uboot-source/common/board_f.c	2021-09-30 15:32:48.084312725 +0200
+@@ -50,9 +50,11 @@
  #include <asm/mp.h>
  #endif
  #include <asm/io.h>
@@ -178,7 +167,11 @@ diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
  #include <asm/sections.h>
  #include <dm/root.h>
  #include <linux/errno.h>
-@@ -869,6 +870,56 @@
++#include <linux/delay.h>
+ 
+ /*
+  * Pointer to initial global data area
+@@ -821,6 +823,56 @@
  	return 0;
  }
  
@@ -235,7 +228,7 @@ diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
  static const init_fnc_t init_sequence_f[] = {
  	setup_mon_len,
  #ifdef CONFIG_OF_CONTROL
-@@ -925,6 +976,7 @@
+@@ -875,6 +927,7 @@
  #endif
  #if defined(CONFIG_DISPLAY_BOARDINFO)
  	show_board_info,
@@ -244,40 +237,43 @@ diff -Naurw ./common/board_f.c ../uboot-source/common/board_f.c
  	INIT_FUNC_WATCHDOG_INIT
  #if defined(CONFIG_MISC_INIT_F)
 diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp15_basic_defconfig
---- ./configs/stm32mp15_basic_defconfig	2020-11-25 17:51:50.996790520 +0100
-+++ ../uboot-source/configs/stm32mp15_basic_defconfig	2020-11-25 17:52:46.793312428 +0100
-@@ -2,12 +2,12 @@
+--- ./configs/stm32mp15_basic_defconfig	2021-09-30 13:53:24.806210347 +0200
++++ ../uboot-source/configs/stm32mp15_basic_defconfig	2021-09-30 14:25:41.793505818 +0200
+@@ -1,7 +1,7 @@
+ CONFIG_ARM=y
  CONFIG_ARCH_STM32MP=y
  CONFIG_SYS_MALLOC_F_LEN=0x3000
- CONFIG_SPL_MMC_SUPPORT=y
 -CONFIG_ENV_OFFSET=0x280000
-+CONFIG_ENV_OFFSET=0x180000
- CONFIG_SPL=y
++CONFIG_ENV_OFFSET=0x1C0000
+ CONFIG_ENV_SECT_SIZE=0x40000
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0x80000
+ CONFIG_SPL_DM_SPI=y
+@@ -11,7 +11,7 @@
  CONFIG_TARGET_ST_STM32MP15x=y
  CONFIG_CMD_STM32PROG=y
- CONFIG_ENV_SECT_SIZE=0x40000
+ CONFIG_TYPEC_STUSB160X=y
 -CONFIG_ENV_OFFSET_REDUND=0x2C0000
-+CONFIG_ENV_OFFSET_REDUND=0x1C0000
++CONFIG_ENV_OFFSET_REDUND=0x1E0000
  CONFIG_SPL_SPI_FLASH_SUPPORT=y
  CONFIG_SPL_SPI_SUPPORT=y
  # CONFIG_ARMV7_VIRT is not set
-@@ -22,6 +22,8 @@
+@@ -30,6 +30,8 @@
  CONFIG_SPL_POWER_SUPPORT=y
- CONFIG_SYS_SPI_U_BOOT_OFFS=0x80000
+ CONFIG_SPL_SPI_FLASH_MTD=y
  CONFIG_SYS_PROMPT="STM32MP> "
 +CONFIG_MISC=y
 +CONFIG_I2C_EEPROM=y
- # CONFIG_CMD_BOOTD is not set
- CONFIG_CMD_DTIMG=y
+ CONFIG_CMD_ADTIMG=y
  # CONFIG_CMD_ELF is not set
-@@ -49,6 +51,7 @@
+ CONFIG_CMD_ERASEENV=y
+@@ -56,6 +58,7 @@
  CONFIG_CMD_REGULATOR=y
  CONFIG_CMD_EXT4_WRITE=y
  CONFIG_CMD_MTDPARTS=y
-+CONFIG_MTDPARTS_NOR0_BOOT="256k(fsbl1),256k(fsbl2),1m(ssbl),256k(u-boot-env)"
++CONFIG_MTDPARTS_NOR0_BOOT="256k(fsbl1),256k(fsbl2),1280k(ssbl),128k(u-boot-env)"
  CONFIG_CMD_UBI=y
  # CONFIG_SPL_DOS_PARTITION is not set
- CONFIG_DEFAULT_DEVICE_TREE="stm32mp157c-ev1"
+ CONFIG_OF_SPL_REMOVE_PROPS="interrupts interrupt-names interrupts-extended interrupt-controller \\\#interrupt-cells interrupt-parent dmas dma-names assigned-clocks assigned-clock-rates assigned-clock-parents hwlocks"
 @@ -109,6 +112,8 @@
  CONFIG_DM_ETH=y
  CONFIG_DWC_ETH_QOS=y
@@ -288,37 +284,40 @@ diff -Naurw ./configs/stm32mp15_basic_defconfig ../uboot-source/configs/stm32mp1
  CONFIG_PINCONF=y
  # CONFIG_SPL_PINCTRL_FULL is not set
 diff -Naurw ./configs/stm32mp15_trusted_defconfig ../uboot-source/configs/stm32mp15_trusted_defconfig
---- ./configs/stm32mp15_trusted_defconfig	2020-11-25 17:51:50.996790520 +0100
-+++ ../uboot-source/configs/stm32mp15_trusted_defconfig	2020-11-25 17:52:46.793312428 +0100
-@@ -1,15 +1,17 @@
- CONFIG_ARM=y
+--- ./configs/stm32mp15_trusted_defconfig	2021-09-30 13:53:24.806210347 +0200
++++ ../uboot-source/configs/stm32mp15_trusted_defconfig	2021-09-30 14:25:41.793505818 +0200
+@@ -2,18 +2,20 @@
  CONFIG_ARCH_STM32MP=y
+ CONFIG_TFABOOT=y
  CONFIG_SYS_MALLOC_F_LEN=0x3000
--CONFIG_ENV_OFFSET=0x280000
-+CONFIG_ENV_OFFSET=0x180000
+-CONFIG_ENV_OFFSET=0x480000
++CONFIG_ENV_OFFSET=0x1C0000
+ CONFIG_ENV_SECT_SIZE=0x40000
  CONFIG_TARGET_ST_STM32MP15x=y
  CONFIG_CMD_STM32PROG=y
- CONFIG_ENV_SECT_SIZE=0x40000
--CONFIG_ENV_OFFSET_REDUND=0x2C0000
-+CONFIG_ENV_OFFSET_REDUND=0x1C0000
+ CONFIG_TYPEC_STUSB160X=y
+-CONFIG_ENV_OFFSET_REDUND=0x4C0000
++CONFIG_ENV_OFFSET_REDUND=0x1E0000
+ CONFIG_DEFAULT_DEVICE_TREE="stm32mp157c-ev1"
  CONFIG_DISTRO_DEFAULTS=y
  CONFIG_FIT=y
+ CONFIG_BOOTDELAY=1
  CONFIG_BOOTCOMMAND="run bootcmd_stm32mp"
  CONFIG_SYS_PROMPT="STM32MP> "
 +CONFIG_MISC=y
 +CONFIG_I2C_EEPROM=y
- # CONFIG_CMD_BOOTD is not set
- CONFIG_CMD_DTIMG=y
+ CONFIG_CMD_ADTIMG=y
  # CONFIG_CMD_ELF is not set
-@@ -37,6 +39,7 @@
+ CONFIG_CMD_ERASEENV=y
+@@ -39,6 +41,7 @@
+ CONFIG_CMD_PMIC=y
  CONFIG_CMD_REGULATOR=y
  CONFIG_CMD_EXT4_WRITE=y
++CONFIG_MTDPARTS_NOR0_BOOT="256k(fsbl1),256k(fsbl2),1280k(ssbl),128k(u-boot-env)"
  CONFIG_CMD_MTDPARTS=y
-+CONFIG_MTDPARTS_NOR0_BOOT="256k(fsbl1),256k(fsbl2),1m(ssbl),256k(u-boot-env)"
  CONFIG_CMD_UBI=y
- CONFIG_DEFAULT_DEVICE_TREE="stm32mp157c-ev1"
  CONFIG_ENV_IS_NOWHERE=y
-@@ -96,6 +99,8 @@
+@@ -90,6 +93,8 @@
  CONFIG_DM_ETH=y
  CONFIG_DWC_ETH_QOS=y
  CONFIG_PHY=y
@@ -328,18 +327,18 @@ diff -Naurw ./configs/stm32mp15_trusted_defconfig ../uboot-source/configs/stm32m
  CONFIG_PINCONF=y
  CONFIG_PINCTRL_STMFX=y
 diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.c
---- ./drivers/net/dwc_eth_qos.c	2020-11-25 17:51:50.864798753 +0100
-+++ ../uboot-source/drivers/net/dwc_eth_qos.c	2020-11-25 17:52:46.821310684 +0100
-@@ -707,7 +707,7 @@
- 			return ret;
- 		}
+--- ./drivers/net/dwc_eth_qos.c	2021-09-30 13:53:24.946208069 +0200
++++ ../uboot-source/drivers/net/dwc_eth_qos.c	2021-09-30 15:25:04.048261912 +0200
+@@ -710,7 +710,7 @@
+ 		return ret;
+ 	}
  
--		udelay(2);
-+		mdelay(10);
+-	udelay(2);
++	mdelay(10);
  
- 		ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 0);
- 		if (ret < 0) {
-@@ -733,18 +733,6 @@
+ 	ret = dm_gpio_set_value(&eqos->phy_reset_gpio, 0);
+ 	if (ret < 0) {
+@@ -781,18 +781,6 @@
  
  static int eqos_stop_resets_stm32(struct udevice *dev)
  {
@@ -358,7 +357,7 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
  	return 0;
  }
  
-@@ -1049,13 +1037,13 @@
+@@ -1178,13 +1166,13 @@
  		goto err;
  	}
  
@@ -374,7 +373,17 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
  
  	eqos->reg_access_ok = true;
  
-@@ -1639,6 +1627,7 @@
+@@ -1745,8 +1733,7 @@
+ 	}
+ 
+ 	ret = gpio_request_by_name(dev, "phy-reset-gpios", 0,
+-				   &eqos->phy_reset_gpio,
+-				   GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE);
++				   &eqos->phy_reset_gpio, GPIOD_IS_OUT);
+ 	if (ret) {
+ 		pr_err("gpio_request_by_name(phy reset) failed: %d", ret);
+ 		goto err_free_reset_eqos;
+@@ -1795,6 +1782,7 @@
  err_free_clk_slave_bus:
  	clk_free(&eqos->clk_slave_bus);
  err_free_gpio_phy_reset:
@@ -382,18 +391,7 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
  	dm_gpio_free(dev, &eqos->phy_reset_gpio);
  err_free_reset_eqos:
  	reset_free(&eqos->reset_ctl);
-@@ -1707,9 +1696,7 @@
- 		/* search "reset-gpios" in phy node */
- 		ret = gpio_request_by_name_nodev(phandle_args.node,
- 						 "reset-gpios", 0,
--						 &eqos->phy_reset_gpio,
--						 GPIOD_IS_OUT |
--						 GPIOD_IS_OUT_ACTIVE);
-+						 &eqos->phy_reset_gpio, GPIOD_IS_OUT );
- 		if (ret)
- 			pr_warn("gpio_request_by_name(phy reset) not provided %d",
- 				ret);
-@@ -1820,6 +1807,12 @@
+@@ -2017,6 +2005,12 @@
  		goto err_remove_resources_core;
  	}
  
@@ -403,30 +401,29 @@ diff -Naurw ./drivers/net/dwc_eth_qos.c ../uboot-source/drivers/net/dwc_eth_qos.
 +		goto err_remove_resources_tegra;
 +	}
 +
- 	eqos->mii = mdio_alloc();
- 	if (!eqos->mii) {
- 		pr_err("mdio_alloc() failed");
+ #ifdef CONFIG_DM_ETH_PHY
+ 	eqos->mii = eth_phy_get_mdio_bus(dev);
+ #endif
 diff -Naurw ./drivers/net/phy/phy.c ../uboot-source/drivers/net/phy/phy.c
---- ./drivers/net/phy/phy.c	2020-11-25 17:51:48.848924501 +0100
-+++ ../uboot-source/drivers/net/phy/phy.c	2020-11-25 17:52:46.825310436 +0100
-@@ -783,6 +783,7 @@
- 	int i;
- 	struct phy_device *phydev;
+--- ./drivers/net/phy/phy.c	2021-09-30 13:53:24.946208069 +0200
++++ ../uboot-source/drivers/net/phy/phy.c	2021-09-30 14:25:41.793505818 +0200
+@@ -800,6 +800,7 @@
+ 	int i, devad_cnt;
  
+ 	devad_cnt = sizeof(devad)/sizeof(int);
 +	mdelay(5);		/* 5 ms */
  	phydev = search_for_existing_phy(bus, phy_mask, interface);
  	if (phydev)
  		return phydev;
 diff -Naurw ./Makefile ../uboot-source/Makefile
---- ./Makefile	2020-11-25 17:51:50.416826696 +0100
-+++ ../uboot-source/Makefile	2020-11-25 17:52:46.905305452 +0100
-@@ -273,7 +273,8 @@
+--- ./Makefile	2021-09-30 13:53:24.806210347 +0200
++++ ../uboot-source/Makefile	2021-09-30 14:25:41.793505818 +0200
+@@ -277,7 +277,7 @@
  
  HOSTCC       = cc
  HOSTCXX      = c++
--HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
-+#HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
-+HOSTCFLAGS   = -Wall -Wstrict-prototypes -g -O1 -fomit-frame-pointer \
- 		$(if $(CONFIG_TOOLS_DEBUG),-g)
- HOSTCXXFLAGS = -O2
- 
+-KBUILD_HOSTCFLAGS   := -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer \
++KBUILD_HOSTCFLAGS   := -Wall -Wstrict-prototypes -g -O1 -fomit-frame-pointer \
+ 		$(HOST_LFS_CFLAGS) $(HOSTCFLAGS)
+ KBUILD_HOSTCXXFLAGS := -O2 $(HOST_LFS_CFLAGS) $(HOSTCXXFLAGS)
+ KBUILD_HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS) $(HOSTLDFLAGS)
