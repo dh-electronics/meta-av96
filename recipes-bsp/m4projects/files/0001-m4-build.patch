@@ -1,6 +1,6 @@
-diff -Naurw ./Makefile.stm32 ../1.2.0-r0/Makefile.stm32
---- ./Makefile.stm32	2020-11-03 10:05:30.477698440 +0100
-+++ ../1.2.0-r0/Makefile.stm32	2020-11-03 10:14:24.883257617 +0100
+diff -Naurw ./Makefile.stm32 ../1.0.0-r0/Makefile.stm32
+--- ./Makefile.stm32	2021-10-07 14:46:16.107927680 +0200
++++ ../1.0.0-r0/Makefile.stm32	2021-10-07 14:55:52.446012171 +0200
 @@ -1,4 +1,5 @@
  CC := $(CROSS_COMPILE)gcc
 +CPP := $(CROSS_COMPILE)g++
@@ -43,22 +43,22 @@ diff -Naurw ./Makefile.stm32 ../1.2.0-r0/Makefile.stm32
  	@cp $@.sym $@
  	@$(STRIP) -g $@
  	@$(SIZE) $@
-diff -Naurw ./parse_project_config.py ../1.2.0-r0/parse_project_config.py
---- ./parse_project_config.py	2020-11-03 10:05:30.477698440 +0100
-+++ ../1.2.0-r0/parse_project_config.py	2020-11-03 10:18:29.999265048 +0100
-@@ -88,7 +88,7 @@
+diff -Naurw ./parse_project_config.py ../1.0.0-r0/parse_project_config.py
+--- ./parse_project_config.py	2021-10-07 14:46:16.107927680 +0200
++++ ../1.0.0-r0/parse_project_config.py	2021-10-07 15:07:06.710794144 +0200
+@@ -90,7 +90,7 @@
          #print("text:"+a.text)
          temp=a.text
  
 -        if ((temp.find(".txt")==-1) & (temp.find(".gdb")==-1) & (temp.find(".launch")==-1) & (temp.find(".sh")==-1) & (temp.find("README")==-1)):
 +        if ((temp.find(".c")==(len(temp) - 2)) | (temp.find(".s")==(len(temp) - 2))):
-             temp=temp.replace("PARENT-1-PROJECT_LOC/", "../")
-             temp=temp.replace("PARENT-2-PROJECT_LOC/", "../../")
-             temp=temp.replace("PARENT-3-PROJECT_LOC/", "../../../")
-@@ -98,7 +98,42 @@
+ 
+             # Format locationURI value
+             if re.search(r'\$\%7BPARENT-.-PROJECT_LOC\%7D', temp):
+@@ -107,7 +107,42 @@
+             temp=temp.replace("PARENT-6-PROJECT_LOC/", "../../../../../../")
              temp=temp.replace("PARENT-7-PROJECT_LOC/", "../../../../../../../")
              temp=temp.replace("PROJECT_LOC/", "../")
- 
 -            #print(temp)
 +            print(temp)
 +            temp=fullpath(temp)
@@ -99,29 +99,3 @@ diff -Naurw ./parse_project_config.py ../1.2.0-r0/parse_project_config.py
              temp=fullpath(temp)
  
              f.write(temp+" \\\n")
-@@ -117,7 +152,7 @@
-     if temp == buildconfig:
-         for i in j.iter('option'):
-             a=i.get('superClass')
--            if a == 'gnu.c.compiler.option.include.paths':
-+            if a == 'com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths':
-                 for j in i.iter('listOptionValue'):
-                     temp=j.get('value')
-                     if temp != "":
-@@ -128,14 +163,14 @@
-                         #print(temp)
-                         cflags=cflags+" -I"+temp+" \\\n"
- 
--            if a == 'gnu.c.compiler.option.preprocessor.def.symbols':
-+            if a == 'com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.definedsymbols':
-                 for j in i.iter('listOptionValue'):
-                     temp=j.get('value')
-                     if temp != "":
-                         #print(temp)
-                         cflags=cflags+" -D"+temp+" \\\n"
- 
--            if a == 'fr.ac6.managedbuild.tool.gnu.cross.c.linker.script':
-+            if a == 'com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.option.script':
-                 temp=i.get('value')
-                 temp=temp.replace("../", "",1)
-                 temp=fullpath(temp)
