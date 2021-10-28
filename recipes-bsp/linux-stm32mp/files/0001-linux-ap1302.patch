@@ -2190,7 +2190,7 @@ diff -Naurw ./drivers/media/i2c/ap1302.c ../kernel-source/drivers/media/i2c/ap13
 diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconfig
 --- ./drivers/media/i2c/Kconfig	2020-10-27 10:18:44.428342012 +0100
 +++ ../kernel-source/drivers/media/i2c/Kconfig	2020-11-05 17:57:57.728941324 +0100
-@@ -933,6 +933,18 @@
+@@ -933,6 +933,17 @@
  	  To compile this driver as a module, choose M here: the
  	  module will be called mt9v111.
  
@@ -2200,7 +2200,6 @@ diff -Naurw ./drivers/media/i2c/Kconfig ../kernel-source/drivers/media/i2c/Kconf
 +	depends on GPIOLIB && VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
 +	depends on MEDIA_CAMERA_SUPPORT
 +	select V4L2_FWNODE
-+	select VIDEO_ST_MIPID02
 +	help
 +	  This is a Video4Linux2 sensor driver for one OnSemi image
 +	  sensor connected to the OnSemi AP1302 ISP through MIPI CSI-2

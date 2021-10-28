@@ -49,11 +49,11 @@ SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Inc/openamp_log.h;subdir=
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/Inc/openamp_conf.h;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/single_shot.cpp;subdir=git"
 SRC_URI += "file://Projects/Avenger96/lte_sensors/Core/VL53L0X/I2Cdev.cpp;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/lte_sensors_Debug.launch;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/STM32MP157AACX_RAM.ld;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/.project;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/.cproject;subdir=git"
-SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/lte_sensors/lte_sensors_Debug.cfg;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/CM4/lte_sensors_Debug.launch;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/CM4/STM32MP157AACX_RAM.ld;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/CM4/.project;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/CM4/.cproject;subdir=git"
+SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/CM4/lte_sensors_Debug.cfg;subdir=git"
 
 S = "${WORKDIR}/git"
 
