@@ -57,19 +57,19 @@ SRC_URI += "file://Projects/Avenger96/lte_sensors/STM32CubeIDE/CM4/lte_sensors_D
 
 S = "${WORKDIR}/git"
 
-do_compile_prepend() {
+do_compile:prepend() {
     if [ ! -x "${S}/Projects/Avenger96/lte_sensors/SW4STM32" ]; then
         lnr ${S}/Projects/Avenger96/lte_sensors/STM32CubeIDE ${S}/Projects/Avenger96/lte_sensors/SW4STM32
     fi
 }
 
-do_install_append() {
+do_install:append() {
     install -d ${D}/home/root
     lnr ${D}/usr/local/Cube-M4-examples/Avenger96/lte_sensors/fw_cortex_m4.sh ${D}/home/root/fw_cortex_m4.sh
 }
 
-FILES_${PN} += "/home/root"
+FILES:${PN} += "/home/root"
 
 
-SYSTEMD_PACKAGES_remove = " m4projects-stm32mp1 "
-SYSTEMD_SERVICE_${PN} = ""
+SYSTEMD_PACKAGES:remove = " m4projects-stm32mp1 "
+SYSTEMD_SERVICE:${PN} = ""

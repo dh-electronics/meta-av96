@@ -1,5 +1,5 @@
 
-do_configure_append() {
+do_configure:append() {
     if [ -e ${WORKDIR}/create_sdcard_from_flashlayout.sh ]; then
         bbnote "Update DEFAULT_ROOTFS_PARTITION_SIZE to ${ROOTFS_PARTITION_SIZE}"
         sed 's/^DEFAULT_ROOTFS_PARTITION_SIZE=.*$/DEFAULT_ROOTFS_PARTITION_SIZE='"${ROOTFS_PARTITION_SIZE}"'/' -i ${WORKDIR}/create_sdcard_from_flashlayout.sh

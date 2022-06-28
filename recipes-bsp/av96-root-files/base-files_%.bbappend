@@ -1,4 +1,4 @@
 
-do_install_append () {
+do_install:append () {
     rm ${D}${sysconfdir}/issue
 }

@@ -3,7 +3,7 @@ SECTION = "examples"
 LICENSE = "CLOSED" 
 PR = "r0" 
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}-${PV}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}-${PV}:"
 
 SRC_URI = "git://github.com/ArrowElectronics/LTE_sensors_av96_dashboard.git;protocol=https;name=github"
 SRCREV_github = "master"
@@ -19,5 +19,5 @@ do_install() {
     install -m 755 ${WORKDIR}/README-lte-sensors-demo.txt ${D}/home/root/
 }
 
-FILES_${PN} += "/home/root"
+FILES:${PN} += "/home/root"
 

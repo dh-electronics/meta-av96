@@ -14,5 +14,5 @@ do_install() {
     install -m 755 ${WORKDIR}/LTE_sensors_azure_demo/* ${D}/home/root/LTE_sensors_azure_demo
 }
 
-FILES_${PN} += "/home/root"
-RDEPENDS_${PN} = "python3-core bash"
+FILES:${PN} += "/home/root"
+RDEPENDS:${PN} = "python3-core bash"

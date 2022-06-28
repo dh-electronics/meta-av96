@@ -43,14 +43,14 @@ do_install() {
     install -m 0644 ${WORKDIR}/lib/systemd/network/53-usb-otg.network ${D}${systemd_unitdir}/network/
 }
 
-FILES_${PN} += "${sysconfdir}"
-FILES_${PN} += "${sysconfdir}/xdg/weston"
-FILES_${PN} += "${sysconfdir}/systemd/network"
-FILES_${PN} += "${sysconfdir}/wpa_supplicant"
-FILES_${PN} += "${base_sbindir}"
-FILES_${PN} += "${bindir}"
-FILES_${PN} += "${datadir}/weston/icon"
-FILES_${PN} += "/home/root"
-FILES_${PN} += "${systemd_unitdir}/network"
+FILES:${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}/xdg/weston"
+FILES:${PN} += "${sysconfdir}/systemd/network"
+FILES:${PN} += "${sysconfdir}/wpa_supplicant"
+FILES:${PN} += "${base_sbindir}"
+FILES:${PN} += "${bindir}"
+FILES:${PN} += "${datadir}/weston/icon"
+FILES:${PN} += "/home/root"
+FILES:${PN} += "${systemd_unitdir}/network"
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
