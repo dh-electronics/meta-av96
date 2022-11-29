@@ -13,5 +13,5 @@ do_install() {
     install -m 755 ${WORKDIR}/lib/firmware/brcm/* ${D}${base_libdir}/firmware/brcm/
 }
 
-FILES_${PN} += "${base_libdir}/firmware/brcm"
+FILES:${PN} += "${base_libdir}/firmware/brcm"
 

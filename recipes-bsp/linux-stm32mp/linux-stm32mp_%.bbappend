@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://0001-linux-ap1302.patch"
 SRC_URI += "file://0002-media-ov5640-reduce-mipi-rate-according-to-maximum-p.patch"

@@ -11,5 +11,5 @@ do_install() {
     install -m 755 ${WORKDIR}/lib/firmware/ap1302/* ${D}${base_libdir}/firmware/ap1302/
 }
 
-FILES_${PN} += "${base_libdir}/firmware/ap1302"
+FILES:${PN} += "${base_libdir}/firmware/ap1302"
 
